@@ -9,3 +9,9 @@ reference/
 # Packaged artifacts (MVP-12) — thousands of vendored files, none of them ours.
 release/
 build/
+
+# Agent worktrees (git excludes these too, via .git/info/exclude). They contain
+# whole copies of the repo, artifacts included: prettier walks dot-directories
+# even though eslint and git do not, so format:check fails on someone else's
+# scratch output without this.
+.claude/

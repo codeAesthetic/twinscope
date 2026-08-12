@@ -1,0 +1,6 @@
+import { request } from '../client';
+
+export const webhooks = {
+  register: (url: string) => request(`/webhooks?url=${encodeURIComponent(url)}`),
+  list: () => request('/webhooks'),
+};

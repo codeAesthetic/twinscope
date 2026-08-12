@@ -1,0 +1,29 @@
+{
+  "user": {
+    "id": "u_10482",
+    "name": "Ada Lovelace",
+    "status": "active",
+    "age": "27",
+    "phone": "+44 20 7946 0132",
+    "address": {
+      "city": "Cambridge",
+      "zip": "CB2 1TN",
+      "country": "UK"
+    },
+    "roles": ["admin", "viewer", "editor"],
+    "prefs": {
+      "theme": "dark",
+      "density": "comfortable",
+      "notifications": null
+    }
+  },
+  "quota": {
+    "requests": 10000,
+    "storageMb": 512
+  },
+  "meta": {
+    "requestId": "r_902",
+    "region": "eu-west-1",
+    "version": 4
+  }
+}

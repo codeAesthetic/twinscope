@@ -1,0 +1,48 @@
+import { createTransport } from './transport';
+import { logger } from './logger';
+
+export interface RequestOptions {
+  baseUrl: string;
+  timeout: number;
+  retries: number;
+}
+
+export const DEFAULT_OPTIONS: RequestOptions = {
+  baseUrl: 'https://api.internal/v1',
+  timeout: 5000,
+  retries: 2,
+};
+
+const transport = createTransport(DEFAULT_OPTIONS);
+const timeoutMs = DEFAULT_OPTIONS.timeout;
+
+/**
+ * One request, one place to look when it fails.
+ *
+ * Every caller goes through here, so the retry policy, the logging and the
+ * timing are each defined exactly once.
+ */
+export async function request(path: string, init: RequestInit = {}) {
+  const started = performance.now();
+  const response = await transport.send(path, init);
+
+  if (!response.ok) {
+    logger.warn('request failed', {
+      path,
+      status: response.status,
+    });
+  }
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    body: await response.json(),
+    ms: performance.now() - started,
+  };
+}
+
+export function withRetries(overrides: Partial<RequestOptions> = {}) {
+  return { ...DEFAULT_OPTIONS, ...overrides };
+}
+
+export const shortLived = { ...DEFAULT_OPTIONS, timeout: 1000 };

@@ -1,0 +1,5 @@
+import { request } from '../client';
+
+export const orders = {
+  list: () => request('/orders'),
+};

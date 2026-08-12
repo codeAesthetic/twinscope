@@ -1,0 +1,6 @@
+{
+  "port": 8080,
+  "logLevel": "debug",
+  "features": ["search", "export", "webhooks"],
+  "timeout": 8000,
+}

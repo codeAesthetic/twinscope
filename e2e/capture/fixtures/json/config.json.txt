@@ -1,0 +1,6 @@
+{
+  "port": 8080,
+  "logLevel": "info",
+  "features": ["search", "export"],
+  "timeout": 5000
+}

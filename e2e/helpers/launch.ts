@@ -48,6 +48,12 @@ export interface LaunchOptions {
    * owns cleanup in that case.
    */
   userDataDir?: string;
+  /**
+   * Record a webm of the window into `dir`. Only the media capture harness
+   * (MEDIA-1) uses this: the file is an intermediate that ffmpeg turns into a
+   * GIF, and it is finalised on `close()`, so read `page.video()` after that.
+   */
+  recordVideo?: { dir: string; size?: { width: number; height: number } };
 }
 
 /**
@@ -76,6 +82,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<Harness> {
     args: [entry, `--user-data-dir=${userDataDir}`],
     // Keeps Electron quiet about being unsigned/dev in CI-ish contexts.
     env: { ...process.env, NODE_ENV: 'test', ELECTRON_ENABLE_LOGGING: '1' },
+    ...(options.recordVideo !== undefined ? { recordVideo: options.recordVideo } : {}),
   });
 
   const logs: string[] = [];

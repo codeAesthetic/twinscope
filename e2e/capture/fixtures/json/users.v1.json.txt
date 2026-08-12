@@ -1,0 +1,29 @@
+{
+  "user": {
+    "id": "u_10482",
+    "name": "Ada L.",
+    "status": "pending",
+    "age": 27,
+    "avatar": "https://cdn.internal/a/1f2.png",
+    "address": {
+      "city": "London",
+      "zip": "CB2 1TN",
+      "country": "UK"
+    },
+    "roles": ["viewer", "editor", "admin"],
+    "prefs": {
+      "theme": "dark",
+      "density": "compact",
+      "notifications": null
+    }
+  },
+  "quota": {
+    "requests": 5000,
+    "storageMb": 512
+  },
+  "meta": {
+    "requestId": "r_881",
+    "region": "eu-west-1",
+    "version": 3
+  }
+}

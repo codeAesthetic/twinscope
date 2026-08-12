@@ -1,0 +1,9 @@
+export const DEFAULT_OPTIONS = {
+  baseUrl: 'https://api.internal/v1',
+  timeout: 5000,
+  retries: 2,
+};
+
+export async function request(path: string) {
+  return fetch(`${DEFAULT_OPTIONS.baseUrl}${path}`);
+}

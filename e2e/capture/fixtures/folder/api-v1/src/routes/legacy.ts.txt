@@ -1,0 +1,4 @@
+// Kept for the 2019 mobile client. Delete once telemetry shows nobody left.
+export const legacy = {
+  ping: () => ({ ok: true }),
+};

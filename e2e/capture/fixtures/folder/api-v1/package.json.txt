@@ -1,0 +1,8 @@
+{
+  "name": "@internal/api",
+  "version": "1.4.2",
+  "main": "src/index.ts",
+  "dependencies": {
+    "zod": "3.24.1"
+  }
+}

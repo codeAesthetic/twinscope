@@ -1,0 +1,48 @@
+import { createTransport } from './transport';
+import { logger } from './logger';
+import { metrics } from './metrics';
+
+export interface RequestOptions {
+  baseUrl: string;
+  timeout: number;
+  retries: number;
+}
+
+export const DEFAULT_OPTIONS: RequestOptions = {
+  baseUrl: 'https://api.internal/v2',
+  timeout: 8000,
+  retries: 4,
+};
+
+const transport = createTransport(DEFAULT_OPTIONS);
+const timeoutBudgetMs = DEFAULT_OPTIONS.timeout;
+
+/**
+ * One request, one place to look when it fails.
+ *
+ * Every caller goes through here, so the retry policy, the logging and the
+ * timing are each defined exactly once.
+ */
+export async function request(path: string, init: RequestInit = {}) {
+  const started = performance.now();
+  const response = await transport.send(path, init);
+
+  if (!response.ok) {
+    logger.warn('request failed', {
+      path,
+      status: response.status,
+    });
+  }
+
+  return {
+    ok: response.ok,
+    status: response.status,
+    body: await response.json(),
+    ms: performance.now() - started,
+  };
+}
+
+export function withRetries(overrides: Partial<RequestOptions> = {}) {
+  metrics.count('client.withRetries');
+  return { ...DEFAULT_OPTIONS, ...overrides };
+}

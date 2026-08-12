@@ -1,0 +1,6 @@
+import { request } from '../client';
+
+export const users = {
+  list: () => request('/users'),
+  get: (id: string) => request(`/users/${id}`),
+};
