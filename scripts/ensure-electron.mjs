@@ -20,15 +20,15 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-// Hoisted layout puts it at the root; check the app-local path as a fallback.
-const candidates = [
-  join(repoRoot, 'node_modules', 'electron'),
-  join(repoRoot, 'apps', 'desktop', 'node_modules', 'electron'),
-];
+// CI jobs that only typecheck/lint/test have no use for a 300 MB binary.
+if (process.env.ELECTRON_SKIP_BINARY_DOWNLOAD === '1') {
+  console.log('[ensure-electron] ELECTRON_SKIP_BINARY_DOWNLOAD=1 — skipping');
+  process.exit(0);
+}
 
-const electronDir = candidates.find((dir) => existsSync(join(dir, 'install.js')));
+const electronDir = join(repoRoot, 'node_modules', 'electron');
 
-if (!electronDir) {
+if (!existsSync(join(electronDir, 'install.js'))) {
   console.log('[ensure-electron] electron not installed yet — nothing to do');
   process.exit(0);
 }
