@@ -10,15 +10,16 @@ import {
   Toggle,
 } from '../components/primitives';
 import { DropZonePair } from '../components/home/DropZonePair';
-import type { DropZoneInput } from '../components/home/types';
+import type { InputPayload } from '../../../shared/channels';
 import { useTheme } from '../theme/ThemeProvider';
 
 /** PLACEHOLDER data — real inputs arrive in MVP-2. */
-const FILLED_BEFORE: DropZoneInput = {
+const FILLED_BEFORE: InputPayload = {
+  side: 'A',
   kind: 'json',
   name: 'users-v2.3.json',
-  meta: '41.2 KB · json',
-  preview: ['{', '  "user": {', '    "id": "u_10482",', '    "status": "pending",'],
+  size: 42_189,
+  text: '{\n  "user": {\n    "id": "u_10482",\n    "status": "pending",\n  }\n}',
 };
 
 /**
@@ -101,7 +102,7 @@ export function Gallery() {
 
       <Section title="Drop zones — empty and filled">
         <div style={{ width: '100%' }}>
-          <DropZonePair before={FILLED_BEFORE} />
+          <DropZonePair isStatic staticBefore={FILLED_BEFORE} />
         </div>
       </Section>
 

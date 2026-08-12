@@ -1,15 +1,47 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC, type DevDiffApi } from '../shared/channels';
+import {
+  IPC,
+  type CompareEvent,
+  type CompareRequest,
+  type CompareStarted,
+  type DevDiffApi,
+  type InputPayload,
+  type PingResult,
+} from '../shared/channels';
 
 /**
  * The only bridge between the renderer and the rest of the app.
  *
  * Runs sandboxed: it may use Electron and nothing heavyweight. Never expose
- * `ipcRenderer` (or anything that can reach it) to the page.
+ * `ipcRenderer` (or anything that can reach it) to the page — every method here
+ * is a deliberate, typed hole in context isolation.
  */
 const api: DevDiffApi = {
   platform: process.platform,
-  ping: () => ipcRenderer.invoke(IPC.ping),
+
+  ping: (): Promise<PingResult> => ipcRenderer.invoke(IPC.ping),
+
+  dialog: {
+    pickFile: (side): Promise<InputPayload | null> => ipcRenderer.invoke(IPC.pickFile, side),
+    pickFolder: (side): Promise<InputPayload | null> => ipcRenderer.invoke(IPC.pickFolder, side),
+  },
+
+  input: {
+    read: (side, path): Promise<InputPayload> => ipcRenderer.invoke(IPC.readInput, { side, path }),
+  },
+
+  compare: {
+    start: (request: CompareRequest): Promise<CompareStarted> =>
+      ipcRenderer.invoke(IPC.compareStart, request),
+    cancel: (jobId: string): Promise<void> => ipcRenderer.invoke(IPC.compareCancel, jobId),
+    onEvent: (listener: (event: CompareEvent) => void): (() => void) => {
+      // The raw IpcRendererEvent is dropped deliberately: handing it to the page
+      // would leak `sender`, and with it a route back to ipcRenderer.
+      const wrapped = (_event: unknown, payload: CompareEvent): void => listener(payload);
+      ipcRenderer.on(IPC.compareEvent, wrapped);
+      return () => ipcRenderer.removeListener(IPC.compareEvent, wrapped);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('devdiff', api);

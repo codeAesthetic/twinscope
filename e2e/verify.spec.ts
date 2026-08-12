@@ -35,7 +35,7 @@ test('app boots, bridges to main, and stays locked down', async () => {
     expect(leaks.process).toBe('undefined');
     expect(leaks.require).toBe('undefined');
     expect(leaks.ipcRenderer).toBe('undefined');
-    expect(leaks.bridge.sort()).toEqual(['ping', 'platform']);
+    expect(leaks.bridge.sort()).toEqual(['compare', 'dialog', 'input', 'ping', 'platform']);
 
     // New windows are denied.
     const opened = await harness.page.evaluate(() => window.open('https://example.com') !== null);

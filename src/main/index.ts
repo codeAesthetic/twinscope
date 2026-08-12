@@ -1,4 +1,5 @@
 import { BrowserWindow, app } from 'electron';
+import { killWorkerForTesting, shutdownEngineHost } from './engine-host';
 import { registerIpcHandlers } from './ipc';
 import { applySecurityPolicy } from './security';
 import { createMainWindow } from './window';
@@ -32,6 +33,13 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow = null;
     });
 
+    // Test-only seam: lets the harness kill the engine worker mid-job and prove
+    // the app survives it. Reached via Playwright's main-process evaluate, so it
+    // is never exposed to the renderer.
+    if (process.env['NODE_ENV'] === 'test') {
+      (globalThis as Record<string, unknown>)['__devdiffKillEngineHost'] = killWorkerForTesting;
+    }
+
     // macOS: clicking the dock icon with no windows open reopens one.
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
@@ -41,4 +49,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
   });
+
+  // A busy worker must not outlive the app.
+  app.on('before-quit', shutdownEngineHost);
 }

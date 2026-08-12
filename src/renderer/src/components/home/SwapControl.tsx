@@ -1,8 +1,8 @@
 /**
  * The ⇄ between the two drop zones, with the mockup's fading guide lines.
- * Static for HOME-2; MVP-2 wires it to swap sides (⌘⇧S).
+ * Inert without `onSwap`, which is how the `#gallery` renders it.
  */
-export function SwapControl() {
+export function SwapControl({ onSwap }: { onSwap?: () => void }) {
   return (
     <div className="dd-swap" data-testid="swap-control">
       <span className="dd-swap-line" aria-hidden="true" />
@@ -10,7 +10,8 @@ export function SwapControl() {
         type="button"
         className="dd-swapbtn"
         aria-label="Swap before and after"
-        title="Wired up in MVP-2"
+        data-testid="swap-button"
+        {...(onSwap ? { onClick: onSwap } : { title: 'Wired up in MVP-2' })}
       >
         ⇄
       </button>

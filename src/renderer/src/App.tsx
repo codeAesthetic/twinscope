@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
+import { useCompareEvents } from './lib/compareClient';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
@@ -35,6 +36,10 @@ function CurrentScreen() {
 export function App() {
   const [hash, setHash] = useState(() => window.location.hash);
   const setView = useAppStore((state) => state.setView);
+
+  // Subscribed once at the root: a per-screen subscription would drop events
+  // whenever the user navigated mid-comparison.
+  useCompareEvents();
 
   useEffect(() => {
     const onHashChange = (): void => setHash(window.location.hash);

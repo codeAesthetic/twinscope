@@ -1,18 +1,30 @@
+import { demoEngine } from './demo';
 import { detectKind } from './detect';
 import { ENGINES } from './stubs';
 import type { DiffEngine, InputRef } from './types';
 
+/** Every engine the host can run, including ones detection never picks. */
+const ALL: readonly DiffEngine<unknown>[] = [
+  ...ENGINES,
+  demoEngine as unknown as DiffEngine<unknown>,
+];
+
 /**
  * Engine selection: the highest-priority engine that claims the pair.
  *
- * Mismatched kinds (a JSON against a YAML, say) fall through to the text
- * engine rather than failing — the user still gets a useful comparison, and the
- * UI explains which engine ran.
+ * Mismatched kinds (a JSON against a YAML, say) fall through to the text engine
+ * rather than failing — the user still gets a useful comparison, and the UI
+ * explains which engine ran.
  */
 export function selectEngine(a: InputRef, b: InputRef): DiffEngine<unknown> | undefined {
-  return [...ENGINES]
+  return [...ALL]
     .sort((left, right) => right.meta.priority - left.meta.priority)
     .find((engine) => engine.canHandle(a, b));
+}
+
+/** Look an engine up by id, for when the caller names one explicitly. */
+export function engineById(id: string): DiffEngine<unknown> | undefined {
+  return ALL.find((engine) => engine.meta.id === id);
 }
 
 /** Convenience for intake: detect both sides, then pick. */
@@ -31,3 +43,4 @@ export function selectEngineForInputs(
 }
 
 export { ENGINES } from './stubs';
+export { demoEngine } from './demo';

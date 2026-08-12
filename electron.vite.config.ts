@@ -1,7 +1,10 @@
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
+
+const root = __dirname;
 
 /**
  * Deliberately minimal — electron-vite's defaults already point at
@@ -43,7 +46,20 @@ export default defineConfig(({ mode }) => {
   const isDev = mode !== 'production';
 
   return {
-    main: { plugins: [externalizeDepsPlugin()] },
+    main: {
+      plugins: [externalizeDepsPlugin()],
+      build: {
+        rollupOptions: {
+          // Two entries: the main process, and the engine host worker that
+          // main forks as a utilityProcess (see src/main/engine-host.ts).
+          input: {
+            index: resolve(root, 'src/main/index.ts'),
+            'engine-worker': resolve(root, 'src/engine-worker/index.ts'),
+          },
+          output: { entryFileNames: '[name].js' },
+        },
+      },
+    },
     preload: { plugins: [externalizeDepsPlugin()] },
     renderer: { plugins: [react(), tailwindcss(), csp(isDev)] },
   };

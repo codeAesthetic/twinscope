@@ -1,19 +1,100 @@
+import type { InputKind, InputRef, Summary } from '../engines/types';
+
 /**
- * The contract between processes: channel names and the shape of the bridge.
+ * The contract between processes: channel names, wire shapes, and the bridge.
  *
- * Plain types, no runtime dependency — the sandboxed preload imports this, and
- * anything heavier would end up in its bundle. Runtime validation (zod) arrives
- * with the first real renderer→main payload in MVP-1.
+ * No *runtime* dependency may enter this file — the sandboxed preload imports
+ * it, and anything heavier lands in its bundle. Type-only imports are fine,
+ * since they erase at build time. Runtime validation lives in `./schemas`,
+ * which only main imports.
  */
 export const IPC = {
   /** Liveness + version probe. Proves the bridge works end to end. */
   ping: 'app:ping',
+
+  /** Native pickers. */
+  pickFile: 'dialog:pickFile',
+  pickFolder: 'dialog:pickFolder',
+
+  /** Turn a path into an InputRef: stat, sniff the kind, read small text. */
+  readInput: 'input:read',
+
+  /** Comparison job lifecycle. */
+  compareStart: 'compare:start',
+  compareCancel: 'compare:cancel',
+  /** main → renderer. One channel for every job event; switch on `type`. */
+  compareEvent: 'compare:event',
 } as const;
+
+export type IpcChannel = (typeof IPC)[keyof typeof IPC];
 
 export interface PingResult {
   pong: true;
   versions: { electron: string; chrome: string; node: string };
 }
+
+/**
+ * What crosses the wire for one side of a comparison.
+ *
+ * Large inputs travel as a path only — the engine host reads the bytes itself,
+ * so multi-megabyte payloads never pass through IPC (plan §3.1, MD §31).
+ */
+export interface InputPayload {
+  side: 'A' | 'B';
+  kind: InputKind;
+  name: string;
+  path?: string;
+  text?: string;
+  size: number;
+  lang?: string;
+  /** True when the text was withheld because the input is too big to inline. */
+  large?: boolean;
+}
+
+export interface CompareRequest {
+  a: InputPayload;
+  b: InputPayload;
+  /** Omit to let the registry choose (Rule 1: detect, don't ask). */
+  engineId?: string;
+  options?: Record<string, unknown>;
+}
+
+export interface CompareStarted {
+  jobId: string;
+  engineId: string;
+  engineLabel: string;
+}
+
+export interface CompareProgress {
+  type: 'progress';
+  jobId: string;
+  percent: number;
+  message?: string;
+}
+
+export interface CompareDone {
+  type: 'done';
+  jobId: string;
+  engineId: string;
+  summary: Summary;
+  data: unknown;
+  normalizationNotes: string[];
+  ms: number;
+}
+
+export interface CompareFailed {
+  type: 'error';
+  jobId: string;
+  /** Safe to show a user. */
+  message: string;
+  /** 'cancelled' when the user stopped it; 'crash' when the host died. */
+  reason: 'failed' | 'cancelled' | 'crash';
+}
+
+export type CompareEvent = CompareProgress | CompareDone | CompareFailed;
+
+/** Cheap re-export so callers need not reach into the engines directory. */
+export type { InputRef, InputKind, Summary };
 
 /**
  * Everything exposed to the renderer as `window.devdiff`.
@@ -24,9 +105,26 @@ export interface PingResult {
 export interface DevDiffApi {
   /**
    * Host platform, read once at preload time. The UI needs it for chrome
-   * details — macOS draws traffic lights over the window, so the titlebar has
-   * to leave room for them.
+   * details — macOS draws traffic lights over the window.
    */
   platform: 'darwin' | 'win32' | 'linux' | string;
+
   ping(): Promise<PingResult>;
+
+  dialog: {
+    /** Resolves to null when the user cancels. */
+    pickFile(side: 'A' | 'B'): Promise<InputPayload | null>;
+    pickFolder(side: 'A' | 'B'): Promise<InputPayload | null>;
+  };
+
+  input: {
+    read(side: 'A' | 'B', path: string): Promise<InputPayload>;
+  };
+
+  compare: {
+    start(request: CompareRequest): Promise<CompareStarted>;
+    cancel(jobId: string): Promise<void>;
+    /** Returns an unsubscribe function. */
+    onEvent(listener: (event: CompareEvent) => void): () => void;
+  };
 }
