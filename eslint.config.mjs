@@ -62,7 +62,7 @@ export default tseslint.config(
     },
   },
 
-  // --- Engines: pure logic. No Electron, so the CLI can reuse them (V1-2). ---
+  // --- Engines: pure logic. No Electron, so the CLI can reuse them (v0.2.0-2). ---
   {
     files: ['src/engines/**/*.ts'],
     rules: {

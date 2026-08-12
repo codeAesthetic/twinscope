@@ -2,7 +2,7 @@
 //
 // The history fixtures left with MVP-8 and the shortcut table with MVP-10,
 // which generates it from the real registry. What remains is the quick-start
-// deck: two of its four flows (URLs, Git refs) are V1 features, so the cards
+// deck: two of its four flows (URLs, Git refs) are v0.2.0 features, so the cards
 // stay descriptive until then. Kept in one module so each removal is a single
 // deletion.
 
@@ -15,7 +15,7 @@ export interface QuickStart {
   description: string;
 }
 
-/** The four fastest ways in (MD §34/§35). Wired up across MVP-2 and V1. */
+/** The four fastest ways in (MD §34/§35). Wired up across MVP-2 and v0.2.0. */
 export const QUICK_STARTS: readonly QuickStart[] = [
   {
     id: 'folders',

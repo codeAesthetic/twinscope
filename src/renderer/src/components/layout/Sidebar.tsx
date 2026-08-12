@@ -18,7 +18,7 @@ const NAV: readonly NavEntry[] = [
   { view: 'settings', label: 'Settings', shortcut: '⌘,', icon: <SettingsIcon /> },
 ];
 
-/** Placeholder until saved comparisons exist (V1-9). */
+/** Placeholder until saved comparisons exist (v0.2.0-9). */
 const PINNED = [
   { kind: 'image' as const, label: 'Homepage regression' },
   { kind: 'json' as const, label: '/users contract' },

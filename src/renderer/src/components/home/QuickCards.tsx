@@ -4,7 +4,7 @@ import { QUICK_STARTS } from '../../lib/mockData';
 /**
  * Four shortcuts into a comparison, for the cases where dropping two files is
  * not the fastest route (MD §34/§35). Inert until MVP-2 (clipboard, folders)
- * and V1 (Git refs).
+ * and v0.2.0 (Git refs).
  */
 export function QuickCards() {
   return (

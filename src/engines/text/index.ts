@@ -22,7 +22,7 @@ async function textFor(input: InputRef, read: (path: string) => Promise<string>)
  * Text / code comparison (MD §8.1) — the engine every other one falls back to.
  *
  * Line-based rather than syntax-aware for now; AST-level moves and renames are
- * V1 work (MD §27). What it does give you is readable output: edited lines pair
+ * v0.2.0 work (MD §27). What it does give you is readable output: edited lines pair
  * up with word-level marks instead of appearing as unrelated delete/add noise.
  */
 export const textEngine: DiffEngine<TextDiffOptions, TextDiffData> = {

@@ -24,7 +24,7 @@ function CurrentScreen() {
     case 'history':
       return <HistoryScreen />;
     case 'projects':
-      return <Placeholder name="Projects" note="Scoped at V1-9." />;
+      return <Placeholder name="Projects" note="Scoped at v0.2.0-9." />;
     case 'settings':
       return <SettingsScreen />;
   }
