@@ -1,0 +1,299 @@
+/*
+ * Primitive component styles, ported from reference/devdiff-mockup.html.
+ * Tokens only — never a literal colour, so both themes work for free.
+ */
+
+/* --- chip --- */
+.dd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2.5px 8px;
+  border-radius: 99px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--tx-2);
+  white-space: nowrap;
+}
+.dd-chip[data-variant='add'] {
+  color: var(--add);
+  border-color: color-mix(in srgb, var(--add) 40%, transparent);
+  background: var(--add-bg);
+}
+.dd-chip[data-variant='del'] {
+  color: var(--del);
+  border-color: color-mix(in srgb, var(--del) 40%, transparent);
+  background: var(--del-bg);
+}
+.dd-chip[data-variant='mod'] {
+  color: var(--mod);
+  border-color: color-mix(in srgb, var(--mod) 40%, transparent);
+  background: var(--mod-bg);
+}
+.dd-chip[data-variant='info'] {
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 40%, transparent);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
+}
+.dd-chip[data-variant='acc'] {
+  color: var(--acc-2);
+  border-color: color-mix(in srgb, var(--acc) 45%, transparent);
+  background: var(--acc-bg);
+}
+html[data-theme='light'] .dd-chip[data-variant='acc'] {
+  color: var(--acc);
+}
+
+/* --- button --- */
+.dd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-2);
+  background: var(--elev);
+  color: var(--tx);
+  padding: 5px 10px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.dd-btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+.dd-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.dd-btn[data-variant='primary'] {
+  background: linear-gradient(var(--acc), color-mix(in srgb, var(--acc) 80%, #000));
+  border-color: transparent;
+  color: #fff;
+  font-weight: 600;
+}
+.dd-btn[data-variant='primary']:hover:not(:disabled) {
+  filter: brightness(1.08);
+  background: linear-gradient(var(--acc), color-mix(in srgb, var(--acc) 80%, #000));
+}
+.dd-btn[data-variant='ghost'] {
+  background: transparent;
+  border-color: transparent;
+  color: var(--tx-2);
+}
+.dd-btn[data-variant='ghost']:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--tx);
+}
+.dd-btn[data-size='sm'] {
+  padding: 3px 8px;
+  font-size: 11.5px;
+}
+
+/* --- segmented control --- */
+.dd-seg {
+  display: inline-flex;
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.dd-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--tx-2);
+  font: inherit;
+  font-size: 11.5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.dd-seg button + button {
+  border-left: 1px solid var(--line);
+}
+.dd-seg button:hover {
+  background: var(--hover);
+  color: var(--tx);
+}
+.dd-seg button[aria-selected='true'] {
+  background: var(--acc-bg);
+  color: var(--acc-2);
+}
+html[data-theme='light'] .dd-seg button[aria-selected='true'] {
+  color: var(--acc);
+}
+
+/* --- toggle pill --- */
+.dd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--tx-2);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: 4px 9px;
+  border-radius: 7px;
+}
+.dd-toggle .dd-toggle-box {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  border: 1px solid var(--line-2);
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  color: transparent;
+}
+.dd-toggle[aria-pressed='true'] {
+  color: var(--tx);
+  border-color: color-mix(in srgb, var(--acc) 45%, transparent);
+  background: var(--acc-bg);
+}
+.dd-toggle[aria-pressed='true'] .dd-toggle-box {
+  background: var(--acc);
+  border-color: var(--acc);
+  color: #fff;
+}
+
+/* --- search --- */
+.dd-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-2);
+  background: var(--panel);
+  border-radius: 7px;
+  padding: 4px 9px;
+  color: var(--tx-3);
+  min-width: 190px;
+}
+.dd-search input {
+  border: 0;
+  background: transparent;
+  color: var(--tx);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  width: 100%;
+}
+.dd-search svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+/* --- kbd --- */
+.dd-kbd {
+  font: 600 10px/1 var(--mono);
+  color: var(--tx-3);
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  padding: 4px 6px;
+  white-space: nowrap;
+}
+
+/* --- file type badge --- */
+.dd-ftype {
+  width: 26px;
+  height: 20px;
+  border-radius: 5px;
+  display: grid;
+  place-items: center;
+  font: 700 9px/1 var(--mono);
+  background: var(--elev);
+  border: 1px solid var(--line-2);
+  color: var(--tx-2);
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+}
+.dd-ftype[data-kind='json'] {
+  color: #ffb257;
+  border-color: rgba(255, 178, 87, 0.35);
+  background: rgba(255, 178, 87, 0.1);
+}
+.dd-ftype[data-kind='code'] {
+  color: #58a6ff;
+  border-color: rgba(88, 166, 255, 0.35);
+  background: rgba(88, 166, 255, 0.1);
+}
+.dd-ftype[data-kind='image'] {
+  color: #ff7bd0;
+  border-color: rgba(255, 123, 208, 0.35);
+  background: rgba(255, 123, 208, 0.1);
+}
+.dd-ftype[data-kind='folder'] {
+  color: #61dafb;
+  border-color: rgba(97, 218, 251, 0.3);
+  background: rgba(97, 218, 251, 0.08);
+}
+.dd-ftype[data-kind='md'] {
+  color: #9fe6a0;
+  border-color: rgba(159, 230, 160, 0.3);
+  background: rgba(159, 230, 160, 0.08);
+}
+
+/* --- switch --- */
+.dd-switch {
+  width: 30px;
+  height: 17px;
+  border-radius: 99px;
+  background: var(--line-2);
+  position: relative;
+  flex: 0 0 auto;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.dd-switch::after {
+  content: '';
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  transition: left 0.15s;
+}
+.dd-switch[aria-checked='true'] {
+  background: var(--acc);
+}
+.dd-switch[aria-checked='true']::after {
+  left: 15px;
+}
+
+/*
+ * File-type badge colours are hue-coded (the mockup picks a colour per file
+ * kind), so they are literals rather than tokens. The mockup's values are tuned
+ * for dark; on light they wash out to unreadable, so each gets a darker pair.
+ */
+html[data-theme='light'] .dd-ftype[data-kind='json'] {
+  color: #b45309;
+  border-color: rgba(180, 83, 9, 0.35);
+  background: rgba(180, 83, 9, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='code'] {
+  color: #0969da;
+  border-color: rgba(9, 105, 218, 0.35);
+  background: rgba(9, 105, 218, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='image'] {
+  color: #a21caf;
+  border-color: rgba(162, 28, 175, 0.35);
+  background: rgba(162, 28, 175, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='folder'] {
+  color: #0e7490;
+  border-color: rgba(14, 116, 144, 0.35);
+  background: rgba(14, 116, 144, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='md'] {
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.35);
+  background: rgba(21, 128, 61, 0.08);
+}

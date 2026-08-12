@@ -1,67 +1,20 @@
 import { useEffect, useState } from 'react';
-import type { PingResult } from '../../shared/channels';
+import { BootScreen } from './screens/BootScreen';
+import { Gallery } from './screens/Gallery';
+import { ThemeProvider } from './theme/ThemeProvider';
 
 /**
- * Boot screen for SETUP-2 — replaced by the real app frame in HOME-1.
- *
- * It renders a live round trip through the preload bridge, so "does IPC
- * actually work?" is answerable by looking at the window.
+ * No router yet (plan D11) — screens switch on state. The only route today is
+ * the dev-facing #gallery, used to compare primitives against the mockup.
  */
 export function App() {
-  const [ping, setPing] = useState<PingResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [hash, setHash] = useState(() => window.location.hash);
 
   useEffect(() => {
-    window.devdiff
-      .ping()
-      .then(setPing)
-      .catch((cause: unknown) => setError(cause instanceof Error ? cause.message : String(cause)));
+    const onHashChange = (): void => setHash(window.location.hash);
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  return (
-    <main
-      style={{ height: '100%', display: 'grid', placeItems: 'center' }}
-      data-testid="boot-screen"
-    >
-      <div style={{ textAlign: 'center' }}>
-        <div
-          style={{
-            width: 34,
-            height: 34,
-            margin: '0 auto 14px',
-            borderRadius: 10,
-            background: 'linear-gradient(140deg, var(--acc), #4ad2ff)',
-            position: 'relative',
-          }}
-        >
-          <span
-            style={{
-              position: 'absolute',
-              inset: '8px 15px 8px 8px',
-              background: 'rgba(255,255,255,.92)',
-              borderRadius: '3px 0 0 3px',
-            }}
-          />
-        </div>
-
-        <h1 style={{ fontSize: 20, fontWeight: 650, letterSpacing: '-0.02em', margin: 0 }}>
-          DevDiff
-        </h1>
-        <p style={{ color: 'var(--tx-2)', margin: '6px 0 0' }}>
-          Compare anything. Understand what changed.
-        </p>
-
-        <p
-          data-testid="bridge-status"
-          style={{ color: 'var(--tx-3)', marginTop: 22, fontSize: 11.5 }}
-        >
-          {error !== null
-            ? `bridge error: ${error}`
-            : ping
-              ? `bridge ok · electron ${ping.versions.electron} · chrome ${ping.versions.chrome} · node ${ping.versions.node}`
-              : 'connecting…'}
-        </p>
-      </div>
-    </main>
-  );
+  return <ThemeProvider>{hash === '#gallery' ? <Gallery /> : <BootScreen />}</ThemeProvider>;
 }
