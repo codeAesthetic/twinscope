@@ -77,6 +77,37 @@ export const HistoryListSchema = z
 
 export const HistoryIdSchema = z.number().int().positive();
 
+const ReportSideSchema = z.object({
+  name: z.string().min(1).max(1024),
+  path: z.string().max(4096).optional(),
+  kind: z.string().max(32),
+});
+
+export const ReportFormatSchema = z.enum(['html', 'md', 'patch']);
+
+export const ReportPayloadSchema = z.object({
+  a: ReportSideSchema,
+  b: ReportSideSchema,
+  engineId: z.string().regex(/^[a-z][a-z0-9-]{0,31}$/),
+  summary: SummarySchema,
+  options: z.record(z.string(), z.unknown()),
+  normalizationNotes: z.array(z.string().max(2000)).max(64),
+  generatedAt: z.string().max(64),
+  // The engine's own model: shape-checked by the renderer that consumes it, and
+  // size-bounded by the IPC layer rather than by a schema that would have to
+  // know every engine.
+  data: z.unknown(),
+  images: z
+    .object({
+      before: z.string().optional(),
+      after: z.string().optional(),
+      mask: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const RevealPathSchema = z.string().min(1).max(4096);
+
 export const PreferencesPatchSchema = z.object({
   theme: z.enum(['system', 'dark', 'light']).optional(),
   engineDefaults: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),

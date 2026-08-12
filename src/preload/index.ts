@@ -49,6 +49,11 @@ const api: DevDiffApi = {
     clear: () => ipcRenderer.invoke(IPC.historyClear),
   },
 
+  report: {
+    save: (format, input) => ipcRenderer.invoke(IPC.exportReport, format, input),
+    reveal: (path: string) => ipcRenderer.invoke(IPC.revealReport, path),
+  },
+
   settings: {
     read: () => ipcRenderer.invoke(IPC.settingsRead),
     write: (patch) => ipcRenderer.invoke(IPC.settingsWrite, patch),

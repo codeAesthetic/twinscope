@@ -1,4 +1,5 @@
 import { createElement, Suspense, useEffect, useRef, useState } from 'react';
+import { ExportMenu } from '../components/compare/ExportMenu';
 import { SummaryStrip } from '../components/compare/SummaryStrip';
 import { ToolbarSlotProvider } from '../components/compare/ToolbarSlot';
 import { Button, Chip, SearchInput } from '../components/primitives';
@@ -109,9 +110,7 @@ export function WorkspaceScreen() {
           {result !== null && (
             <>
               <WorkspaceSearch />
-              <Button disabled title="Export arrives in MVP-9">
-                Export ▾
-              </Button>
+              <ExportMenu />
             </>
           )}
 

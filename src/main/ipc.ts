@@ -4,6 +4,7 @@ import { readClipboard, writeClipboard } from './clipboard';
 import { readBytes, readInput } from './input';
 import { clear, get, list, record, remove, setStarred, touch } from './history';
 import { readPreferences, savePreferences } from './settings';
+import { exportReport, revealReport } from './export';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
 import { z } from 'zod';
 import {
@@ -13,6 +14,9 @@ import {
   HistoryRecordSchema,
   JobIdSchema,
   PreferencesPatchSchema,
+  ReportFormatSchema,
+  ReportPayloadSchema,
+  RevealPathSchema,
   ReadBytesSchema,
   ReadInputSchema,
   ResolveInputsSchema,
@@ -133,6 +137,17 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle(IPC.historyClear, (): void => clear());
+
+  // --- export (MD §38/§39)
+  ipcMain.handle(IPC.exportReport, async (event, rawFormat: unknown, payload: unknown) => {
+    const format = ReportFormatSchema.parse(rawFormat);
+    const input = ReportPayloadSchema.parse(payload);
+    return exportReport(event.sender, format, input as Parameters<typeof exportReport>[2]);
+  });
+
+  ipcMain.handle(IPC.revealReport, (_event, rawPath: unknown): void => {
+    revealReport(RevealPathSchema.parse(rawPath));
+  });
 
   // --- preferences
   ipcMain.handle(IPC.settingsRead, () => readPreferences());

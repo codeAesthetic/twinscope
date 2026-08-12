@@ -36,6 +36,10 @@ export const IPC = {
   historyRemove: 'history:remove',
   historyClear: 'history:clear',
 
+  /** Report export (MD §38/§39). */
+  exportReport: 'export:report',
+  revealReport: 'export:reveal',
+
   /** Preferences that outlive the window. */
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',
@@ -141,6 +145,20 @@ export interface HistoryRow {
   openedAt: string;
 }
 
+/** What the renderer hands main to turn into a report file. */
+export interface ReportPayload {
+  a: { name: string; path?: string; kind: string };
+  b: { name: string; path?: string; kind: string };
+  engineId: string;
+  summary: Summary;
+  options: Record<string, unknown>;
+  normalizationNotes: string[];
+  generatedAt: string;
+  data: unknown;
+  /** `data:` URLs, embedded so an HTML report needs no companion files. */
+  images?: { before?: string; after?: string; mask?: string };
+}
+
 export type ThemePreference = 'system' | 'dark' | 'light';
 
 export interface Preferences {
@@ -219,6 +237,12 @@ export interface DevDiffApi {
     star(id: number, starred: boolean): Promise<void>;
     remove(id: number): Promise<void>;
     clear(): Promise<void>;
+  };
+
+  report: {
+    /** Opens a save dialog; resolves with null when the user cancels. */
+    save(format: 'html' | 'md' | 'patch', input: ReportPayload): Promise<{ path: string | null }>;
+    reveal(path: string): Promise<void>;
   };
 
   settings: {

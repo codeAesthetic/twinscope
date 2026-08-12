@@ -128,7 +128,7 @@ export async function startImageJob(
         },
       );
 
-      const [beforeUrl, afterUrl] = await Promise.all([objectUrl(a), objectUrl(b)]);
+      const [beforeUrl, afterUrl] = await Promise.all([dataUrl(a), dataUrl(b)]);
 
       emit({
         type: 'done',
@@ -174,9 +174,38 @@ function toRef(payload: InputPayload) {
   };
 }
 
-/** A blob URL the <img> tags can point at; CSP already allows `blob:`. */
-async function objectUrl(payload: InputPayload): Promise<string> {
+/**
+ * A `data:` URL for the <img> tags.
+ *
+ * A blob URL would be cheaper, but the HTML report has to be a single file that
+ * still shows its images on someone else's machine — and a blob URL is
+ * meaningless the moment it leaves this window. Base64 costs a third more
+ * memory; the 64 MB read cap keeps that bounded.
+ */
+async function dataUrl(payload: InputPayload): Promise<string> {
   if (payload.path === undefined) return '';
   const bytes = await window.devdiff.input.bytes(payload.path);
-  return URL.createObjectURL(new Blob([bytes as BlobPart]));
+
+  // btoa in one call blows the argument limit on anything sizeable.
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let at = 0; at < bytes.length; at += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
+  }
+
+  return `data:${mimeFor(payload.name)};base64,${btoa(binary)}`;
+}
+
+function mimeFor(name: string): string {
+  const extension = name.toLowerCase().split('.').pop() ?? '';
+  const known: Record<string, string> = {
+    png: 'image/png',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    avif: 'image/avif',
+    bmp: 'image/bmp',
+  };
+  return known[extension] ?? 'image/png';
 }
