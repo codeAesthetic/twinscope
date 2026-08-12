@@ -1,0 +1,33 @@
+# --- Local-only planning material (intentionally never published) ---
+plan.md
+reference/
+CLAUDE.md
+
+# --- Dependencies / build output ---
+node_modules/
+out/
+dist/
+release/
+*.tsbuildinfo
+
+# --- Local data ---
+*.db
+*.sqlite
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Test artifacts ---
+e2e/.artifacts/
+test-results/
+playwright-report/
+coverage/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.log
