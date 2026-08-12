@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { pasteInput } from '../helpers/seed';
 
 /**
  * REGRESSION — the §3.8 scroll budget, the one row that was never instrumented.
@@ -34,16 +35,10 @@ test('scroll performance: a 50k-row diff scrolls without dropping to a crawl', a
   const harness = await launchApp();
 
   try {
-    const paste = async (text: string): Promise<void> => {
-      await harness.app.evaluate(
-        ({ clipboard }, value: string) => clipboard.writeText(value),
-        text,
-      );
-      await harness.page.keyboard.press('Meta+Shift+V');
-    };
-
-    await paste(generate('before'));
-    await paste(generate('after'));
+    // The shared helper retries the keystroke: the first press after boot can
+    // land before the renderer has attached its listener (CLAUDE.md §7).
+    await pasteInput(harness, generate('before'), 'before');
+    await pasteInput(harness, generate('after'), 'after');
     await harness.page.getByTestId('compare-button').click();
 
     const diff = harness.page.getByTestId('text-diff');
