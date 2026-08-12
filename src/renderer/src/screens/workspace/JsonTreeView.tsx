@@ -1,11 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
-import { Button, Switch, Toggle } from '../../components/primitives';
+import { Button, Chip, Seg, Switch, Toggle } from '../../components/primitives';
 import { Toast } from '../../components/Toast';
 import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { useSearchStore } from '../../stores/search';
+import { useViewModeStore } from '../../stores/viewMode';
+import {
+  afterText,
+  beforeText,
+  buildDisplayRows,
+  containerText,
+  JSON_VIEW_MODES,
+  markFor,
+  toneFor,
+  type JsonDisplayRow,
+  type JsonViewMode,
+} from '../../lib/jsonView';
+import { useViewModeCycle } from '../../lib/viewMode';
 import {
   DEFAULT_JSON_OPTIONS,
   type JsonDiffData,
@@ -17,16 +31,46 @@ import type { EngineViewProps } from './engineViews';
 const ROW_HEIGHT = 23;
 
 /**
- * The structural JSON view (MD §13): a virtualised tree of rows plus the
+ * The structural JSON view (MD §13): the diff in five presentations, plus the
  * normalisation rail that explains — and can undo — every suppressed difference.
  *
- * Normalisation options are not a display filter. Changing one re-runs the
+ * Two rules shape this file.
+ *
+ * **Normalisation options are not a display filter.** Changing one re-runs the
  * engine, because the counts have to come from the comparison itself; a view
  * that hid rows locally would report numbers the engine never agreed to.
+ *
+ * **A view mode is not a second diff.** Side-by-side, unified, inline and tree
+ * are four renderings of one row list from one structural walk, so the summary
+ * strip describes every one of them. `raw` is deliberately not a diff at all: it
+ * shows the two documents as they arrived.
+ *
+ * **Deviation from the mockup (owner-directed):** `#s-json`'s seg is
+ * `Tree | Side-by-side | Raw` with Tree selected. Side-by-side is the default
+ * here, and unified and inline were added for parity with the text view.
  */
 export default function JsonTreeView({ result }: EngineViewProps) {
   const data = result.data as JsonDiffData;
   const rows = data.rows;
+
+  /**
+   * The mode outlives this component on purpose: a normalisation toggle re-runs
+   * the engine, which unmounts and remounts the view (see `stores/viewMode.ts`).
+   */
+  const rawMode = useViewModeStore((state) => state.modeFor(result.engineId, 'side'));
+  const mode = (JSON_VIEW_MODES as readonly string[]).includes(rawMode)
+    ? (rawMode as JsonViewMode)
+    : 'side';
+  const setStoredMode = useViewModeStore((state) => state.set);
+  const cycleStoredMode = useViewModeStore((state) => state.cycle);
+  const setMode = useCallback(
+    (next: JsonViewMode) => setStoredMode(result.engineId, next),
+    [setStoredMode, result.engineId],
+  );
+  const cycleMode = useCallback(
+    () => cycleStoredMode(result.engineId, JSON_VIEW_MODES),
+    [cycleStoredMode, result.engineId],
+  );
 
   const [onlyChanges, setOnlyChanges] = useState(true);
   const [expandAll, setExpandAll] = useState(false);
@@ -34,6 +78,8 @@ export default function JsonTreeView({ result }: EngineViewProps) {
   const [menu, setMenu] = useState<{ row: JsonRow; x: number; y: number } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
+  const a = useCompareStore((state) => state.a);
+  const b = useCompareStore((state) => state.b);
   const storeOptions = useCompareStore((state) => state.options);
   const setOptions = useCompareStore((state) => state.setOptions);
   const register = useChangeNavStore((state) => state.register);
@@ -51,64 +97,39 @@ export default function JsonTreeView({ result }: EngineViewProps) {
     [storeOptions],
   );
 
-  useEffect(() => {
-    enableSearch('Filter by path or value…');
-    return disableSearch;
-  }, [enableSearch, disableSearch]);
-
-  /** Parent row index for each row, from the depth column. */
-  const parents = useMemo(() => {
-    const out = new Array<number>(rows.length).fill(-1);
-    const stack: number[] = [];
-    rows.forEach((row, index) => {
-      stack.length = row.depth;
-      out[index] = row.depth === 0 ? -1 : (stack[row.depth - 1] ?? -1);
-      stack[row.depth] = index;
-    });
-    return out;
-  }, [rows]);
+  useViewModeCycle(cycleMode);
 
   /**
-   * Which rows survive the filters. Search keeps the ancestors of a match so a
-   * hit is never orphaned from its path; "only changes" drops unchanged leaves
-   * and whole unchanged subtrees.
+   * Raw has no rows to filter, so the box says it cannot search rather than
+   * accepting a query and doing nothing (the rule `WorkspaceSearch` states).
    */
-  const visible = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    const keep = rows.map((row) => {
-      if (onlyChanges && row.container === undefined && row.state === 'same') return false;
-      if (onlyChanges && row.container !== undefined && (row.changed ?? 0) === 0) return false;
-      if (needle === '') return true;
-      return rowText(row).toLowerCase().includes(needle);
-    });
-
-    // Ancestors of a kept row stay, so the tree never loses its spine.
-    for (let index = rows.length - 1; index >= 0; index -= 1) {
-      if (!keep[index]) continue;
-      const parent = parents[index] ?? -1;
-      if (parent >= 0) keep[parent] = true;
+  useEffect(() => {
+    if (mode === 'raw') {
+      disableSearch();
+      return;
     }
+    enableSearch('Filter by path or value…');
+    return disableSearch;
+  }, [mode, enableSearch, disableSearch]);
 
-    const out: Array<{ row: JsonRow; index: number }> = [];
-    let hiddenBelow = -1;
-    rows.forEach((row, index) => {
-      if (hiddenBelow >= 0 && row.depth > hiddenBelow) return;
-      hiddenBelow = -1;
-      if (!keep[index]) return;
-      out.push({ row, index });
-      const isCollapsed = row.container !== undefined && !expandAll && collapsed.has(row.path);
-      if (isCollapsed) hiddenBelow = row.depth;
-    });
-    return out;
-  }, [rows, parents, onlyChanges, query, collapsed, expandAll]);
+  const visible = useMemo(
+    () => buildDisplayRows(rows, { mode, onlyChanges, query, collapsed, expandAll }),
+    [rows, mode, onlyChanges, query, collapsed, expandAll],
+  );
 
-  /** Every non-`same` leaf is a navigable change (the strip's ‹ n/m ›). */
+  /**
+   * Every non-`same` leaf is a navigable change (the strip's ‹ n/m ›).
+   *
+   * `anchor` is what keeps the count mode-independent: unified draws a
+   * modification as two rows, and both of them are still one change.
+   */
   const changeRows = useMemo(
     () =>
       visible
         .map((entry, position) => ({ ...entry, position }))
         .filter(
-          ({ row }) => row.container === undefined && row.state !== 'same' && row.state !== 'ign',
+          ({ row, anchor }) =>
+            anchor && row.container === undefined && row.state !== 'same' && row.state !== 'ign',
         ),
     [visible],
   );
@@ -152,55 +173,111 @@ export default function JsonTreeView({ result }: EngineViewProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%', minHeight: 0 }}>
       <ToolbarSlot>
-        <Toggle pressed={onlyChanges} onChange={setOnlyChanges}>
-          Only changes
-        </Toggle>
-        <Toggle
-          pressed={expandAll}
-          onChange={(next) => {
-            setExpandAll(next);
-            if (next) setCollapsed(new Set());
-          }}
-        >
-          Expand all
-        </Toggle>
+        <Seg
+          label="JSON view mode"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'side', label: 'Side-by-side' },
+            { value: 'unified', label: 'Unified' },
+            { value: 'inline', label: 'Inline' },
+            { value: 'tree', label: 'Tree' },
+            { value: 'raw', label: 'Raw' },
+          ]}
+        />
+        {mode !== 'raw' && (
+          <Toggle pressed={onlyChanges} onChange={setOnlyChanges}>
+            Only changes
+          </Toggle>
+        )}
+        {/* Containers only exist in the tree, so nothing else has anything to expand. */}
+        {mode === 'tree' && (
+          <Toggle
+            pressed={expandAll}
+            onChange={(next) => {
+              setExpandAll(next);
+              if (next) setCollapsed(new Set());
+            }}
+          >
+            Expand all
+          </Toggle>
+        )}
       </ToolbarSlot>
 
       <div className="dd-jsonwrap">
-        <div className="dd-jsontree" ref={scrollRef} data-testid="json-tree">
-          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-            {virtualizer.getVirtualItems().map((item) => {
-              const entry = visible[item.index];
-              if (entry === undefined) return null;
-              return (
-                <div
-                  key={item.key}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${item.start}px)`,
-                  }}
-                >
-                  <TreeRow
-                    row={entry.row}
-                    collapsed={!expandAll && collapsed.has(entry.row.path)}
-                    isCurrent={item.index === currentPosition}
-                    onToggle={toggleContainer}
-                    onMenu={(x, y) => setMenu({ row: entry.row, x, y })}
-                  />
+        {/* The testid stays `json-tree` in every mode: it addresses the JSON
+            view, and three specs plus the media captures already point at it. */}
+        <div className="dd-jsontree" ref={scrollRef} data-testid="json-tree" data-mode={mode}>
+          {mode === 'raw' ? (
+            <RawPanes a={a} b={b} />
+          ) : (
+            <>
+              {mode === 'side' && (
+                <div className="dd-diff-header">
+                  <div>
+                    <b>{a?.name}</b>
+                    {result.summary.removed > 0 && (
+                      <Chip variant="del">－{result.summary.removed}</Chip>
+                    )}
+                  </div>
+                  <div>
+                    <b>{b?.name}</b>
+                    {result.summary.added > 0 && (
+                      <Chip variant="add">＋{result.summary.added}</Chip>
+                    )}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+              )}
 
-          {visible.length === 0 && (
-            <p className="dd-json-empty" data-testid="json-empty">
-              {query.trim() === ''
-                ? 'No differences under the current normalisation.'
-                : `Nothing matches “${query}”.`}
-            </p>
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualizer.getVirtualItems().map((item) => {
+                  const entry = visible[item.index];
+                  if (entry === undefined) return null;
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${item.start}px)`,
+                      }}
+                    >
+                      {mode === 'tree' ? (
+                        <TreeRow
+                          row={entry.row}
+                          collapsed={!expandAll && collapsed.has(entry.row.path)}
+                          isCurrent={item.index === currentPosition}
+                          onToggle={toggleContainer}
+                          onMenu={(x, y) => setMenu({ row: entry.row, x, y })}
+                        />
+                      ) : mode === 'side' ? (
+                        <SplitRow
+                          entry={entry}
+                          isCurrent={item.index === currentPosition}
+                          onMenu={(x, y) => setMenu({ row: entry.row, x, y })}
+                        />
+                      ) : (
+                        <FlatRow
+                          entry={entry}
+                          isCurrent={item.index === currentPosition}
+                          onMenu={(x, y) => setMenu({ row: entry.row, x, y })}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {visible.length === 0 && (
+                <p className="dd-json-empty" data-testid="json-empty">
+                  {query.trim() === ''
+                    ? 'No differences under the current normalisation.'
+                    : `Nothing matches “${query}”.`}
+                </p>
+              )}
+            </>
           )}
         </div>
 
@@ -286,9 +363,220 @@ export default function JsonTreeView({ result }: EngineViewProps) {
   );
 }
 
-/** Everything a search query can match against. */
-function rowText(row: JsonRow): string {
-  return [row.key, row.path, row.value, row.a, row.b, row.note].filter(Boolean).join(' ');
+/**
+ * Side-by-side: one row carrying both sides, aligned by JSONPath.
+ *
+ * One row per path rather than two scrolling columns — the same reason the text
+ * view pairs its rows: the sides cannot drift out of alignment and there is no
+ * scroll to synchronise. A key that exists on only one side leaves the other
+ * striped, which reads as "nothing here" rather than "empty value".
+ */
+function SplitRow({
+  entry,
+  isCurrent,
+  onMenu,
+}: {
+  entry: JsonDisplayRow;
+  isCurrent: boolean;
+  onMenu: (x: number, y: number) => void;
+}) {
+  const { row } = entry;
+  const before = beforeText(row);
+  const after = afterText(row);
+
+  return (
+    <div
+      className="dd-jsplit"
+      data-state={row.state}
+      data-current={isCurrent ? 'true' : 'false'}
+      data-path={row.path}
+      role="row"
+      tabIndex={0}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onMenu(event.clientX, event.clientY);
+      }}
+      onKeyDown={(event) => menuKey(event, onMenu)}
+    >
+      <SplitSide row={row} side="before" text={before} absent={before === undefined} />
+      <SplitSide row={row} side="after" text={after} absent={after === undefined} />
+    </div>
+  );
+}
+
+function SplitSide({
+  row,
+  side,
+  text,
+  absent,
+}: {
+  row: JsonRow;
+  side: 'before' | 'after';
+  text: string | undefined;
+  absent: boolean;
+}) {
+  return (
+    <div className="dd-jside" data-side={side} data-kind={absent ? 'nil' : row.state}>
+      <span className="dd-jgutter" aria-hidden="true" />
+      {!absent && (
+        <>
+          <span className="dd-jpath" title={row.path}>
+            {row.path}
+          </span>
+          <span className="dd-jval" data-tone={toneFor(row, side)}>
+            {text}
+          </span>
+          {/* The note names the transition (`number → string`), so it belongs
+              with the value that arrived — and the marker rides the same side,
+              one per row, at the row's end. */}
+          {side === 'after' && row.note !== undefined && (
+            <span className="dd-jnote">{row.note}</span>
+          )}
+          {side === 'after' && (
+            <span className="dd-jmark" aria-hidden="true">
+              {markFor(row)}
+            </span>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Unified and inline: one column, addressed by path.
+ *
+ * Unified splits a modification into `− before` and `+ after` (the `half` the
+ * display model set); inline keeps both on one row as `before → after`, which is
+ * what the tree does without the indentation.
+ */
+function FlatRow({
+  entry,
+  isCurrent,
+  onMenu,
+}: {
+  entry: JsonDisplayRow;
+  isCurrent: boolean;
+  onMenu: (x: number, y: number) => void;
+}) {
+  const { row, half } = entry;
+  const split = half !== undefined;
+  const state = split ? (half === 'before' ? 'del' : 'add') : row.state;
+
+  return (
+    <div
+      className="dd-jflat"
+      data-state={state}
+      data-current={isCurrent ? 'true' : 'false'}
+      data-path={row.path}
+      data-half={half ?? 'both'}
+      role="row"
+      tabIndex={0}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onMenu(event.clientX, event.clientY);
+      }}
+      onKeyDown={(event) => menuKey(event, onMenu)}
+    >
+      <span className="dd-jgutter" aria-hidden="true" />
+      <span className="dd-jmark" aria-hidden="true">
+        {split ? (half === 'before' ? '−' : '+') : markFor(row)}
+      </span>
+      <span className="dd-jpath" title={row.path}>
+        {row.path}
+      </span>
+
+      {half === 'before' ? (
+        <span className="dd-jval" data-tone="old">
+          {beforeText(row)}
+        </span>
+      ) : half === 'after' ? (
+        <span className="dd-jval" data-tone="new">
+          {afterText(row)}
+        </span>
+      ) : row.state === 'chg' || row.state === 'type' ? (
+        <>
+          <span className="dd-jval" data-tone="old">
+            {row.a}
+          </span>
+          <span className="dd-jarrow">→</span>
+          <span className="dd-jval" data-tone="new">
+            {row.b}
+          </span>
+        </>
+      ) : (
+        <span
+          className="dd-jval"
+          data-tone={toneFor(row, row.state === 'del' ? 'before' : 'after')}
+        >
+          {row.state === 'del' ? beforeText(row) : afterText(row)}
+        </span>
+      )}
+
+      {/* A type change names its transition; on a split row only the `+` half
+          carries it, or the note would appear twice for one change. */}
+      {row.note !== undefined && half !== 'before' && <span className="dd-jnote">{row.note}</span>}
+    </div>
+  );
+}
+
+/**
+ * Raw: the two documents as they arrived, not a diff.
+ *
+ * One scroll container holding two columns, so there is a single scrollbar and
+ * nothing to keep in sync. The lines are deliberately *not* paired — pairing
+ * them would be a line diff of reformatted JSON, the comparison this engine
+ * exists to avoid.
+ */
+function RawPanes({
+  a,
+  b,
+}: {
+  a: { name: string; text?: string; large?: boolean } | null;
+  b: { name: string; text?: string; large?: boolean } | null;
+}) {
+  return (
+    <div className="dd-jraw" data-testid="json-raw">
+      <RawPane side="before" input={a} />
+      <RawPane side="after" input={b} />
+    </div>
+  );
+}
+
+function RawPane({
+  side,
+  input,
+}: {
+  side: 'before' | 'after';
+  input: { name: string; text?: string; large?: boolean } | null;
+}) {
+  const text = input?.text;
+  return (
+    <div className="dd-jrawpane" data-side={side}>
+      <div className="dd-jrawhd">{input?.name ?? '—'}</div>
+      {text === undefined ? (
+        <p className="dd-json-empty" data-testid={`json-raw-absent-${side}`}>
+          {input?.large === true
+            ? 'Too large to show inline — the engine read it from disk.'
+            : 'This side has no text to show.'}
+        </p>
+      ) : (
+        <pre className="dd-jrawtext">{text}</pre>
+      )}
+    </div>
+  );
+}
+
+/** Shift+F10 / the context-menu key, for a row that has no button to click. */
+function menuKey(
+  event: ReactKeyboardEvent<HTMLDivElement>,
+  onMenu: (x: number, y: number) => void,
+): void {
+  if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+    event.preventDefault();
+    const box = event.currentTarget.getBoundingClientRect();
+    onMenu(box.left + 40, box.bottom);
+  }
 }
 
 function TreeRow({
@@ -305,19 +593,7 @@ function TreeRow({
   onMenu: (x: number, y: number) => void;
 }) {
   const isContainer = row.container !== undefined;
-  // A container's own state is derived from its children, so marking it too
-  // would double-count the change visually.
-  const mark = isContainer
-    ? ''
-    : row.state === 'add'
-      ? '+'
-      : row.state === 'del'
-        ? '−'
-        : row.state === 'chg'
-          ? '~'
-          : row.state === 'type'
-            ? '⚠'
-            : '';
+  const mark = markFor(row);
 
   return (
     <div
@@ -334,13 +610,7 @@ function TreeRow({
         event.preventDefault();
         onMenu(event.clientX, event.clientY);
       }}
-      onKeyDown={(event) => {
-        if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-          event.preventDefault();
-          const box = event.currentTarget.getBoundingClientRect();
-          onMenu(box.left + 40, box.bottom);
-        }
-      }}
+      onKeyDown={(event) => menuKey(event, onMenu)}
     >
       <span className="dd-jgutter" aria-hidden="true" />
       {Array.from({ length: row.depth }, (_, level) => (
@@ -367,7 +637,7 @@ function TreeRow({
       <span className="dd-jcolon">:</span>
 
       {isContainer ? (
-        <span className="dd-jnote">{row.container === 'arr' ? '[ … ]' : '{ … }'}</span>
+        <span className="dd-jnote">{containerText(row)}</span>
       ) : row.state === 'chg' || row.state === 'type' ? (
         <>
           <span className="dd-jval" data-tone="old">
@@ -389,7 +659,7 @@ function TreeRow({
       ) : row.value !== undefined ? (
         <span className="dd-jval">{row.value}</span>
       ) : (
-        <span className="dd-jnote">{row.container === 'arr' ? '[ … ]' : '{ … }'}</span>
+        <span className="dd-jnote">{containerText(row)}</span>
       )}
 
       {row.note !== undefined && <span className="dd-jnote">{row.note}</span>}

@@ -65,19 +65,77 @@ test('json diff: tree, normalisation round-trip, search, copy path', async () =>
     await expect(strip).toContainText('～5 modified');
     await expect(strip).toContainText('⚠ 1 type change');
 
+    // ---------- side-by-side is the default view ----------
+    // Owner-directed deviation from the mockup, whose seg defaults to Tree.
+    await expect(tree).toHaveAttribute('data-mode', 'side');
+    await expect(harness.page.getByRole('tab', { name: 'Side-by-side' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+
     // ---------- a type change is its own row kind, with the transition named ----------
     const ageRow = tree.locator('[data-path="$.user.age"]');
     await expect(ageRow).toHaveAttribute('data-state', 'type');
     await expect(ageRow).toContainText('number → string');
-
-    // ---------- containers carry a changed-descendant badge ----------
-    await expect(tree.locator('[data-path="$.user.address"] .dd-jbadge')).toHaveText('1 changed');
 
     // ---------- "only changes" is on by default, so unchanged leaves are hidden ----------
     await expect(tree.locator('[data-path="$.user.id"]')).toHaveCount(0);
     await harness.page.getByRole('button', { name: 'Only changes' }).click();
     await expect(tree.locator('[data-path="$.user.id"]')).toHaveCount(1);
     await harness.page.getByRole('button', { name: 'Only changes' }).click();
+
+    // ---------- the two sides sit beside each other, and an absent key is striped ----------
+    // Geometry, because CSS is the only thing holding the columns apart: a
+    // missing rule stacks them and every assertion above still passes.
+    const beforeSide = ageRow.locator('.dd-jside[data-side="before"]');
+    const afterSide = ageRow.locator('.dd-jside[data-side="after"]');
+    await expect(beforeSide).toContainText('27');
+    await expect(afterSide).toContainText('"27"');
+
+    const beforeBox = (await beforeSide.boundingBox())!;
+    const afterBox = (await afterSide.boundingBox())!;
+    expect(afterBox.x).toBeGreaterThan(beforeBox.x + beforeBox.width - 2);
+    expect(Math.abs(afterBox.y - beforeBox.y)).toBeLessThan(1);
+    // An addition has nothing on the before side, a removal nothing on the after.
+    await expect(
+      tree.locator('[data-path="$.user.phone"] .dd-jside[data-side="before"]'),
+    ).toHaveAttribute('data-kind', 'nil');
+    await expect(
+      tree.locator('[data-path="$.user.avatar"] .dd-jside[data-side="after"]'),
+    ).toHaveAttribute('data-kind', 'nil');
+
+    await harness.screenshot('json-side-by-side-dark');
+
+    // ---------- unified splits a change into − old then + new ----------
+    await harness.page.getByRole('tab', { name: 'Unified' }).click();
+    await expect(tree).toHaveAttribute('data-mode', 'unified');
+    const nameHalves = tree.locator('[data-path="$.user.name"]');
+    await expect(nameHalves).toHaveCount(2);
+    await expect(nameHalves.first()).toHaveAttribute('data-state', 'del');
+    await expect(nameHalves.first()).toContainText('Ada L.');
+    await expect(nameHalves.last()).toHaveAttribute('data-state', 'add');
+    // The replacement text must be in the DOM — the defect the text view had.
+    await expect(nameHalves.last()).toContainText('Ada Lovelace');
+
+    await harness.screenshot('json-unified-dark');
+
+    // ---------- inline keeps both versions on one row ----------
+    await harness.page.getByRole('tab', { name: 'Inline' }).click();
+    await expect(tree).toHaveAttribute('data-mode', 'inline');
+    await expect(tree.locator('[data-path="$.user.name"]')).toHaveCount(1);
+    await expect(tree.locator('[data-path="$.user.name"]')).toContainText('Ada L.');
+    await expect(tree.locator('[data-path="$.user.name"]')).toContainText('Ada Lovelace');
+
+    // ---------- ⌘\ cycles, so the switch is reachable without the mouse ----------
+    await harness.page.keyboard.press('Meta+\\');
+    await expect(tree).toHaveAttribute('data-mode', 'tree');
+
+    // ---------- the tree keeps the structure: containers, badges, indentation ----------
+    await expect(harness.page.getByRole('tab', { name: 'Tree' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(tree.locator('[data-path="$.user.address"] .dd-jbadge')).toHaveText('1 changed');
 
     await harness.screenshot('json-tree-dark');
 
@@ -129,6 +187,26 @@ test('json diff: tree, normalisation round-trip, search, copy path', async () =>
     await expect(harness.page.getByTestId('change-position')).toHaveText('– / 8');
     await harness.page.keyboard.press('Alt+ArrowDown');
     await expect(harness.page.getByTestId('change-position')).toHaveText('1 / 8');
+
+    // ---------- raw shows the documents, and admits it is not a diff ----------
+    await harness.page.getByRole('tab', { name: 'Raw' }).click();
+    await expect(tree).toHaveAttribute('data-mode', 'raw');
+    const raw = harness.page.getByTestId('json-raw');
+    await expect(raw).toBeVisible();
+    // Verbatim, both sides: a key only in BEFORE and one only in AFTER.
+    await expect(raw.locator('.dd-jrawpane[data-side="before"]')).toContainText('avatar');
+    await expect(raw.locator('.dd-jrawpane[data-side="after"]')).toContainText('+1 415 555 0132');
+    // Unchanged text is not tinted away — this is the source, not a comparison.
+    await expect(raw.locator('.dd-jrawpane[data-side="before"]')).toContainText('u_10482');
+
+    // Nothing to filter and nothing to step through, so neither control pretends.
+    await expect(search).toBeDisabled();
+    await expect(harness.page.getByTestId('change-nav')).toHaveCount(0);
+    await expect(harness.page.getByRole('button', { name: 'Only changes' })).toHaveCount(0);
+    // The normalisation rail still belongs to the comparison, not to the mode.
+    await expect(harness.page.getByTestId('json-options')).toBeVisible();
+
+    await harness.screenshot('json-raw-dark');
 
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {

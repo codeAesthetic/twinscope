@@ -1,12 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Button, Chip, Seg, Toggle } from '../../components/primitives';
 import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { useSearchStore } from '../../stores/search';
+import { useViewModeStore } from '../../stores/viewMode';
 import { countMatches, segmentRow, stripMarks } from '../../lib/searchMatch';
 import { ensureLanguage, isHighlightable, tokenizeLine } from '../../lib/highlight';
+import { useViewModeCycle } from '../../lib/viewMode';
 import { useTheme } from '../../theme/ThemeProvider';
 import {
   DEFAULT_TEXT_OPTIONS,
@@ -19,6 +21,9 @@ import {
 import type { EngineViewProps } from './engineViews';
 
 type ViewMode = 'side' | 'unified' | 'inline';
+
+/** Seg order, and the order `⌘\` cycles through. */
+const VIEW_MODES: readonly ViewMode[] = ['side', 'unified', 'inline'];
 
 /** One painted row. See the `rows` memo for why this is not just a `TextRow`. */
 interface DisplayRow {
@@ -40,7 +45,19 @@ const ROW_HEIGHT = 20;
  */
 export default function TextDiffView({ result }: EngineViewProps) {
   const data = result.data as TextDiffData;
-  const [mode, setMode] = useState<ViewMode>('side');
+  /** Survives the remount a normalisation re-run causes — see `stores/viewMode.ts`. */
+  const rawMode = useViewModeStore((state) => state.modeFor(result.engineId, 'side'));
+  const mode = (VIEW_MODES as readonly string[]).includes(rawMode) ? (rawMode as ViewMode) : 'side';
+  const setStoredMode = useViewModeStore((state) => state.set);
+  const cycleStoredMode = useViewModeStore((state) => state.cycle);
+  const setMode = useCallback(
+    (next: ViewMode) => setStoredMode(result.engineId, next),
+    [setStoredMode, result.engineId],
+  );
+  const cycleMode = useCallback(
+    () => cycleStoredMode(result.engineId, VIEW_MODES),
+    [cycleStoredMode, result.engineId],
+  );
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const a = useCompareStore((state) => state.a);
   const b = useCompareStore((state) => state.b);
@@ -67,6 +84,8 @@ export default function TextDiffView({ result }: EngineViewProps) {
   const currentMatch = useSearchStore((state) => state.current);
 
   const { theme } = useTheme();
+
+  useViewModeCycle(cycleMode);
 
   /**
    * The language comes from whichever side detection identified — a `.ts` file

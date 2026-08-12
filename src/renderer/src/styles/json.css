@@ -172,6 +172,206 @@ button.dd-jtwisty:hover {
   text-align: center;
 }
 
+/* ============ VIEW MODES (side-by-side · unified · inline · raw) ============
+ *
+ * Four more renderings of the same engine rows. They share the tree's gutter,
+ * mark and value styling — a `chg` is the same colour whichever mode draws it —
+ * and add only the layout each one needs.
+ *
+ * Side-by-side reuses `.dd-diff-header` from diff.css: it is the same piece of
+ * chrome over the same kind of two-column diff, and duplicating it here is how
+ * the two drift apart.
+ */
+.dd-jsontree[data-mode='side'],
+.dd-jsontree[data-mode='raw'] {
+  padding-top: 0;
+}
+.dd-jsontree[data-mode='raw'] {
+  padding-bottom: 0;
+}
+
+/* --- side-by-side --- */
+.dd-jsplit {
+  display: flex;
+  height: var(--dd-jrow-height);
+  align-items: stretch;
+  font: 12px/18px var(--mono);
+}
+.dd-jside {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  position: relative;
+}
+.dd-jside + .dd-jside {
+  border-left: 1px solid var(--line);
+}
+.dd-jsplit:hover .dd-jside {
+  background: var(--hover);
+}
+.dd-jsplit:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+.dd-jsplit[data-current='true'] .dd-jside {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+
+.dd-jside[data-kind='chg'],
+.dd-jside[data-kind='type'] {
+  background: var(--mod-bg);
+}
+.dd-jside[data-side='before'][data-kind='del'] {
+  background: var(--del-bg);
+}
+.dd-jside[data-side='after'][data-kind='add'] {
+  background: var(--add-bg);
+}
+/* An absent key: striped, so it reads as "nothing here", not "empty value". */
+.dd-jside[data-kind='nil'] {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(128, 128, 128, 0.05) 6px,
+    rgba(128, 128, 128, 0.05) 12px
+  );
+}
+.dd-jside[data-kind='chg'] .dd-jgutter,
+.dd-jside[data-kind='type'] .dd-jgutter {
+  background: var(--mod);
+}
+.dd-jside[data-kind='del'] .dd-jgutter {
+  background: var(--del);
+}
+.dd-jside[data-kind='add'] .dd-jgutter {
+  background: var(--add);
+}
+.dd-jside .dd-jmark {
+  margin-left: auto;
+}
+.dd-jside[data-kind='add'] .dd-jmark {
+  color: var(--add);
+}
+.dd-jside[data-kind='del'] .dd-jmark {
+  color: var(--del);
+}
+.dd-jside[data-kind='chg'] .dd-jmark {
+  color: var(--mod);
+}
+.dd-jside[data-kind='type'] .dd-jmark {
+  color: var(--info);
+}
+
+/* --- unified + inline --- */
+.dd-jflat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--dd-jrow-height);
+  padding: 0 14px;
+  font: 12px/18px var(--mono);
+  position: relative;
+}
+.dd-jflat:hover {
+  background: var(--hover);
+}
+.dd-jflat:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+.dd-jflat[data-current='true'] {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+.dd-jflat[data-state='chg'] {
+  background: var(--mod-bg);
+}
+.dd-jflat[data-state='add'] {
+  background: var(--add-bg);
+}
+.dd-jflat[data-state='del'] {
+  background: var(--del-bg);
+}
+.dd-jflat[data-state='type'] {
+  background: color-mix(in srgb, var(--info) 9%, transparent);
+}
+.dd-jflat[data-state='ign'] {
+  opacity: 0.5;
+}
+.dd-jflat[data-state='add'] .dd-jgutter {
+  background: var(--add);
+}
+.dd-jflat[data-state='del'] .dd-jgutter {
+  background: var(--del);
+}
+.dd-jflat[data-state='chg'] .dd-jgutter {
+  background: var(--mod);
+}
+.dd-jflat[data-state='type'] .dd-jgutter {
+  background: var(--info);
+}
+.dd-jflat[data-state='add'] .dd-jmark {
+  color: var(--add);
+}
+.dd-jflat[data-state='del'] .dd-jmark {
+  color: var(--del);
+}
+.dd-jflat[data-state='chg'] .dd-jmark {
+  color: var(--mod);
+}
+.dd-jflat[data-state='type'] .dd-jmark {
+  color: var(--info);
+}
+
+/*
+ * The path is the row's identity once the indentation is gone. Fixed share of
+ * the row so values line up down the column; the full path is in `title`, since
+ * a deep path is exactly the one that gets clipped.
+ */
+.dd-jpath {
+  flex: 0 0 38%;
+  min-width: 0;
+  color: var(--tx-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- raw --- */
+.dd-jraw {
+  display: flex;
+  align-items: flex-start;
+  min-height: 100%;
+}
+.dd-jrawpane {
+  flex: 1;
+  min-width: 0;
+}
+.dd-jrawpane + .dd-jrawpane {
+  border-left: 1px solid var(--line);
+}
+.dd-jrawhd {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  font: 600 11.5px var(--mono);
+  color: var(--tx);
+}
+.dd-jrawtext {
+  margin: 0;
+  padding: 8px 12px 20px;
+  font: 12px/18px var(--mono);
+  color: var(--tx-2);
+  white-space: pre;
+  overflow-x: auto;
+}
+
 /* --- normalisation rail --- */
 .dd-optpanel {
   width: 250px;
