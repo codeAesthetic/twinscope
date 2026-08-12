@@ -49,6 +49,10 @@ nsis:
 
 linux:
   category: Development
+  # Required for the .deb target — it sets the package maintainer field. Same
+  # identity as every commit; the noreply address keeps a real inbox out of a
+  # published package.
+  maintainer: codeAesthetic <34807924+codeAesthetic@users.noreply.github.com>
   target:
     - AppImage
     - deb

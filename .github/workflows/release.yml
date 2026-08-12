@@ -1,0 +1,84 @@
+name: Release installers
+
+# Windows and Linux installers are built on their own platforms rather than
+# cross-compiled from macOS. Windows needs wine to make an NSIS installer, and a
+# wine build is a worse artifact than a native one for something people install;
+# Linux AppImage/deb cross-builds work but produce packages nobody has run on the
+# OS they target. Native runners cost nothing here and remove both compromises.
+#
+# macOS is built and uploaded from the maintainer's machine, because signing and
+# notarisation need a Developer ID that does not belong in CI.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to attach installers to (e.g. v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            artifacts: 'release/*.exe'
+          - os: ubuntu-latest
+            platform: linux
+            artifacts: |
+              release/*.AppImage
+              release/*.deb
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Nothing native compiles — history uses Node's built-in SQLite — so this is
+      # the same build the maintainer runs, just on the target OS.
+      - run: npm run package:${{ matrix.platform }}
+
+      - name: List what was built
+        shell: bash
+        run: ls -lh release/ | grep -Ev '^total|blockmap|\.yml$' || true
+
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          shopt -s nullglob
+          files=(release/*.exe release/*.AppImage release/*.deb)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "::error::no installers were produced"
+            exit 1
+          fi
+          # --clobber so re-running the workflow replaces an asset rather than
+          # failing on a name that already exists.
+          gh release upload "$TAG" "${files[@]}" --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Checksums
+        shell: bash
+        run: |
+          shopt -s nullglob
+          for f in release/*.exe release/*.AppImage release/*.deb; do
+            if command -v sha256sum >/dev/null; then sha256sum "$f"; else shasum -a 256 "$f"; fi
+          done
