@@ -18,6 +18,8 @@ export const IPC = {
 
   /** Turn a path into an InputRef: stat, sniff the kind, read small text. */
   readInput: 'input:read',
+  /** Raw bytes for a path. Only the image path needs this — see `input.bytes`. */
+  readBytes: 'input:bytes',
   /** Read the system clipboard as an input (MD §34). */
   readClipboard: 'clipboard:read',
   /** Copy text out. Goes through main because the renderer denies all
@@ -129,6 +131,11 @@ export interface DevDiffApi {
 
   input: {
     read(side: 'A' | 'B', path: string): Promise<InputPayload>;
+    /**
+     * Raw bytes, for the one job that has to run in the renderer: image
+     * comparison needs a decoder, and only the window has one (D8).
+     */
+    bytes(path: string): Promise<Uint8Array>;
     /**
      * Resolves a dropped `File` to its absolute path.
      *

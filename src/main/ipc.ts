@@ -1,10 +1,16 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
 import { readClipboard, writeClipboard } from './clipboard';
-import { readInput } from './input';
+import { readBytes, readInput } from './input';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
 import { z } from 'zod';
-import { CompareRequestSchema, JobIdSchema, ReadInputSchema, SideSchema } from '../shared/schemas';
+import {
+  CompareRequestSchema,
+  JobIdSchema,
+  ReadBytesSchema,
+  ReadInputSchema,
+  SideSchema,
+} from '../shared/schemas';
 
 /**
  * Every `ipcMain` handler lives here.
@@ -59,6 +65,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.readInput, async (_event, payload: unknown): Promise<InputPayload> => {
     const { side, path } = ReadInputSchema.parse(payload);
     return readInput(side, path);
+  });
+
+  ipcMain.handle(IPC.readBytes, async (_event, rawPath: unknown): Promise<Uint8Array> => {
+    return readBytes(ReadBytesSchema.parse(rawPath));
   });
 
   ipcMain.handle(IPC.readClipboard, async (_event, rawSide: unknown) => {

@@ -1,6 +1,6 @@
 import { demoEngine } from './demo';
 import { detectKind } from './detect';
-import { ENGINES } from './stubs';
+import { ENGINES } from './catalog';
 import type { DiffEngine, InputRef } from './types';
 
 /** Every engine the host can run, including ones detection never picks. */
@@ -42,5 +42,5 @@ export function selectEngineForInputs(
   return { engine: selectEngine(refA, refB), kinds: [kindA, kindB] };
 }
 
-export { ENGINES } from './stubs';
+export { ENGINES } from './catalog';
 export { demoEngine } from './demo';

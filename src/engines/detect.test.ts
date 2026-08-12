@@ -139,27 +139,18 @@ describe('selectEngineForInputs', () => {
   });
 });
 
-describe('engine stubs', () => {
-  it('reject compare until their feature lands', async () => {
-    // image is the last stub; text, json and folder are real engines now.
-    const engine = selectEngine(
-      ref('a.png', { kind: 'image' }),
-      ref('b.png', { kind: 'image', side: 'B' }),
-    );
-    await expect(
-      engine?.compare(
-        ref('a'),
-        ref('b'),
-        {},
-        {
-          signal: new AbortController().signal,
-          progress: () => undefined,
-        },
-      ),
-    ).rejects.toThrow(/not implemented yet/);
+describe('the engine catalog', () => {
+  it('covers every MVP engine, each claiming its own kind', () => {
+    const claims = (kind: InputKind): string | undefined =>
+      selectEngine(ref('a', { kind }), ref('b', { kind, side: 'B' }))?.meta.id;
+
+    expect(claims('folder')).toBe('folder');
+    expect(claims('image')).toBe('image');
+    expect(claims('json')).toBe('json');
+    expect(claims('text')).toBe('text');
   });
 
-  it('hand out a fresh options object each time, so callers cannot mutate defaults', () => {
+  it('hands out a fresh options object each time, so callers cannot mutate defaults', () => {
     const engine = selectEngine(
       ref('a.png', { kind: 'image' }),
       ref('b.png', { kind: 'image', side: 'B' }),

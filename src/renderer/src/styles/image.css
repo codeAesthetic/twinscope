@@ -1,0 +1,230 @@
+/*
+ * Image viewer — ported from reference/devdiff-mockup.html (.imgstage/.imgside).
+ *
+ * The stage carries the checkerboard so transparency reads as transparency
+ * rather than as white, and zoom scales the pane width so the percentage-based
+ * region boxes stay pinned to their pixels.
+ */
+.dd-imgwrap {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  width: 100%;
+}
+
+.dd-imgstage {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: safe center;
+  justify-content: safe center;
+  gap: 18px;
+  padding: 20px;
+  overflow: auto;
+  background:
+    linear-gradient(
+        45deg,
+        rgba(128, 128, 128, 0.045) 25%,
+        transparent 25%,
+        transparent 75%,
+        rgba(128, 128, 128, 0.045) 75%
+      )
+      0 0 / 22px 22px,
+    linear-gradient(
+        45deg,
+        rgba(128, 128, 128, 0.045) 25%,
+        transparent 25%,
+        transparent 75%,
+        rgba(128, 128, 128, 0.045) 75%
+      )
+      11px 11px / 22px 22px,
+    var(--bg-2);
+}
+
+.dd-shotwrap {
+  margin: 0;
+  flex: 0 0 auto;
+  max-width: none;
+}
+.dd-shotwrap figcaption {
+  margin-top: 7px;
+  text-align: center;
+  font: 600 10.5px/1 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+
+.dd-shot {
+  position: relative;
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+  line-height: 0;
+}
+.dd-shot img {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+  user-select: none;
+}
+.dd-shot-overlay {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: difference;
+}
+
+.dd-imgstage[data-grid='true'] .dd-shot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--acc) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--acc) 22%, transparent) 1px, transparent 1px);
+  background-size: 10% 10%;
+}
+
+.dd-region {
+  position: absolute;
+  border: 1px solid var(--del);
+  background: color-mix(in srgb, var(--del) 12%, transparent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+.dd-region[data-current='true'] {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 18%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 45%, transparent);
+}
+
+/* --- right rail --- */
+.dd-imgside {
+  width: 250px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--line);
+  background: var(--bg-2);
+  overflow: auto;
+  text-align: left;
+}
+html[data-theme='light'] .dd-imgside {
+  background: var(--panel-2);
+}
+
+.dd-metric {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.dd-metric b {
+  display: block;
+  font: 700 26px/1 var(--sans);
+  color: var(--tx);
+}
+.dd-metric span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--tx-3);
+}
+.dd-metric-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--line);
+  overflow: hidden;
+  margin: 10px 0;
+}
+.dd-metric-bar i {
+  display: block;
+  height: 100%;
+  background: var(--del);
+}
+.dd-metric-dims {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dd-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.dd-slider input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--acc);
+}
+.dd-slider b {
+  font: 600 11.5px var(--mono);
+  color: var(--tx-2);
+  flex: 0 0 auto;
+}
+
+.dd-imgside .dd-optrow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dd-regionitem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  font: 12px var(--sans);
+  color: var(--tx-2);
+  text-align: left;
+}
+.dd-regionitem:hover {
+  background: var(--hover);
+}
+.dd-regionitem[data-current='true'] {
+  background: var(--acc-bg);
+  color: var(--tx);
+}
+.dd-regionswatch {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--del);
+  flex: 0 0 auto;
+}
+.dd-regionname {
+  font: 11.5px var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-regionpct {
+  margin-left: auto;
+  color: var(--tx-3);
+  font: 600 10.5px var(--mono);
+  flex: 0 0 auto;
+}
+
+/* --- zoom control in the toolbar --- */
+.dd-zoom {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.dd-zoom-value {
+  min-width: 48px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--tx-2);
+  font: 600 11.5px var(--mono);
+}
+.dd-zoom-value:hover {
+  color: var(--tx);
+}

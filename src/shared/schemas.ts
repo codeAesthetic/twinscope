@@ -52,6 +52,9 @@ export const CompareRequestSchema = z.object({
 
 export const JobIdSchema = z.string().uuid();
 
+/** Bytes are only ever read for images; the cap is a denial-of-service guard. */
+export const ReadBytesSchema = z.string().min(1).max(4096);
+
 /** A path arriving from the renderer, before we touch the filesystem with it. */
 export const ReadInputSchema = z.object({
   side: SideSchema,

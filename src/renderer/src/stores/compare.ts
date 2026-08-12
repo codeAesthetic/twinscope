@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { cancelImageJob, isRendererEngine, startImageJob } from '../lib/imageCompare';
+import { selectEngine } from '../../../engines/registry';
 import type { CompareEvent, CompareRequest, InputPayload, Summary } from '../../../shared/channels';
 
 /**
@@ -94,6 +96,21 @@ const IDLE = {
   error: null,
 };
 
+/**
+ * Which engine this request will actually use. Main resolves it again for real;
+ * the renderer needs to know first, because one engine runs here.
+ */
+function engineFor(request: CompareRequest): string {
+  if (request.engineId !== undefined) return request.engineId;
+  const asRef = (payload: InputPayload) => ({
+    side: payload.side,
+    kind: payload.kind,
+    name: payload.name,
+    size: payload.size,
+  });
+  return selectEngine(asRef(request.a), asRef(request.b))?.meta.id ?? '';
+}
+
 export const useCompareStore = create<CompareState>((set, get) => ({
   a: null,
   b: null,
@@ -180,14 +197,22 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     // describe the request being made, not the reply.
     set({ ...IDLE, options, status: 'running' });
 
+    const request: CompareRequest = {
+      a,
+      b,
+      ...(engineOverride !== null ? { engineId: engineOverride } : {}),
+      ...(Object.keys(options).length > 0 ? { options } : {}),
+      ...overrides,
+    };
+
     try {
-      const started = await window.devdiff.compare.start({
-        a,
-        b,
-        ...(engineOverride !== null ? { engineId: engineOverride } : {}),
-        ...(Object.keys(options).length > 0 ? { options } : {}),
-        ...overrides,
-      });
+      // Almost every engine runs in the host process. The image engine cannot:
+      // it needs a decoder, and the only one is in this window (D8).
+      const started = isRendererEngine(engineFor(request))
+        ? await startImageJob(request.a, request.b, request.options ?? {}, (event) =>
+            get().applyEvent(event),
+          )
+        : await window.devdiff.compare.start(request);
       set({ jobId: started.jobId, engineLabel: started.engineLabel });
       return started.jobId;
     } catch (cause) {
@@ -200,6 +225,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
   cancel: async () => {
     const { jobId } = get();
     if (jobId === null) return;
+    cancelImageJob(jobId);
     await window.devdiff.compare.cancel(jobId);
   },
 

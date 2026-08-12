@@ -15,6 +15,9 @@ import type { InputPayload } from '../shared/channels';
 /** Above this, the text is left on disk for the engine host to stream. */
 const INLINE_LIMIT_BYTES = 10 * 1024 * 1024;
 
+/** The largest image the renderer will be handed in one piece. */
+const MAX_BYTES = 64 * 1024 * 1024;
+
 /** Enough to sniff binary content and JSON structure without reading the file. */
 const SNIFF_BYTES = 8192;
 
@@ -30,6 +33,24 @@ async function sniff(path: string, size: number): Promise<string> {
   }
 }
 
+/**
+ * Raw bytes for one path. Used only by the image comparison, which runs in the
+ * renderer because that is where the decoder lives (D8).
+ *
+ * The size cap keeps a hostile or mistaken request from pushing hundreds of
+ * megabytes through IPC; the image engine downscales anything large anyway.
+ */
+export async function readBytes(path: string): Promise<Uint8Array> {
+  const info = await stat(path);
+  if (info.size > MAX_BYTES) {
+    throw new Error(
+      `${basename(path)} is ${(info.size / 1024 / 1024).toFixed(0)} MB — too large to open in the viewer.`,
+    );
+  }
+  const { readFile } = await import('node:fs/promises');
+  return new Uint8Array(await readFile(path));
+}
+
 export async function readInput(side: 'A' | 'B', path: string): Promise<InputPayload> {
   const info = await stat(path);
   const name = basename(path) || path;
@@ -39,7 +60,10 @@ export async function readInput(side: 'A' | 'B', path: string): Promise<InputPay
   }
 
   const head = info.size > 0 ? await sniff(path, info.size) : '';
-  const kind = looksBinary(head) ? 'binary' : detectKind({ name, text: head, kind: 'unknown' });
+  const detected = detectKind({ name, text: head, kind: 'unknown' });
+  // Every image is "binary" by the NUL sniff, but a PNG is a format we can read,
+  // not an opaque blob. Detection by extension wins for the kinds we support.
+  const kind = detected === 'image' ? detected : looksBinary(head) ? 'binary' : detected;
   const lang = languageOf(name);
 
   const inlineable =

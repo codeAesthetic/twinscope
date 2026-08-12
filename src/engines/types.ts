@@ -42,10 +42,37 @@ export interface HostFs {
   hashFile(path: string): Promise<string>;
 }
 
+/** Decoded pixels, in the only layout every image API agrees on. */
+export interface Raster {
+  width: number;
+  height: number;
+  /** RGBA, 4 bytes per pixel, row-major. */
+  data: Uint8ClampedArray;
+}
+
+/**
+ * Image decoding and encoding, injected because there is no portable decoder:
+ * the renderer has `createImageBitmap`, and the future CLI will have pngjs.
+ * The pixel maths in `engines/image` works the same either way.
+ */
+export interface ImageHost {
+  /** Decodes and downscales so the longest side is at most `maxDimension`. */
+  decode(bytes: Uint8Array, maxDimension: number): Promise<Raster & { natural: [number, number] }>;
+  /** Returns a `data:` URL, which is what a view can render directly. */
+  encodePng(raster: Raster): Promise<string>;
+}
+
 export interface EngineCtx {
   signal: AbortSignal;
   progress(percent: number, message?: string): void;
   fs?: HostFs;
+  image?: ImageHost;
+  /**
+   * Hands control back to the host mid-computation. On a single-threaded host
+   * this is what keeps a long pixel loop from freezing the UI; elsewhere it can
+   * be a no-op.
+   */
+  yieldNow?: () => Promise<void>;
 }
 
 export interface Summary {
@@ -80,14 +107,6 @@ export interface DiffEngine<TOptions = unknown, TData = unknown> {
   canHandle(a: InputRef, b: InputRef): boolean;
   defaultOptions(): TOptions;
   compare(a: InputRef, b: InputRef, options: TOptions, ctx: EngineCtx): Promise<DiffResult<TData>>;
-}
-
-/** Thrown by stub engines until their feature lands. */
-export class NotImplementedError extends Error {
-  constructor(engineId: string) {
-    super(`The ${engineId} engine is not implemented yet`);
-    this.name = 'NotImplementedError';
-  }
 }
 
 /** An offer the error panel can turn into a button. */
