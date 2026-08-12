@@ -249,3 +249,73 @@ select.dd-selectish {
   display: flex;
   gap: 4px;
 }
+
+/* ============ BINARY VERDICT CARD (MVP-11) ============ */
+.dd-binary {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 28px 20px;
+  text-align: left;
+}
+
+.dd-binary-verdict {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+.dd-binary-verdict[data-identical='true'] {
+  border-color: color-mix(in srgb, var(--add) 45%, var(--line-2));
+  background: var(--add-bg);
+}
+.dd-binary-verdict[data-identical='false'] {
+  border-color: color-mix(in srgb, var(--mod) 45%, var(--line-2));
+  background: var(--mod-bg);
+}
+.dd-binary-glyph {
+  font: 600 26px/1 var(--mono);
+  color: var(--tx-2);
+  flex: 0 0 auto;
+}
+.dd-binary-verdict h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--tx);
+}
+.dd-binary-verdict p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--tx-2);
+}
+
+.dd-binary-table {
+  width: 100%;
+  margin-top: 18px;
+  border-collapse: collapse;
+  font: 12px var(--mono);
+}
+.dd-binary-table th {
+  text-align: left;
+  color: var(--tx-3);
+  font: 600 10.5px var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.dd-binary-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  color: var(--tx-2);
+  word-break: break-all;
+}
+
+.dd-binary-note {
+  margin: 14px 0 0;
+  color: var(--tx-3);
+  font-size: 12px;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, Kbd } from '../primitives';
+import { Toast } from '../Toast';
 import { useCompareStore } from '../../stores/compare';
 import type { ImageViewData } from '../../lib/imageCompare';
 import type { ReportPayload } from '../../../../shared/channels';
@@ -86,12 +87,6 @@ export function ExportMenu() {
     return () => window.removeEventListener('keydown', onKeyDown);
   });
 
-  useEffect(() => {
-    if (toast === null) return;
-    const timer = setTimeout(() => setToast(null), 6000);
-    return () => clearTimeout(timer);
-  }, [toast]);
-
   return (
     <>
       <Button data-testid="export-button" onClick={() => setOpen((value) => !value)}>
@@ -120,19 +115,23 @@ export function ExportMenu() {
       )}
 
       {toast !== null && (
-        <div className="dd-toast" role="status" data-testid="export-toast">
-          <span>{toast.message}</span>
-          {toast.path !== null && (
-            <Button
-              variant="ghost"
-              size="sm"
-              data-testid="reveal-report"
-              onClick={() => void window.devdiff.report.reveal(toast.path as string)}
-            >
-              Reveal
-            </Button>
-          )}
-        </div>
+        <Toast
+          message={toast.message}
+          testId="export-toast"
+          onDismiss={() => setToast(null)}
+          action={
+            toast.path !== null ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                data-testid="reveal-report"
+                onClick={() => void window.devdiff.report.reveal(toast.path as string)}
+              >
+                Reveal
+              </Button>
+            ) : undefined
+          }
+        />
       )}
     </>
   );

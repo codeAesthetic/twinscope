@@ -36,6 +36,9 @@ export const InputPayloadSchema = z.object({
   size: z.number().int().nonnegative(),
   lang: z.string().max(64).optional(),
   large: z.boolean().optional(),
+  encoding: z.string().max(32).optional(),
+  eol: z.string().max(8).optional(),
+  lossy: z.boolean().optional(),
 });
 
 export const CompareRequestSchema = z.object({

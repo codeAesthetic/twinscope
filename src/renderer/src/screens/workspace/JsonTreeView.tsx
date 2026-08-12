@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Button, Switch, Toggle } from '../../components/primitives';
+import { Toast } from '../../components/Toast';
 import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { useSearchStore } from '../../stores/search';
@@ -274,9 +275,12 @@ export default function JsonTreeView({ result }: EngineViewProps) {
         />
       )}
       {copied !== null && (
-        <span className="dd-copied" role="status" data-testid="json-copied">
-          {copied} copied
-        </span>
+        <Toast
+          message={`${copied} copied`}
+          testId="json-copied"
+          timeoutMs={2500}
+          onDismiss={() => setCopied(null)}
+        />
       )}
     </div>
   );

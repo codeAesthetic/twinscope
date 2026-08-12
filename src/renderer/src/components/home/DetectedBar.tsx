@@ -1,7 +1,13 @@
+import { useState } from 'react';
 import { Button, Chip, Kbd } from '../primitives';
 import { useRunComparison } from '../../lib/compareClient';
 import { useCompareStore } from '../../stores/compare';
 import { ENGINES, selectEngineForInputs } from '../../../../engines/registry';
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 /**
  * Says what DevDiff will do with the inputs, then lets the user run it.
@@ -12,7 +18,11 @@ import { ENGINES, selectEngineForInputs } from '../../../../engines/registry';
  * Detection also runs here, purely to *describe* the choice; the engine host
  * decides for real. Duplicating it keeps the label instant.
  */
+/** Over this, a text comparison is worth warning about before it starts. */
+const HEAVY_BYTES = 10 * 1024 * 1024;
+
 export function DetectedBar() {
+  const [confirmingHeavy, setConfirmingHeavy] = useState(false);
   const a = useCompareStore((state) => state.a);
   const b = useCompareStore((state) => state.b);
   const engineOverride = useCompareStore((state) => state.engineOverride);
@@ -66,14 +76,42 @@ export function DetectedBar() {
 
       {engineOverride !== null && <Chip variant="mod">manual override</Chip>}
 
-      <Button
-        variant="primary"
-        data-testid="compare-button"
-        disabled={chosen === null}
-        onClick={() => void runComparison()}
-      >
-        Compare <Kbd>⏎</Kbd>
-      </Button>
+      {/* A multi-megabyte text pair is slow enough to be worth a heads-up rather
+          than a spinner that looks like a hang (MD §31). */}
+      {confirmingHeavy ? (
+        <>
+          <Chip variant="mod">
+            {formatSize(Math.max(a.size, b.size))} of text — this may take a few seconds
+          </Chip>
+          <Button
+            variant="primary"
+            data-testid="confirm-heavy"
+            onClick={() => {
+              setConfirmingHeavy(false);
+              void runComparison();
+            }}
+          >
+            Compare anyway
+          </Button>
+          <Button variant="ghost" onClick={() => setConfirmingHeavy(false)}>
+            Cancel
+          </Button>
+        </>
+      ) : (
+        <Button
+          variant="primary"
+          data-testid="compare-button"
+          disabled={chosen === null}
+          onClick={() => {
+            const heavy =
+              chosen !== 'folder' && chosen !== 'image' && Math.max(a.size, b.size) > HEAVY_BYTES;
+            if (heavy) setConfirmingHeavy(true);
+            else void runComparison();
+          }}
+        >
+          Compare <Kbd>⏎</Kbd>
+        </Button>
+      )}
 
       <label>
         <span className="dd-sr-only">Comparison engine</span>

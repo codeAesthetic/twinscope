@@ -74,6 +74,12 @@ export interface InputPayload {
   lang?: string;
   /** True when the text was withheld because the input is too big to inline. */
   large?: boolean;
+  /** How the bytes were decoded — shown in the status bar (MVP-11). */
+  encoding?: string;
+  /** Line endings found in the file: LF, CRLF, CR or none. */
+  eol?: string;
+  /** True when the bytes were not valid in their apparent encoding. */
+  lossy?: boolean;
 }
 
 export interface CompareRequest {

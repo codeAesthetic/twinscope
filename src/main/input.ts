@@ -1,7 +1,7 @@
-import { stat } from 'node:fs/promises';
-import { open } from 'node:fs/promises';
+import { open, readFile, stat } from 'node:fs/promises';
 import { basename } from 'node:path';
-import { detectKind, languageOf, looksBinary } from '../engines/detect';
+import { detectKind, languageOf } from '../engines/detect';
+import { decodeText, describeEncoding, looksBinaryText } from '../engines/encoding';
 import type { InputPayload } from '../shared/channels';
 
 /**
@@ -15,19 +15,19 @@ import type { InputPayload } from '../shared/channels';
 /** Above this, the text is left on disk for the engine host to stream. */
 const INLINE_LIMIT_BYTES = 10 * 1024 * 1024;
 
-/** The largest image the renderer will be handed in one piece. */
-const MAX_BYTES = 64 * 1024 * 1024;
-
 /** Enough to sniff binary content and JSON structure without reading the file. */
 const SNIFF_BYTES = 8192;
 
-async function sniff(path: string, size: number): Promise<string> {
+/** The largest image the renderer will be handed in one piece. */
+const MAX_BYTES = 64 * 1024 * 1024;
+
+async function sniff(path: string, size: number): Promise<Uint8Array> {
   const handle = await open(path, 'r');
   try {
     const length = Math.min(SNIFF_BYTES, size);
     const buffer = Buffer.alloc(length);
     await handle.read(buffer, 0, length, 0);
-    return buffer.toString('utf8');
+    return new Uint8Array(buffer);
   } finally {
     await handle.close();
   }
@@ -47,7 +47,6 @@ export async function readBytes(path: string): Promise<Uint8Array> {
       `${basename(path)} is ${(info.size / 1024 / 1024).toFixed(0)} MB — too large to open in the viewer.`,
     );
   }
-  const { readFile } = await import('node:fs/promises');
   return new Uint8Array(await readFile(path));
 }
 
@@ -59,12 +58,24 @@ export async function readInput(side: 'A' | 'B', path: string): Promise<InputPay
     return { side, kind: 'folder', name: `${name}/`, path, size: 0 };
   }
 
-  const head = info.size > 0 ? await sniff(path, info.size) : '';
-  const detected = detectKind({ name, text: head, kind: 'unknown' });
+  const head = info.size > 0 ? await sniff(path, info.size) : new Uint8Array();
+  // Decode first, sniff second: a UTF-16 file is full of NUL bytes and would
+  // otherwise be written off as binary before anyone tried to read it.
+  const decoded = decodeText(head);
+  const detected = detectKind({ name, text: decoded.text, kind: 'unknown' });
+
   // Every image is "binary" by the NUL sniff, but a PNG is a format we can read,
   // not an opaque blob. Detection by extension wins for the kinds we support.
-  const kind = detected === 'image' ? detected : looksBinary(head) ? 'binary' : detected;
+  const kind =
+    detected === 'image' ? detected : looksBinaryText(decoded.text) ? 'binary' : detected;
   const lang = languageOf(name);
+
+  const meta = {
+    ...(lang !== undefined ? { lang } : {}),
+    ...(kind === 'image' || kind === 'binary'
+      ? {}
+      : { encoding: describeEncoding(decoded.encoding), eol: decoded.eol }),
+  };
 
   const inlineable =
     info.size <= INLINE_LIMIT_BYTES && kind !== 'image' && kind !== 'binary' && kind !== 'folder';
@@ -76,22 +87,24 @@ export async function readInput(side: 'A' | 'B', path: string): Promise<InputPay
       name,
       path,
       size: info.size,
-      ...(lang !== undefined ? { lang } : {}),
+      ...meta,
       ...(info.size > INLINE_LIMIT_BYTES ? { large: true } : {}),
     };
   }
 
   // Small text: read it once here so the renderer can preview it immediately.
-  const { readFile } = await import('node:fs/promises');
-  const text = await readFile(path, 'utf8');
+  const full = decodeText(new Uint8Array(await readFile(path)));
 
   return {
     side,
-    kind: detectKind({ name, text, kind: 'unknown' }),
+    kind: detectKind({ name, text: full.text, kind: 'unknown' }),
     name,
     path,
     size: info.size,
-    text,
+    text: full.text,
     ...(lang !== undefined ? { lang } : {}),
+    encoding: describeEncoding(full.encoding),
+    eol: full.eol,
+    ...(full.lossy ? { lossy: true } : {}),
   };
 }

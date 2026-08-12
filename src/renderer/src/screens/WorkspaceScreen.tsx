@@ -42,12 +42,18 @@ export function WorkspaceScreen() {
   // The status bar belongs to the frame, so the screen publishes into it.
   useEffect(() => {
     if (result !== null) {
-      setStatus({ detail: `${result.engineId} engine`, right: `Compared in ${result.ms} ms` });
+      // Encoding and line endings belong in the status bar, not in a chip: they
+      // are facts about the files, and they answer "why does line 1 differ?".
+      const encoding = [a?.encoding, a?.eol].filter(Boolean).join(' · ');
+      setStatus({
+        detail: `${result.engineId} engine${encoding === '' ? '' : ` · ${encoding}`}`,
+        right: `Compared in ${result.ms} ms`,
+      });
     } else if (status === 'running') {
       setStatus({ detail: engineLabel ?? 'comparing', right: `${percent}%` });
     }
     return clearStatus;
-  }, [result, status, percent, engineLabel, setStatus, clearStatus]);
+  }, [result, status, percent, engineLabel, a, setStatus, clearStatus]);
 
   const startOver = (): void => {
     // "New" means new: clearing the inputs too, or Compare shows a stale ready

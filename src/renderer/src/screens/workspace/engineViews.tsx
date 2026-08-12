@@ -24,6 +24,7 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   json: lazy(() => import('./JsonTreeView')),
   folder: lazy(() => import('./FolderTreeView')),
   image: lazy(() => import('./ImageDiffView')),
+  binary: lazy(() => import('./BinaryView')),
 };
 
 export function engineViewFor(

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { decodeText } from '../engines/encoding';
 import type { HostFs } from '../engines/types';
 
 /**
@@ -13,7 +14,9 @@ import type { HostFs } from '../engines/types';
  * rather than a copy of it.
  */
 export const nodeHostFs: HostFs = {
-  readText: (path) => readFile(path, 'utf8'),
+  // Decoded rather than assumed UTF-8: a UTF-16 file read as UTF-8 is a wall of
+  // NULs, and a byte-order mark becomes an invisible difference on line 1.
+  readText: async (path) => decodeText(new Uint8Array(await readFile(path))).text,
 
   readBytes: async (path) => new Uint8Array(await readFile(path)),
 

@@ -43,6 +43,24 @@ export const textEngine: DiffEngine<TextDiffOptions, TextDiffData> = {
 
     if (ctx.signal.aborted) throw new DOMException('Comparison cancelled', 'AbortError');
 
+    // Identical inputs are common (the same file on both sides, a re-run after
+    // an aborted edit) and cost nothing to answer without diffing at all.
+    if (before === after) {
+      ctx.progress(100, 'done');
+      const lines = before === '' ? 0 : before.split('\n').length;
+      return {
+        engineId: 'text',
+        summary: { added: 0, removed: 0, modified: 0, extra: { lines } },
+        data: { rows: [], lines: { before: lines, after: lines } },
+        normalizationNotes: [
+          before === ''
+            ? 'Both inputs are empty.'
+            : 'These inputs are identical — nothing to show.',
+        ],
+        timings: { ms: Date.now() - startedAt },
+      };
+    }
+
     ctx.progress(45, 'comparing lines');
     const { data, stats, notes } = diffText(before, after, options);
 

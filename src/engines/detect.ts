@@ -111,7 +111,10 @@ export function detectKind(input: Pick<InputRef, 'name' | 'text' | 'kind'>): Inp
   if (byExtension) return byExtension;
 
   const text = input.text;
-  if (text === undefined) return input.kind === 'image' ? 'image' : 'unknown';
+  // Nothing to sniff: keep whatever the caller already established. Main has
+  // usually looked at the bytes by this point, and second-guessing it here would
+  // turn a known binary back into an unknown.
+  if (text === undefined) return input.kind === 'unknown' ? 'unknown' : input.kind;
   if (looksBinary(text)) return 'binary';
   if (parsesAsJson(text)) return 'json';
 

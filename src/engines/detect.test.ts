@@ -109,8 +109,9 @@ describe('selectEngine', () => {
     expect(pick('folder', 'json')).toBeUndefined();
   });
 
-  it('has no engine for binary input', () => {
-    expect(pick('binary', 'binary')).toBeUndefined();
+  it('routes a binary pair to the binary engine, not to text (MVP-11)', () => {
+    // Line-diffing a compiled binary produces mojibake and answers nothing.
+    expect(pick('binary', 'binary')).toBe('binary');
   });
 
   it('prefers the specialised engine over the text fallback', () => {
