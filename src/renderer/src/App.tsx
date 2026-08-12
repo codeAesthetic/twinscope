@@ -3,7 +3,10 @@ import { AppFrame } from './components/layout/AppFrame';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
+import { HistoryScreen } from './screens/HistoryScreen';
 import { Placeholder } from './screens/Placeholder';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { WorkspaceScreen } from './screens/WorkspaceScreen';
 import { ThemeProvider } from './theme/ThemeProvider';
 
 function CurrentScreen() {
@@ -12,27 +15,36 @@ function CurrentScreen() {
   switch (view) {
     case 'compare':
       return <CompareScreen />;
+    case 'workspace':
+      return <WorkspaceScreen />;
     case 'history':
-      return <Placeholder name="History" note="Recent and saved comparisons arrive in HOME-4." />;
+      return <HistoryScreen />;
     case 'projects':
       return <Placeholder name="Projects" note="Scoped at V1-9." />;
     case 'settings':
-      return <Placeholder name="Settings" note="Settings groups arrive in HOME-4." />;
+      return <SettingsScreen />;
   }
 }
 
 /**
- * No router (plan D11) — the sidebar drives a Zustand `view`. The only special
- * route is the dev-facing #gallery, used to check primitives against the mockup.
+ * No router (plan D11) — the sidebar drives a Zustand `view`.
+ *
+ * Two dev-facing hash routes: #gallery for the design system, and #workspace to
+ * reach the comparison chassis before a real comparison can open it.
  */
 export function App() {
   const [hash, setHash] = useState(() => window.location.hash);
+  const setView = useAppStore((state) => state.setView);
 
   useEffect(() => {
     const onHashChange = (): void => setHash(window.location.hash);
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
+
+  useEffect(() => {
+    if (hash === '#workspace') setView('workspace');
+  }, [hash, setView]);
 
   if (hash === '#gallery') {
     return (

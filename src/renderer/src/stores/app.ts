@@ -1,7 +1,10 @@
 import { create } from 'zustand';
 
-/** The four top-level destinations (MD §10). */
-export type View = 'compare' | 'history' | 'projects' | 'settings';
+/**
+ * The four sidebar destinations (MD §10), plus `workspace` — the comparison
+ * chassis, which you reach by running a comparison rather than from the nav.
+ */
+export type View = 'compare' | 'workspace' | 'history' | 'projects' | 'settings';
 
 interface AppState {
   view: View;
@@ -9,7 +12,7 @@ interface AppState {
 }
 
 /**
- * No router (plan D11) — four screens switched by state. Deep linking can come
+ * No router (plan D11) — five screens switched by state. Deep linking can come
  * later if it earns its keep.
  */
 export const useAppStore = create<AppState>((set) => ({

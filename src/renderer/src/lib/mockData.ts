@@ -5,23 +5,24 @@
 
 import type { ChipVariant, FileKind } from '../components/primitives';
 
-export interface RecentSummaryChip {
+export interface SummaryChip {
   label: string;
   variant: ChipVariant;
 }
 
-export interface RecentComparison {
+export interface ComparisonRecord {
   id: string;
   kind: FileKind;
   title: string;
   /** The two inputs, as the user would recognise them. */
   path: string;
-  chips: RecentSummaryChip[];
+  chips: SummaryChip[];
   /** Pre-formatted for now; MVP-8 stores timestamps and formats them here. */
   ago: string;
+  starred?: boolean;
 }
 
-export const RECENT_COMPARISONS: readonly RecentComparison[] = [
+export const RECENT_COMPARISONS: readonly ComparisonRecord[] = [
   {
     id: 'r1',
     kind: 'json',
@@ -77,6 +78,68 @@ export const RECENT_COMPARISONS: readonly RecentComparison[] = [
   },
 ];
 
+export interface HistoryGroup {
+  label: string;
+  items: readonly ComparisonRecord[];
+}
+
+/** MVP-8 derives these buckets from stored timestamps. */
+export const HISTORY_GROUPS: readonly HistoryGroup[] = [
+  {
+    label: 'Today',
+    items: [
+      { ...RECENT_COMPARISONS[0]!, id: 'h1', starred: true },
+      { ...RECENT_COMPARISONS[1]!, id: 'h2', starred: true },
+      { ...RECENT_COMPARISONS[2]!, id: 'h3' },
+      {
+        id: 'h4',
+        kind: 'web',
+        title: 'checkout.har ↔ checkout-2.har',
+        path: 'api engine · 41 requests',
+        chips: [
+          { label: '+3 requests', variant: 'info' },
+          { label: '～11', variant: 'mod' },
+        ],
+        ago: '5 hours ago',
+      },
+    ],
+  },
+  {
+    label: 'Yesterday',
+    items: [
+      { ...RECENT_COMPARISONS[3]!, id: 'h5' },
+      {
+        id: 'h6',
+        kind: 'json',
+        title: 'k8s/staging.yaml ↔ k8s/prod.yaml',
+        path: 'yaml engine · config drift',
+        chips: [
+          { label: '～9', variant: 'mod' },
+          { label: '－2', variant: 'del' },
+        ],
+        ago: 'Yesterday 11:20',
+      },
+    ],
+  },
+  {
+    label: 'Earlier',
+    items: [
+      { ...RECENT_COMPARISONS[4]!, id: 'h7' },
+      {
+        id: 'h8',
+        kind: 'folder',
+        title: 'schema.dev ↔ schema.prod',
+        path: 'schema engine · 4 tables',
+        chips: [
+          { label: '＋2 cols', variant: 'add' },
+          { label: '－1 col', variant: 'del' },
+        ],
+        ago: 'Aug 8',
+      },
+    ],
+  },
+];
+
 export interface QuickStart {
   id: string;
   kind: FileKind;
@@ -110,4 +173,28 @@ export const QUICK_STARTS: readonly QuickStart[] = [
     title: 'Git refs',
     description: 'Branch, tag, commit or range.',
   },
+];
+
+export interface ShortcutEntry {
+  label: string;
+  keys: string;
+}
+
+/**
+ * Display-only for now. MVP-10 builds the real registry and generates both the
+ * bindings and this grid from it, so they cannot disagree.
+ */
+export const SHORTCUTS: readonly ShortcutEntry[] = [
+  { label: 'Command palette', keys: '⌘K' },
+  { label: 'Compare files', keys: '⌘O' },
+  { label: 'Compare folders', keys: '⌘⇧O' },
+  { label: 'Paste to compare', keys: '⌘⇧V' },
+  { label: 'Next change', keys: '⌥↓' },
+  { label: 'Previous change', keys: '⌥↑' },
+  { label: 'Toggle view mode', keys: '⌘\\' },
+  { label: 'Swap sides', keys: '⌘⇧S' },
+  { label: 'Find in diff', keys: '⌘F' },
+  { label: 'Export report', keys: '⌘⇧E' },
+  { label: 'Quick Compare window', keys: '⌘⌥D' },
+  { label: 'Settings', keys: '⌘,' },
 ];
