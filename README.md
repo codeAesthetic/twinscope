@@ -2,13 +2,17 @@
 
 **Compare anything. Understand what changed.**
 
+📖 **[Documentation](https://codeaesthetic.github.io/twinscope-website/)** · [Download](https://codeaesthetic.github.io/twinscope-website/download/) · [Changelog](https://codeaesthetic.github.io/twinscope-website/changelog/)
+
 A local-first universal comparison tool for developers. Drop two files, folders, images or clipboard contents — TwinScope detects what they are, picks the right diff engine, and shows what changed.
 
 Your files never leave your machine: no telemetry, no uploads, no account.
 
-> **Status: 0.1.0.** All five engines work, comparisons persist, and results
-> export. macOS builds are unsigned unless you build them with your own
-> Developer ID — see [`docs/release.md`](docs/release.md).
+> **Status: 0.1.0 released.** All five engines work, comparisons persist, and
+> results export. The macOS builds are **unsigned** — macOS will refuse to open
+> the app until you right-click → Open → Open. See
+> [`docs/release.md`](docs/release.md) and the
+> [install guide](https://codeaesthetic.github.io/twinscope-website/docs/getting-started/install/).
 
 ![Structural JSON comparison](docs/screenshots/json.png)
 
@@ -118,3 +122,14 @@ The renderer is treated as untrusted. `src/main/security.ts` enables the sandbox
 ## License
 
 MIT
+
+## Documentation
+
+Full documentation lives at
+**[codeaesthetic.github.io/twinscope-website](https://codeaesthetic.github.io/twinscope-website/)**
+— every engine, every keyboard shortcut, what is stored and what never is, and a
+screenshot or GIF of each feature captured from the running app.
+
+Its source is [`codeAesthetic/twinscope-website`](https://github.com/codeAesthetic/twinscope-website).
+The screenshots are produced from this repo by `npm run capture`, so re-run it
+after any UI change rather than editing images by hand.

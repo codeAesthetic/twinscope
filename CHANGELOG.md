@@ -6,30 +6,7 @@ project uses [semantic versioning][semver].
 [kac]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
 
-## Unreleased
-
-### Added
-
-- **Syntax highlighting** for text and code diffs across the nine MVP languages,
-  loaded on demand. Changed-word marks and search hits stay visible on top of it.
-- **Ignore whitespace / Ignore case / Collapse unchanged** toggles in the text
-  toolbar. They re-run the comparison, so the counts always describe what is on
-  screen.
-- **Per-side `＋`/`－` totals** on the text diff's file headers.
-- **Search within a diff (`⌘F`)** for text and code comparisons: a match count,
-  `⏎` / `⇧⏎` to walk the hits, and `Esc` to clear. Matches are highlighted
-  without hiding anything — a find, not a filter. A hit inside a changed word
-  keeps both highlights.
-
-### Fixed
-
-- **Swapping sides keeps your comparison.** With a diff open, swap now re-runs
-  it the other way round instead of emptying the workspace.
-- **Plain `⌘V` now starts a comparison** when nothing is focused, alongside
-  `⌘⇧V`. The approved design specified both; only `⌘⇧V` had been wired. Pasting
-  into a text field is untouched — the field still gets the paste.
-
-## 0.1.0 — 2026-08-12
+## 0.1.0 — 2026-08-13
 
 First release. Drop two things in, get a comparison that explains itself.
 
@@ -38,6 +15,10 @@ First release. Drop two things in, get a comparison that explains itself.
 - **Text and code** — side-by-side, unified and inline, with edited lines paired
   and marked word by word instead of appearing as unrelated deletes and adds.
   Long unchanged runs fold. Virtualised, so a 100k-line pair scrolls.
+  **Syntax highlighting** for nine languages, loaded on demand, with changed-word
+  marks and search hits staying visible on top of it. **Ignore whitespace**,
+  **ignore case** and **collapse unchanged** re-run the comparison, so the counts
+  always describe what is on screen.
 - **JSON** — a structural tree, not a line diff: reformatting a file changes
   nothing. Arrays match by identity so a reorder does not read as a rewrite,
   objects compare as key sets, and type changes get their own row kind.
@@ -54,6 +35,9 @@ First release. Drop two things in, get a comparison that explains itself.
 - Normalisation is explainable and reversible: anything hidden is counted, named,
   and one click from coming back.
 - ‹ › and ⌥↑/⌥↓ step through changes from the same index the view uses.
+- **Search within a diff (⌘F)** for text and code: a match count, ⏎ / ⇧⏎ to walk
+  the hits, Esc to clear. A find, not a filter — nothing is hidden, and a hit
+  inside a changed word keeps both highlights.
 
 ### Keep
 
@@ -76,6 +60,10 @@ First release. Drop two things in, get a comparison that explains itself.
 
 ### Known limits
 
-- Syntax highlighting and search-within-a-diff are not in this release.
+- **⌘\ (cycle view mode) does not fire.** The shortcut registry declares it and
+  the Settings grid prints it, but nothing dispatches or listens for it. Use the
+  toolbar control. Every other binding works.
+- Syntax highlighting tokenises each row without its neighbours, so an
+  unterminated multi-line string colours as if it started on that line.
 - Windows and Linux builds exist but are untested on their own platforms.
 - The macOS build is unsigned unless you build it with your own Developer ID.
