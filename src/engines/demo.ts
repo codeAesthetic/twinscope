@@ -27,8 +27,9 @@ export const demoEngine: DiffEngine<DemoOptions, DemoData> = {
 
   canHandle: () => false,
 
-  // ~4.5s: long enough to watch progress move and to cancel mid-run.
-  defaultOptions: () => ({ steps: 30, stepMs: 150 }),
+  // ~2s: long enough to watch progress move and to cancel mid-run, short
+  // enough that the regression suite stays fast.
+  defaultOptions: () => ({ steps: 20, stepMs: 100 }),
 
   async compare(a, b, options, ctx): Promise<DiffResult<DemoData>> {
     const startedAt = Date.now();
