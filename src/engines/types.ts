@@ -79,3 +79,24 @@ export class NotImplementedError extends Error {
     this.name = 'NotImplementedError';
   }
 }
+
+/** An offer the error panel can turn into a button. */
+export interface EngineFallback {
+  fallbackEngineId: string;
+  fallbackLabel: string;
+}
+
+/**
+ * The input is wrong for this engine, but another engine could still say
+ * something useful — unparseable JSON is still comparable as text. Carrying the
+ * offer on the error keeps the recovery path next to the failure that caused it.
+ */
+export class EngineInputError extends Error {
+  readonly fallback: EngineFallback | undefined;
+
+  constructor(message: string, fallback?: EngineFallback) {
+    super(message);
+    this.name = 'EngineInputError';
+    this.fallback = fallback;
+  }
+}

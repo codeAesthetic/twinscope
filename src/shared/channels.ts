@@ -94,6 +94,11 @@ export interface CompareFailed {
   message: string;
   /** 'cancelled' when the user stopped it; 'crash' when the host died. */
   reason: 'failed' | 'cancelled' | 'crash';
+  /**
+   * Another engine that could still compare these inputs — unparseable JSON is
+   * still readable as text. The error panel renders it as a one-click retry.
+   */
+  fallback?: { engineId: string; label: string };
 }
 
 export type CompareEvent = CompareProgress | CompareDone | CompareFailed;

@@ -1,0 +1,332 @@
+/*
+ * JSON tree + normalisation rail — ported from reference/devdiff-mockup.html.
+ *
+ * Rows are a fixed --dd-jrow-height so the virtualiser needs no measurement
+ * pass, same contract as the text diff.
+ */
+.dd-jsonwrap {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  width: 100%;
+}
+
+.dd-jsontree {
+  --dd-jrow-height: 23px;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  background: var(--panel);
+  padding: 6px 0 20px;
+  /* The mockup's JSON value green, derived from the add token rather than
+     hard-coded, so it tracks the theme. */
+  --dd-json-value: color-mix(in srgb, var(--add) 58%, var(--tx));
+}
+
+.dd-jrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--dd-jrow-height);
+  padding: 0 14px;
+  font: 12px/18px var(--mono);
+  position: relative;
+}
+.dd-jrow:hover {
+  background: var(--hover);
+}
+.dd-jrow:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+
+.dd-jgutter {
+  width: 3px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.dd-jrow[data-state='chg'] .dd-jgutter {
+  background: var(--mod);
+}
+.dd-jrow[data-state='add'] .dd-jgutter {
+  background: var(--add);
+}
+.dd-jrow[data-state='del'] .dd-jgutter {
+  background: var(--del);
+}
+.dd-jrow[data-state='type'] .dd-jgutter {
+  background: var(--info);
+}
+
+.dd-jindent {
+  display: block;
+  flex: 0 0 auto;
+  width: 14px;
+  height: 18px;
+  border-left: 1px solid var(--line);
+}
+
+.dd-jtwisty {
+  display: block;
+  width: 12px;
+  flex: 0 0 auto;
+  color: var(--tx-3);
+  text-align: center;
+  font-size: 9px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+button.dd-jtwisty:hover {
+  color: var(--tx);
+}
+
+.dd-jmark {
+  display: block;
+  width: 12px;
+  flex: 0 0 auto;
+  color: var(--tx-3);
+  text-align: center;
+  user-select: none;
+}
+.dd-jrow[data-state='add'] .dd-jmark {
+  color: var(--add);
+}
+.dd-jrow[data-state='del'] .dd-jmark {
+  color: var(--del);
+}
+.dd-jrow[data-state='chg'] .dd-jmark {
+  color: var(--mod);
+}
+.dd-jrow[data-state='type'] .dd-jmark {
+  color: var(--info);
+}
+
+.dd-jkey {
+  color: var(--tx);
+  white-space: nowrap;
+}
+.dd-jcolon {
+  color: var(--tx-3);
+  margin-left: -6px;
+}
+.dd-jval {
+  color: var(--dd-json-value);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-jval[data-tone='old'] {
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--del) 55%, transparent);
+}
+.dd-jval[data-tone='new'] {
+  color: var(--add);
+}
+.dd-jarrow {
+  color: var(--tx-3);
+  flex: 0 0 auto;
+}
+.dd-jnote {
+  color: var(--tx-3);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.dd-jbadge {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.dd-jrow[data-state='chg'] {
+  background: var(--mod-bg);
+}
+.dd-jrow[data-state='add'] {
+  background: var(--add-bg);
+}
+.dd-jrow[data-state='del'] {
+  background: var(--del-bg);
+}
+.dd-jrow[data-state='type'] {
+  background: color-mix(in srgb, var(--info) 9%, transparent);
+}
+.dd-jrow[data-state='ign'] {
+  opacity: 0.5;
+}
+.dd-jrow[data-state='same'] .dd-jkey {
+  color: var(--tx-2);
+}
+.dd-jrow[data-current='true'] {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+
+.dd-json-empty {
+  margin: 0;
+  padding: 24px 16px;
+  color: var(--tx-3);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+/* --- normalisation rail --- */
+.dd-optpanel {
+  width: 250px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--line);
+  background: var(--bg-2);
+  overflow: auto;
+  text-align: left;
+}
+html[data-theme='light'] .dd-optpanel {
+  background: var(--panel-2);
+}
+
+.dd-opthd {
+  padding: 9px 12px;
+  font: 600 10.5px/1 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.dd-optrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.dd-optrow:hover {
+  background: var(--hover);
+}
+.dd-opttxt {
+  flex: 1;
+}
+.dd-optt {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--tx);
+}
+.dd-optd {
+  font-size: 11px;
+  color: var(--tx-3);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+
+.dd-pathchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 12px;
+}
+.dd-pathchip {
+  font: 11px var(--mono);
+  border: 1px solid var(--line-2);
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 3px 6px;
+  color: var(--tx-2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dd-pathchip[data-add='true'] {
+  border-style: dashed;
+  color: var(--tx-3);
+  cursor: pointer;
+}
+.dd-pathchip[data-add='true']:hover {
+  color: var(--tx-2);
+  border-color: var(--acc);
+}
+.dd-pathchip button {
+  color: var(--tx-3);
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+}
+.dd-pathchip button:hover {
+  color: var(--del);
+}
+.dd-pathinput {
+  font: 11px var(--mono);
+  border: 1px solid var(--acc);
+  background: var(--panel);
+  border-radius: 6px;
+  padding: 3px 6px;
+  color: var(--tx);
+  width: 130px;
+  outline: none;
+}
+
+.dd-explain {
+  padding: 10px 12px;
+  color: var(--tx-3);
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+.dd-linkish {
+  color: var(--acc-2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+}
+.dd-linkish:hover {
+  text-decoration: underline;
+}
+.dd-notes {
+  margin: 8px 0 0;
+  padding-left: 14px;
+}
+.dd-notes li {
+  margin-top: 3px;
+}
+
+/* --- row context menu --- */
+.dd-menu-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.dd-menu {
+  position: fixed;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 5px;
+  min-width: 170px;
+  background: var(--elev);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+}
+.dd-menu .dd-btn {
+  justify-content: flex-start;
+}
+
+.dd-copied {
+  position: fixed;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--elev);
+  border: 1px solid var(--line-2);
+  border-radius: 99px;
+  padding: 5px 14px;
+  font-size: 11.5px;
+  color: var(--tx-2);
+  box-shadow: var(--shadow);
+  z-index: 42;
+}

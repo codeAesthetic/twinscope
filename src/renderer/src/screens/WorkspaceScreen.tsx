@@ -1,10 +1,11 @@
-import { createElement, Suspense, useEffect, useState } from 'react';
+import { createElement, Suspense, useEffect, useRef, useState } from 'react';
 import { SummaryStrip } from '../components/compare/SummaryStrip';
 import { ToolbarSlotProvider } from '../components/compare/ToolbarSlot';
 import { Button, Chip, SearchInput } from '../components/primitives';
 import { useAppStore } from '../stores/app';
 import { useChangeNavStore } from '../stores/changeNav';
 import { useCompareStore, type CompareResult } from '../stores/compare';
+import { useSearchStore } from '../stores/search';
 import { useStatusStore } from '../stores/status';
 import { engineViewFor } from './workspace/engineViews';
 
@@ -25,6 +26,7 @@ export function WorkspaceScreen() {
   const a = useCompareStore((state) => state.a);
   const b = useCompareStore((state) => state.b);
   const cancel = useCompareStore((state) => state.cancel);
+  const run = useCompareStore((state) => state.run);
   const reset = useCompareStore((state) => state.reset);
   const setView = useAppStore((state) => state.setView);
   const setStatus = useStatusStore((state) => state.set);
@@ -89,7 +91,7 @@ export function WorkspaceScreen() {
 
           {result !== null && (
             <>
-              <SearchInput placeholder="Search in diff…" hint="⌘F" disabled />
+              <WorkspaceSearch />
               <Button disabled title="Export arrives in MVP-9">
                 Export ▾
               </Button>
@@ -171,6 +173,20 @@ export function WorkspaceScreen() {
                 {error.message}
               </p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                {/* A wrong-engine failure is recoverable: offer the engine that
+                    can still say something about these inputs. */}
+                {error.fallback !== undefined && (
+                  <Button
+                    variant="primary"
+                    data-testid="error-fallback"
+                    onClick={() => {
+                      const { engineId } = error.fallback as { engineId: string };
+                      void run({ engineId }).catch(() => undefined);
+                    }}
+                  >
+                    {error.fallback.label}
+                  </Button>
+                )}
                 <Button onClick={startOver}>Back to Compare</Button>
                 {error.reason !== 'cancelled' && (
                   <Button
@@ -208,6 +224,47 @@ export function WorkspaceScreen() {
         </div>
       </div>
     </ToolbarSlotProvider>
+  );
+}
+
+/**
+ * The toolbar's search box. Disabled until an engine view opts in, because a
+ * search field that silently does nothing is worse than one that says it can't.
+ */
+function WorkspaceSearch() {
+  const enabled = useSearchStore((state) => state.enabled);
+  const query = useSearchStore((state) => state.query);
+  const placeholder = useSearchStore((state) => state.placeholder);
+  const setQuery = useSearchStore((state) => state.setQuery);
+  const focusRequest = useSearchStore((state) => state.focusRequest);
+  const requestFocus = useSearchStore((state) => state.requestFocus);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        requestFocus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [requestFocus]);
+
+  useEffect(() => {
+    if (focusRequest > 0 && enabled) inputRef.current?.focus();
+  }, [focusRequest, enabled]);
+
+  return (
+    <SearchInput
+      ref={inputRef}
+      placeholder={placeholder}
+      hint="⌘F"
+      disabled={!enabled}
+      value={query}
+      onChange={(event) => setQuery(event.target.value)}
+      data-testid="workspace-search"
+    />
   );
 }
 

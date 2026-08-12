@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { engineById, selectEngine } from '../engines/registry';
+import { EngineInputError } from '../engines/types';
 import type { EngineCtx, HostFs, InputRef } from '../engines/types';
 import type { CompareEvent, InputPayload } from '../shared/channels';
 
@@ -127,6 +128,9 @@ async function runJob(message: StartMessage): Promise<void> {
   } catch (cause) {
     const cancelled =
       controller.signal.aborted || (cause instanceof Error && cause.name === 'AbortError');
+    const fallback = !cancelled && cause instanceof EngineInputError ? cause.fallback : undefined;
+    const fallbackEngine =
+      fallback !== undefined ? engineById(fallback.fallbackEngineId) : undefined;
 
     send({
       type: 'error',
@@ -137,6 +141,9 @@ async function runJob(message: StartMessage): Promise<void> {
           ? cause.message
           : String(cause),
       reason: cancelled ? 'cancelled' : 'failed',
+      ...(fallback !== undefined && fallbackEngine !== undefined
+        ? { fallback: { engineId: fallbackEngine.meta.id, label: fallback.fallbackLabel } }
+        : {}),
     });
   } finally {
     running.delete(message.jobId);

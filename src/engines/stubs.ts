@@ -1,3 +1,4 @@
+import { jsonEngine } from './json';
 import { textEngine } from './text';
 import { NotImplementedError } from './types';
 import type { DiffEngine, InputRef } from './types';
@@ -6,8 +7,8 @@ import type { DiffEngine, InputRef } from './types';
  * The four MVP engines (MD §55: start with exactly these).
  *
  * `canHandle` is real — engine selection is testable today. `compare` throws
- * until each engine's feature lands: text MVP-4, json MVP-5, folder MVP-6,
- * image MVP-7.
+ * until each engine's feature lands: text MVP-4 and json MVP-5 are real engines
+ * now; folder MVP-6 and image MVP-7 are still stubs here.
  */
 
 function stub<TOptions extends object>(
@@ -35,12 +36,6 @@ export const imageEngine = stub(
   { id: 'image', label: 'Visual / pixel diff', priority: 30 },
   bothAre('image'),
   { threshold: 0.12, showRegions: true },
-);
-
-export const jsonEngine = stub(
-  { id: 'json', label: 'Structural JSON diff', priority: 20 },
-  bothAre('json'),
-  { ignoreKeyOrder: true, ignoreNulls: false, ignoreArrayOrder: true, ignorePaths: [] as string[] },
 );
 
 /**

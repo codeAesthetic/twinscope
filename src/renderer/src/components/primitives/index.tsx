@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref } from 'react';
 
 /**
  * Primitives matching reference/devdiff-mockup.html.
@@ -91,15 +91,16 @@ export function Toggle({
 
 export function SearchInput({
   hint,
+  ref,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { hint?: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & { hint?: string; ref?: Ref<HTMLInputElement> }) {
   return (
     <div className="dd-search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <circle cx="11" cy="11" r="7" />
         <path d="M16.5 16.5L21 21" />
       </svg>
-      <input type="search" {...props} />
+      <input type="search" ref={ref} {...props} />
       {hint !== undefined && <Kbd>{hint}</Kbd>}
     </div>
   );

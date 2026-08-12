@@ -31,13 +31,26 @@ interface CompareState {
   progressMessage: string | null;
 
   result: CompareResult | null;
-  error: { message: string; reason: 'failed' | 'cancelled' | 'crash' } | null;
+  error: {
+    message: string;
+    reason: 'failed' | 'cancelled' | 'crash';
+    fallback?: { engineId: string; label: string };
+  } | null;
 
   /** Manual engine choice. Detection still decides when this is null (Rule 1). */
   engineOverride: string | null;
 
+  /**
+   * Engine options for the current pair. Engine views change these and the job
+   * re-runs — normalisation is a property of the comparison, not of the view, so
+   * the counts have to come back from the engine (Rule 3).
+   */
+  options: Record<string, unknown>;
+
   setInput: (side: 'A' | 'B', input: InputPayload | null) => void;
   setEngineOverride: (engineId: string | null) => void;
+  /** Merges options into the current set and re-runs the comparison. */
+  setOptions: (patch: Record<string, unknown>) => Promise<void>;
   swap: () => void;
   reset: () => void;
 
@@ -62,10 +75,19 @@ export const useCompareStore = create<CompareState>((set, get) => ({
   a: null,
   b: null,
   engineOverride: null,
+  options: {},
   ...IDLE,
 
   setInput: (side, input) => {
-    set(side === 'A' ? { a: input, ...IDLE } : { b: input, ...IDLE });
+    // Options belong to the pair that was loaded: a new input means a new
+    // comparison, and possibly a different engine whose options are unrelated.
+    set(side === 'A' ? { a: input, options: {}, ...IDLE } : { b: input, options: {}, ...IDLE });
+  },
+
+  setOptions: async (patch) => {
+    const options = { ...get().options, ...patch };
+    set({ options });
+    await get().run();
   },
 
   swap: () => {
@@ -73,27 +95,29 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     set({
       a: b ? { ...b, side: 'A' } : null,
       b: a ? { ...a, side: 'B' } : null,
+      options: {},
       ...IDLE,
     });
   },
 
-  setEngineOverride: (engineId) => set({ engineOverride: engineId, ...IDLE }),
+  setEngineOverride: (engineId) => set({ engineOverride: engineId, options: {}, ...IDLE }),
 
-  reset: () => set({ a: null, b: null, engineOverride: null, ...IDLE }),
+  reset: () => set({ a: null, b: null, engineOverride: null, options: {}, ...IDLE }),
 
   run: async (overrides) => {
-    const { a, b } = get();
+    const { a, b, options, engineOverride } = get();
     if (!a || !b) throw new Error('Two inputs are needed to compare.');
 
-    set({ ...IDLE, status: 'running' });
-
-    const { engineOverride } = get();
+    // IDLE clears the previous result; the options survive it because they
+    // describe the request being made, not the reply.
+    set({ ...IDLE, options, status: 'running' });
 
     try {
       const started = await window.devdiff.compare.start({
         a,
         b,
         ...(engineOverride !== null ? { engineId: engineOverride } : {}),
+        ...(Object.keys(options).length > 0 ? { options } : {}),
         ...overrides,
       });
       set({ jobId: started.jobId, engineLabel: started.engineLabel });
@@ -140,7 +164,11 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     set({
       status: 'error',
       progressMessage: null,
-      error: { message: event.message, reason: event.reason },
+      error: {
+        message: event.message,
+        reason: event.reason,
+        ...(event.fallback !== undefined ? { fallback: event.fallback } : {}),
+      },
     });
   },
 }));
