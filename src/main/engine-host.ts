@@ -49,7 +49,7 @@ function failAll(reason: 'crash', message: string): void {
 
 function spawnWorker(): UtilityProcess {
   const child = utilityProcess.fork(workerPath(), [], {
-    serviceName: 'devdiff-engine-host',
+    serviceName: 'twinscope-engine-host',
     stdio: 'inherit',
   });
 
@@ -79,7 +79,7 @@ function ensureWorker(): UtilityProcess {
 
   if (restarts >= MAX_RESTARTS) {
     throw new Error(
-      'The comparison engine failed to start repeatedly. Restart DevDiff to try again.',
+      'The comparison engine failed to start repeatedly. Restart TwinScope to try again.',
     );
   }
 

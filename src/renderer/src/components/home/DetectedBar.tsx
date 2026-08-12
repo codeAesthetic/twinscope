@@ -10,7 +10,7 @@ function formatSize(bytes: number): string {
 }
 
 /**
- * Says what DevDiff will do with the inputs, then lets the user run it.
+ * Says what TwinScope will do with the inputs, then lets the user run it.
  *
  * Rule 1: never make the user choose an engine we can detect. Rule 3: when the
  * choice is surprising — two different kinds falling back to text — say why.

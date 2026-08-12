@@ -50,7 +50,7 @@ export function renderMarkdown(input: ReportInput): string {
   }
 
   lines.push('', '## Changes', '', ...body(input));
-  lines.push('', '---', '', '_Generated locally by DevDiff. No data left this machine._');
+  lines.push('', '---', '', '_Generated locally by TwinScope. No data left this machine._');
 
   return `${lines.join('\n')}\n`;
 }

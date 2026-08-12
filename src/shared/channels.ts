@@ -178,12 +178,12 @@ export interface Preferences {
 export type { InputRef, InputKind, Summary };
 
 /**
- * Everything exposed to the renderer as `window.devdiff`.
+ * Everything exposed to the renderer as `window.twinscope`.
  *
  * Each entry is a deliberate hole in context isolation — keep it narrow, keep
  * it typed, and never expose `ipcRenderer` itself.
  */
-export interface DevDiffApi {
+export interface TwinScopeApi {
   /**
    * Host platform, read once at preload time. The UI needs it for chrome
    * details — macOS draws traffic lights over the window.

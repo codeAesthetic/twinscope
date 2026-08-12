@@ -54,7 +54,7 @@ export default tseslint.config(
             {
               group: ['node:*', 'fs', 'path', 'os', 'child_process', 'electron'],
               message:
-                'The renderer must not touch node or Electron. Go through the preload bridge (window.devdiff).',
+                'The renderer must not touch node or Electron. Go through the preload bridge (window.twinscope).',
             },
           ],
         },

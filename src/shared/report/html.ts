@@ -164,7 +164,7 @@ export function renderHtml(input: ReportInput): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevDiff — ${escapeHtml(title)}</title>
+<title>TwinScope — ${escapeHtml(title)}</title>
 <style>
 ${styles()}
 </style>
@@ -185,7 +185,7 @@ ${styles()}
   <h2>Changes</h2>
   ${bodyFor(input)}
 
-  <footer>Generated locally by DevDiff. This file is self-contained — it makes no network requests.</footer>
+  <footer>Generated locally by TwinScope. This file is self-contained — it makes no network requests.</footer>
 </main>
 </body>
 </html>

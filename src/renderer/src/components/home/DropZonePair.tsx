@@ -39,8 +39,8 @@ export function DropZonePair({
   const pick = async (side: 'A' | 'B', kind: 'file' | 'folder'): Promise<void> => {
     const picked =
       kind === 'file'
-        ? await window.devdiff.dialog.pickFile(side)
-        : await window.devdiff.dialog.pickFolder(side);
+        ? await window.twinscope.dialog.pickFile(side)
+        : await window.twinscope.dialog.pickFolder(side);
     // null means the user cancelled the dialog — leave the slot untouched.
     if (picked !== null) setInput(side, picked);
   };

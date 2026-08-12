@@ -17,10 +17,10 @@ test('app boots, bridges to main, and stays locked down', async () => {
   try {
     await expect(harness.page.getByTestId('titlebar')).toBeVisible();
     await expect(harness.page.getByTestId('sidebar')).toBeVisible();
-    expect(await harness.page.title()).toBe('DevDiff');
+    expect(await harness.page.title()).toBe('TwinScope');
 
     // The preload bridge round-trips to main, and the UI shows it.
-    const ping = await harness.page.evaluate(() => window.devdiff.ping());
+    const ping = await harness.page.evaluate(() => window.twinscope.ping());
     expect(ping.pong).toBe(true);
     await expect(harness.page.getByTestId('bridge-status')).toContainText('electron');
 
@@ -30,7 +30,7 @@ test('app boots, bridges to main, and stays locked down', async () => {
       process: typeof (globalThis as Record<string, unknown>)['process'],
       require: typeof (globalThis as Record<string, unknown>)['require'],
       ipcRenderer: typeof (globalThis as Record<string, unknown>)['ipcRenderer'],
-      bridge: Object.keys(window.devdiff),
+      bridge: Object.keys(window.twinscope),
     }));
     expect(leaks.process).toBe('undefined');
     expect(leaks.require).toBe('undefined');

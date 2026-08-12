@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to DevDiff. Format follows [Keep a Changelog][kac]; the
+All notable changes to TwinScope. Format follows [Keep a Changelog][kac]; the
 project uses [semantic versioning][semver].
 
 [kac]: https://keepachangelog.com/en/1.1.0/

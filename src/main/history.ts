@@ -84,7 +84,7 @@ function migrate(database: DatabaseSync): void {
 /** Opened lazily: the first comparison pays for it, not startup. */
 function open(): DatabaseSync {
   if (db !== null) return db;
-  db = new DatabaseSync(join(app.getPath('userData'), 'devdiff.db'));
+  db = new DatabaseSync(join(app.getPath('userData'), 'twinscope.db'));
   migrate(db);
   return db;
 }

@@ -1,4 +1,4 @@
-# Releasing DevDiff
+# Releasing TwinScope
 
 Everything here runs locally. There is no release server, no telemetry, and no
 auto-updater — a release is a set of files you build and hand out.
@@ -8,7 +8,7 @@ auto-updater — a release is a set of files you build and hand out.
 ```bash
 npm ci
 npm run gate            # typecheck · lint · format · unit tests · regression suite
-npm run package:mac     # → release/DevDiff-<version>-arm64.dmg (+ x64, + zips)
+npm run package:mac     # → release/TwinScope-<version>-arm64.dmg (+ x64, + zips)
 ```
 
 `package:win` and `package:linux` exist and are best-effort: they have not been
@@ -30,7 +30,7 @@ Developer account (99 USD/year) and:
 2. **An app-specific password** for notarisation, from appleid.apple.com, stored
    in the keychain:
    ```bash
-   xcrun notarytool store-credentials devdiff-notary \
+   xcrun notarytool store-credentials twinscope-notary \
      --apple-id you@example.com --team-id TEAMID --password app-specific-password
    ```
 3. Add to `electron-builder.yml` under `mac:`
@@ -41,9 +41,9 @@ Developer account (99 USD/year) and:
    and build with `CSC_IDENTITY_AUTO_DISCOVERY=true`.
 4. Verify the result, rather than trusting that it worked:
    ```bash
-   codesign --verify --deep --strict --verbose=2 release/mac-arm64/DevDiff.app
-   xcrun stapler validate release/DevDiff-0.1.0-arm64.dmg
-   spctl --assess --type execute --verbose release/mac-arm64/DevDiff.app
+   codesign --verify --deep --strict --verbose=2 release/mac-arm64/TwinScope.app
+   xcrun stapler validate release/TwinScope-0.1.0-arm64.dmg
+   spctl --assess --type execute --verbose release/mac-arm64/TwinScope.app
    ```
 
 Until that is done, `hardenedRuntime: true` is set but nothing is signed, and
@@ -51,12 +51,12 @@ electron-builder will say so in its output.
 
 ## Before tagging — OWNER ACTIONS
 
-- **Name availability.** `devdiff` needs checking on npm (the CLI in V1-2 will
+- **Name availability.** `twinscope` needs checking on npm (the CLI in V1-2 will
   want it), on GitHub, and as a domain. Record the outcome in the plan's
   decision log; if it is taken, the fallback list belongs there too.
 - **Smoke-test the packaged app on a clean account.** Install from the dmg on a
   macOS account without Node or Xcode and run through all five engines, history
-  persistence (`~/Library/Application Support/DevDiff/devdiff.db`) and an export.
+  persistence (`~/Library/Application Support/TwinScope/twinscope.db`) and an export.
   `npm run gate` does not prove any of this: it tests the unpackaged build.
 - **Re-measure RAM on the packaged build** (plan §3.8 follow-up). The unpackaged
   number, 543 MB across all processes, misses the budget; a packaged build drops

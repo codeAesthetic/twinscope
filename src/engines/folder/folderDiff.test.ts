@@ -16,7 +16,7 @@ import type { EngineCtx, InputRef } from '../types';
 const roots: string[] = [];
 
 async function tree(spec: Record<string, string>): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'devdiff-folder-'));
+  const root = await mkdtemp(join(tmpdir(), 'twinscope-folder-'));
   roots.push(root);
 
   for (const [path, content] of Object.entries(spec)) {

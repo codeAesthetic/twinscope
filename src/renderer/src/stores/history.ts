@@ -23,22 +23,22 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   loaded: false,
 
   refresh: async () => {
-    const rows = await window.devdiff.history.list({});
+    const rows = await window.twinscope.history.list({});
     set({ rows, loaded: true });
   },
 
   star: async (id, starred) => {
-    await window.devdiff.history.star(id, starred);
+    await window.twinscope.history.star(id, starred);
     await get().refresh();
   },
 
   remove: async (id) => {
-    await window.devdiff.history.remove(id);
+    await window.twinscope.history.remove(id);
     await get().refresh();
   },
 
   clear: async () => {
-    await window.devdiff.history.clear();
+    await window.twinscope.history.clear();
     await get().refresh();
   },
 }));

@@ -14,7 +14,7 @@ import { pasteInput } from '../helpers/seed';
  */
 test('export: HTML and Markdown reports, and a patch on the clipboard', async () => {
   const harness = await launchApp();
-  const output = await mkdtemp(join(tmpdir(), 'devdiff-export-'));
+  const output = await mkdtemp(join(tmpdir(), 'twinscope-export-'));
 
   try {
     await pasteInput(harness, 'const timeout = 5000;\nshared line\n', 'before');

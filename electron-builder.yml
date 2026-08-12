@@ -3,8 +3,8 @@
 # There is no native module to rebuild: history uses Node's built-in
 # `node:sqlite` (D9a), which is why `npmRebuild` can stay off and the packaged
 # app has nothing to compile on a user's machine.
-appId: com.devdiff.desktop
-productName: DevDiff
+appId: com.twinscope.desktop
+productName: TwinScope
 copyright: © 2026 codeAesthetic
 
 directories:
@@ -35,7 +35,7 @@ mac:
   darkModeSupport: true
 
 dmg:
-  title: DevDiff ${version}
+  title: TwinScope ${version}
 
 win:
   target:

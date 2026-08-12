@@ -24,9 +24,13 @@ export function TitleBar({ title }: { title?: React.ReactNode }) {
     ) : null;
 
   return (
-    <header className="dd-titlebar" data-platform={window.devdiff.platform} data-testid="titlebar">
+    <header
+      className="dd-titlebar"
+      data-platform={window.twinscope.platform}
+      data-testid="titlebar"
+    >
       <div className="dd-titlebar-title" data-testid="titlebar-title">
-        {title ?? comparison ?? <b>DevDiff</b>}
+        {title ?? comparison ?? <b>TwinScope</b>}
       </div>
       <div className="dd-titlebar-right">
         <Kbd>⌘K</Kbd>

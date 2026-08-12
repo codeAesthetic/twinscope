@@ -19,7 +19,7 @@ const EXTENSION: Record<ReportFormat, string> = { html: 'html', md: 'md', patch:
 
 function defaultName(format: ReportFormat, generatedAt: string): string {
   const date = generatedAt.slice(0, 10);
-  return `devdiff-report-${date}.${EXTENSION[format]}`;
+  return `twinscope-report-${date}.${EXTENSION[format]}`;
 }
 
 export function render(format: ReportFormat, input: ReportInput): string {

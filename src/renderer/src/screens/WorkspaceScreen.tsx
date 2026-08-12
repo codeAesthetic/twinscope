@@ -65,9 +65,9 @@ export function WorkspaceScreen() {
 
   const copyDetails = async (): Promise<void> => {
     if (error === null) return;
-    await window.devdiff.clipboard.write(
+    await window.twinscope.clipboard.write(
       [
-        `DevDiff ${error.reason}: ${error.message}`,
+        `TwinScope ${error.reason}: ${error.message}`,
         a !== null ? `before: ${a.name} (${a.kind})` : null,
         b !== null ? `after:  ${b.name} (${b.kind})` : null,
         engineLabel !== null ? `engine: ${engineLabel}` : null,

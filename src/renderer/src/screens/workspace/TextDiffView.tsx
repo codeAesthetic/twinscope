@@ -76,7 +76,7 @@ export default function TextDiffView({ result }: EngineViewProps) {
       .filter((row) => row.kind === 'add' || row.kind === 'mod')
       .map((row) => strip(row.kind === 'mod' ? (row.textRight ?? '') : row.text))
       .join('\n');
-    await window.devdiff.clipboard.write(text);
+    await window.twinscope.clipboard.write(text);
   };
 
   return (

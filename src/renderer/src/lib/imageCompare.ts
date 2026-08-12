@@ -25,7 +25,7 @@ export function isRendererEngine(engineId: string): boolean {
 
 /** Only `readBytes` is reachable from here; the rest would need main. */
 const rendererFs: HostFs = {
-  readBytes: (path) => window.devdiff.input.bytes(path),
+  readBytes: (path) => window.twinscope.input.bytes(path),
   readText: () => Promise.reject(new Error('Text is not read in the renderer.')),
   listDir: () => Promise.reject(new Error('Directories are not listed in the renderer.')),
   stat: () => Promise.reject(new Error('Stat is not available in the renderer.')),
@@ -184,7 +184,7 @@ function toRef(payload: InputPayload) {
  */
 async function dataUrl(payload: InputPayload): Promise<string> {
   if (payload.path === undefined) return '';
-  const bytes = await window.devdiff.input.bytes(payload.path);
+  const bytes = await window.twinscope.input.bytes(payload.path);
 
   // btoa in one call blows the argument limit on anything sizeable.
   let binary = '';

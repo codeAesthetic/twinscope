@@ -12,7 +12,7 @@ export function useCompareEvents(): void {
   const applyEvent = useCompareStore((state) => state.applyEvent);
 
   useEffect(() => {
-    return window.devdiff.compare.onEvent(applyEvent);
+    return window.twinscope.compare.onEvent(applyEvent);
   }, [applyEvent]);
 }
 

@@ -21,21 +21,21 @@ const APP = resolve(
   '..',
   'release',
   process.arch === 'arm64' ? 'mac-arm64' : 'mac',
-  'DevDiff.app',
+  'TwinScope.app',
   'Contents',
   'MacOS',
-  'DevDiff',
+  'TwinScope',
 );
 
 test.describe('packaged app', () => {
   test.skip(
-    process.env['DEVDIFF_PACKAGED'] !== '1' || !existsSync(APP),
-    'set DEVDIFF_PACKAGED=1 and run `npm run package:mac` first',
+    process.env['TWINSCOPE_PACKAGED'] !== '1' || !existsSync(APP),
+    'set TWINSCOPE_PACKAGED=1 and run `npm run package:mac` first',
   );
 
   test('installs, compares, persists and reports its memory', async () => {
-    const profile = await mkdtemp(join(tmpdir(), 'devdiff-packaged-'));
-    const files = await mkdtemp(join(tmpdir(), 'devdiff-packaged-files-'));
+    const profile = await mkdtemp(join(tmpdir(), 'twinscope-packaged-'));
+    const files = await mkdtemp(join(tmpdir(), 'twinscope-packaged-files-'));
 
     const app = await electron.launch({
       executablePath: APP,
@@ -48,7 +48,7 @@ test.describe('packaged app', () => {
 
       // ---------- it boots, and the bridge is there ----------
       await expect(page.getByTestId('screen-compare')).toBeVisible({ timeout: 30_000 });
-      const versions = await page.evaluate(() => window.devdiff.ping());
+      const versions = await page.evaluate(() => window.twinscope.ping());
       expect(versions.pong).toBe(true);
 
       // ---------- a real comparison, through the packaged engine host ----------
@@ -76,7 +76,7 @@ test.describe('packaged app', () => {
       // ---------- history landed in userData, not next to the binary ----------
       await page.getByTestId('back-button').click();
       await expect(page.getByTestId('recent-list')).toContainText('a.json ↔ b.json');
-      expect(existsSync(join(profile, 'devdiff.db'))).toBe(true);
+      expect(existsSync(join(profile, 'twinscope.db'))).toBe(true);
 
       // ---------- what it actually costs, per process ----------
       const metrics = await app.evaluate(({ app: electronApp }) =>

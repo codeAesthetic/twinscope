@@ -13,8 +13,8 @@ import { launchApp } from '../helpers/launch';
  * bytes on disk rather than against the code that wrote them.
  */
 test('history: records, reopens, stars, deletes — and never stores contents', async () => {
-  const userDataDir = await mkdtemp(join(tmpdir(), 'devdiff-history-'));
-  const files = await mkdtemp(join(tmpdir(), 'devdiff-history-files-'));
+  const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history-'));
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-history-files-'));
   const harness = await launchApp({ userDataDir });
 
   const SECRET = 'super-secret-token-9f3a2b';
@@ -51,7 +51,7 @@ test('history: records, reopens, stars, deletes — and never stores contents', 
     // ---------- the row never contains file contents (Rule 2) ----------
     // Read straight from the file the app wrote, so this checks the bytes on
     // disk rather than the code that produced them.
-    const db = new DatabaseSync(join(userDataDir, 'devdiff.db'), { readOnly: true });
+    const db = new DatabaseSync(join(userDataDir, 'twinscope.db'), { readOnly: true });
     const stored = JSON.stringify(db.prepare('SELECT * FROM comparisons').all());
     db.close();
     expect(stored).not.toContain(SECRET);
@@ -98,8 +98,8 @@ test('history: records, reopens, stars, deletes — and never stores contents', 
 });
 
 test('history: survives a restart, and a missing input is explained', async () => {
-  const userDataDir = await mkdtemp(join(tmpdir(), 'devdiff-history2-'));
-  const files = await mkdtemp(join(tmpdir(), 'devdiff-history2-files-'));
+  const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history2-'));
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-history2-files-'));
 
   try {
     const before = join(files, 'a.json');

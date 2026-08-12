@@ -14,7 +14,7 @@ import { openPalette } from '../helpers/seed';
  */
 test('palette and shortcuts: one registry drives keys, settings and commands', async () => {
   const harness = await launchApp();
-  const files = await mkdtemp(join(tmpdir(), 'devdiff-palette-'));
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-palette-'));
 
   try {
     // ---------- ⌘K opens it, Esc closes it ----------

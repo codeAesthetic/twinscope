@@ -26,7 +26,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   load: async () => {
     try {
-      set({ preferences: await window.devdiff.settings.read(), loaded: true });
+      set({ preferences: await window.twinscope.settings.read(), loaded: true });
     } catch {
       set({ preferences: FALLBACK, loaded: true });
     }
@@ -34,7 +34,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
 
   update: async (patch) => {
     set({ preferences: { ...get().preferences, ...patch } });
-    const saved = await window.devdiff.settings.write(patch);
+    const saved = await window.twinscope.settings.write(patch);
     set({ preferences: saved });
   },
 

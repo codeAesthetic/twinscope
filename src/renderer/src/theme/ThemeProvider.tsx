@@ -15,7 +15,7 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-const STORAGE_KEY = 'devdiff.theme';
+const STORAGE_KEY = 'twinscope.theme';
 
 function systemTheme(): ResolvedTheme {
   return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
@@ -41,7 +41,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   // Main's copy is authoritative, but arrives a tick later than first paint.
   useEffect(() => {
     let cancelled = false;
-    void window.devdiff.settings
+    void window.twinscope.settings
       .read()
       .then((preferences) => {
         if (!cancelled) setPreferenceState(preferences.theme);
@@ -68,7 +68,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
     localStorage.setItem(STORAGE_KEY, next);
-    void window.devdiff.settings.write({ theme: next }).catch(() => undefined);
+    void window.twinscope.settings.write({ theme: next }).catch(() => undefined);
   }, []);
 
   const toggle = useCallback(() => {

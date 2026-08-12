@@ -38,7 +38,7 @@ if (!app.requestSingleInstanceLock()) {
     // the app survives it. Reached via Playwright's main-process evaluate, so it
     // is never exposed to the renderer.
     if (process.env['NODE_ENV'] === 'test') {
-      (globalThis as Record<string, unknown>)['__devdiffKillEngineHost'] = killWorkerForTesting;
+      (globalThis as Record<string, unknown>)['__twinscopeKillEngineHost'] = killWorkerForTesting;
     }
 
     // macOS: clicking the dock icon with no windows open reopens one.

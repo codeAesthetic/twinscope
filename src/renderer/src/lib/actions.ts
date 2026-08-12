@@ -53,7 +53,7 @@ export function useActions(): (id: string) => void {
         default:
           // 'export', 'search' and the view-local bindings are owned by the
           // surfaces that can actually perform them.
-          window.dispatchEvent(new CustomEvent('devdiff:action', { detail: id }));
+          window.dispatchEvent(new CustomEvent('twinscope:action', { detail: id }));
       }
     },
     [fromClipboard, runComparison, setInput, swap, setView, toggle],
@@ -71,10 +71,10 @@ async function pickPair(
   method: 'pickFile' | 'pickFolder',
   setInput: ReturnType<typeof useCompareStore.getState>['setInput'],
 ): Promise<void> {
-  const a = await window.devdiff.dialog[method]('A');
+  const a = await window.twinscope.dialog[method]('A');
   if (a === null) return;
   setInput('A', a);
 
-  const b = await window.devdiff.dialog[method]('B');
+  const b = await window.twinscope.dialog[method]('B');
   if (b !== null) setInput('B', b);
 }

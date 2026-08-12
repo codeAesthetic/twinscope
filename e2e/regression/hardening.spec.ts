@@ -14,7 +14,7 @@ import { pasteInput } from '../helpers/seed';
  */
 
 async function withFiles<T>(run: (dir: string) => Promise<T>): Promise<T> {
-  const dir = await mkdtemp(join(tmpdir(), 'devdiff-hard-'));
+  const dir = await mkdtemp(join(tmpdir(), 'twinscope-hard-'));
   try {
     return await run(dir);
   } finally {

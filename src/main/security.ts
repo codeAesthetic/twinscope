@@ -64,7 +64,7 @@ function hardenWebContents(contents: WebContents): void {
     console.warn('[security] blocked <webview> attach');
   });
 
-  // Deny every permission request: nothing in DevDiff needs camera, mic,
+  // Deny every permission request: nothing in TwinScope needs camera, mic,
   // geolocation, notifications or clipboard-read escalation.
   contents.session.setPermissionRequestHandler((_wc, permission, callback) => {
     console.warn(`[security] denied permission request: ${permission}`);

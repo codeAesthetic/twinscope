@@ -37,7 +37,7 @@ function csp(isDev: boolean): Plugin {
   ].join('; ');
 
   return {
-    name: 'devdiff:csp',
+    name: 'twinscope:csp',
     transformIndexHtml: (html) => html.replace('%CSP%', policy),
   };
 }

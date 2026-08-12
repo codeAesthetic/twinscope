@@ -141,7 +141,7 @@ export default function JsonTreeView({ result }: EngineViewProps) {
   }, []);
 
   const copy = async (label: string, text: string): Promise<void> => {
-    await window.devdiff.clipboard.write(text);
+    await window.twinscope.clipboard.write(text);
     setCopied(label);
     setMenu(null);
   };

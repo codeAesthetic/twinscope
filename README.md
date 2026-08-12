@@ -1,8 +1,8 @@
-# DevDiff
+# TwinScope
 
 **Compare anything. Understand what changed.**
 
-A local-first universal comparison tool for developers. Drop two files, folders, images or clipboard contents — DevDiff detects what they are, picks the right diff engine, and shows what changed.
+A local-first universal comparison tool for developers. Drop two files, folders, images or clipboard contents — TwinScope detects what they are, picks the right diff engine, and shows what changed.
 
 Your files never leave your machine: no telemetry, no uploads, no account.
 
@@ -70,7 +70,7 @@ That's the whole setup. If `npm run dev` complains that Electron is missing, re-
 | `npm run lint`            | ESLint, including the import-boundary rules                    |
 | `npm run format`          | Prettier                                                       |
 | `npm run gate`            | Everything above, in the order CI runs it                      |
-| `npm run package:mac`     | Builds `release/DevDiff-<version>.dmg`                         |
+| `npm run package:mac`     | Builds `release/TwinScope-<version>.dmg`                       |
 | `npm run verify:packaged` | Boots the packaged app and compares in it                      |
 | `npm run icon`            | Regenerates `build/icon.png` from `scripts/make-icon.mjs`      |
 
@@ -88,7 +88,7 @@ e2e/            verification harness (see below)
 
 Three boundaries are enforced by ESLint rather than convention:
 
-- The **renderer** cannot import `node:*` or `electron`. It talks to the main process only through `window.devdiff`, exposed by the preload script.
+- The **renderer** cannot import `node:*` or `electron`. It talks to the main process only through `window.twinscope`, exposed by the preload script.
 - **Engines** cannot import `electron`, so the planned CLI can reuse them unchanged.
 - `src/shared/channels.ts` stays dependency-free, because the sandboxed preload imports it.
 

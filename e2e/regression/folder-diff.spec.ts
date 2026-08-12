@@ -31,7 +31,7 @@ const FIXTURE = {
 
 /** Writes one fixture tree into a fresh temp directory. */
 async function build(spec: Record<string, string>): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'devdiff-e2e-'));
+  const root = await mkdtemp(join(tmpdir(), 'twinscope-e2e-'));
   for (const [path, content] of Object.entries(spec)) {
     const full = join(root, path);
     await mkdir(dirname(full), { recursive: true });

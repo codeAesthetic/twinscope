@@ -8,14 +8,14 @@ import type { InputPayload } from '../shared/channels';
 /**
  * Reads the system clipboard into a comparison input (MD §34).
  *
- * This is the workflow that makes DevDiff worth keeping open: copy, ⌘⇧V, copy
+ * This is the workflow that makes TwinScope worth keeping open: copy, ⌘⇧V, copy
  * again, ⌘⇧V, done. Text and images are both handled; an image is spilled to a
  * temp file because the image engine works from a path, not a data URL.
  */
 
 /** Clipboard images land here so the engine host can read them by path. */
 async function spillImage(png: Buffer): Promise<string> {
-  const dir = await mkdtemp(join(app.getPath('temp') || tmpdir(), 'devdiff-clip-'));
+  const dir = await mkdtemp(join(app.getPath('temp') || tmpdir(), 'twinscope-clip-'));
   const path = join(dir, `clipboard-${Date.now()}.png`);
   await writeFile(path, png);
   return path;

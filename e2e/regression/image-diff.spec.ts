@@ -90,7 +90,7 @@ const AFTER = png((x, y) =>
 
 test('image diff: regions, modes, zoom and threshold re-run', async () => {
   const harness = await launchApp();
-  const root = await mkdtemp(join(tmpdir(), 'devdiff-img-'));
+  const root = await mkdtemp(join(tmpdir(), 'twinscope-img-'));
 
   try {
     const before = join(root, 'before.png');

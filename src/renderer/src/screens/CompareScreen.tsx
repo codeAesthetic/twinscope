@@ -17,7 +17,7 @@ export function CompareScreen() {
     <div className="dd-home" data-testid="screen-compare">
       <h1 className="dd-home-title">What do you want to compare?</h1>
       <p className="dd-home-sub">
-        Drop anything — DevDiff detects the type and picks the right comparison.
+        Drop anything — TwinScope detects the type and picks the right comparison.
       </p>
 
       {notice !== null && (

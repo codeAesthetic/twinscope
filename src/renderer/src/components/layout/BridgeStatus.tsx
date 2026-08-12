@@ -12,7 +12,7 @@ export function BridgeStatus() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    window.devdiff
+    window.twinscope
       .ping()
       .then(setPing)
       .catch(() => setFailed(true));

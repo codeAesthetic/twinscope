@@ -4,7 +4,7 @@ import {
   type CompareEvent,
   type CompareRequest,
   type CompareStarted,
-  type DevDiffApi,
+  type TwinScopeApi,
   type InputPayload,
   type PingResult,
 } from '../shared/channels';
@@ -16,7 +16,7 @@ import {
  * `ipcRenderer` (or anything that can reach it) to the page — every method here
  * is a deliberate, typed hole in context isolation.
  */
-const api: DevDiffApi = {
+const api: TwinScopeApi = {
   platform: process.platform,
 
   ping: (): Promise<PingResult> => ipcRenderer.invoke(IPC.ping),
@@ -73,4 +73,4 @@ const api: DevDiffApi = {
   },
 };
 
-contextBridge.exposeInMainWorld('devdiff', api);
+contextBridge.exposeInMainWorld('twinscope', api);

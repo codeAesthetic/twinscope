@@ -88,6 +88,6 @@ jobs:
 
       - uses: actions/upload-artifact@v5
         with:
-          name: devdiff-macos
+          name: twinscope-macos
           path: release/*.dmg
           if-no-files-found: error

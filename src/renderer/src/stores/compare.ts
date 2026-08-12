@@ -16,7 +16,7 @@ import type {
  * State for the current comparison: the two inputs, the running job, and its
  * result or failure.
  *
- * One job at a time by design — DevDiff compares two things, and a second
+ * One job at a time by design — TwinScope compares two things, and a second
  * request supersedes the first (MD §11). Batch comparison is explicitly out of
  * MVP scope.
  */
@@ -133,7 +133,7 @@ async function remember(state: CompareState, engineId: string, summary: Summary)
   if (a === null || b === null || parent !== null) return;
 
   try {
-    await window.devdiff.history.record({ a, b, engineId, options, summary });
+    await window.twinscope.history.record({ a, b, engineId, options, summary });
     await useHistoryStore.getState().refresh();
   } catch (cause) {
     console.warn('[history] could not record this comparison:', cause);
@@ -192,7 +192,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     if (row.a.path !== undefined) requests.push({ side: 'A', path: row.a.path });
     if (row.b.path !== undefined) requests.push({ side: 'B', path: row.b.path });
 
-    const resolved = await window.devdiff.input.resolve(requests);
+    const resolved = await window.twinscope.input.resolve(requests);
     const a = row.a.path === undefined ? null : (resolved.shift() ?? null);
     const b = row.b.path === undefined ? null : (resolved.shift() ?? null);
 
@@ -288,7 +288,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
         ? await startImageJob(request.a, request.b, request.options ?? {}, (event) =>
             get().applyEvent(event),
           )
-        : await window.devdiff.compare.start(request);
+        : await window.twinscope.compare.start(request);
       set({ jobId: started.jobId, engineLabel: started.engineLabel });
       return started.jobId;
     } catch (cause) {
@@ -302,7 +302,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     const { jobId } = get();
     if (jobId === null) return;
     cancelImageJob(jobId);
-    await window.devdiff.compare.cancel(jobId);
+    await window.twinscope.compare.cancel(jobId);
   },
 
   applyEvent: (event) => {

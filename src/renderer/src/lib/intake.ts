@@ -32,9 +32,9 @@ export function useIntake(): {
       if (files.length > 0) {
         // Only the first file is used: a zone holds one input, and silently
         // picking one of several would be worse than ignoring the rest.
-        const path = window.devdiff.input.pathForFile(files[0]!);
+        const path = window.twinscope.input.pathForFile(files[0]!);
         if (path.length > 0) {
-          setInput(side, await window.devdiff.input.read(side, path));
+          setInput(side, await window.twinscope.input.read(side, path));
           return;
         }
       }
@@ -58,7 +58,7 @@ export function useIntake(): {
     async (side?: 'A' | 'B') => {
       const { a, b } = useCompareStore.getState();
       const target = side ?? nextEmptySide(a, b);
-      const payload = await window.devdiff.clipboard.read(target);
+      const payload = await window.twinscope.clipboard.read(target);
       if (payload !== null) setInput(target, payload);
     },
     [setInput],

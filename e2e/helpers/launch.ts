@@ -70,7 +70,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<Harness> {
   // lock makes the second launch in a run quit immediately, and runs would
   // leak settings into each other.
   const ownsProfile = options.userDataDir === undefined;
-  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), 'devdiff-e2e-'));
+  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), 'twinscope-e2e-'));
 
   const app = await electron.launch({
     args: [entry, `--user-data-dir=${userDataDir}`],

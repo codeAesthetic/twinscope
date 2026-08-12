@@ -84,7 +84,7 @@ test('job lifecycle: progress, completion, cancellation, crash recovery', async 
 
     // Killed from the main process, so the renderer never gets this power.
     const killed = await harness.app.evaluate(() => {
-      const kill = (globalThis as Record<string, unknown>)['__devdiffKillEngineHost'];
+      const kill = (globalThis as Record<string, unknown>)['__twinscopeKillEngineHost'];
       return typeof kill === 'function' ? (kill as () => boolean)() : false;
     });
     expect(killed, 'test seam should exist under NODE_ENV=test').toBe(true);

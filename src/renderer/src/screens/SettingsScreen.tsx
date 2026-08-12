@@ -11,7 +11,7 @@ import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
  *
  * The comparison defaults are real: they persist to main and seed every new
  * comparison (see `stores/settings.ts`). The two privacy switches are
- * deliberately fixed — DevDiff has no telemetry to turn on, and history stores
+ * deliberately fixed — TwinScope has no telemetry to turn on, and history stores
  * no file contents to opt into. They are shown as facts, not as controls that
  * pretend to do something.
  */
@@ -90,7 +90,7 @@ export function SettingsScreen() {
 
       <h2>Privacy</h2>
       <div className="dd-card">
-        <Row title="Telemetry" desc="There is none. DevDiff makes no network calls at all.">
+        <Row title="Telemetry" desc="There is none. TwinScope makes no network calls at all.">
           <Switch checked={false} onChange={() => undefined} label="Telemetry" disabled />
         </Row>
         <Row

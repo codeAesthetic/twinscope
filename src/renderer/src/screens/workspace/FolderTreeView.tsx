@@ -100,8 +100,8 @@ export default function FolderTreeView({ result }: EngineViewProps) {
     setDrillError(null);
     try {
       const [a, b] = await Promise.all([
-        window.devdiff.input.read('A', `${data.roots.before}/${row.path}`),
-        window.devdiff.input.read('B', `${data.roots.after}/${row.path}`),
+        window.twinscope.input.read('A', `${data.roots.before}/${row.path}`),
+        window.twinscope.input.read('B', `${data.roots.after}/${row.path}`),
       ]);
       await drillInto(a, b);
     } catch (cause) {

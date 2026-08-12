@@ -13,7 +13,7 @@ const FORMATS: Array<{ value: Format; label: string; detail: string }> = [
   { value: 'patch', label: 'Unified patch', detail: 'Copy to clipboard' },
 ];
 
-const LAST_FORMAT_KEY = 'devdiff.lastExportFormat';
+const LAST_FORMAT_KEY = 'twinscope.lastExportFormat';
 
 /**
  * Export (MD §38/§39).
@@ -55,14 +55,14 @@ export function ExportMenu() {
       // a review comment is the whole use case.
       if (format === 'patch') {
         const { renderUnifiedPatch } = await import('../../../../shared/report/markdown');
-        await window.devdiff.clipboard.write(
+        await window.twinscope.clipboard.write(
           renderUnifiedPatch(payload as Parameters<typeof renderUnifiedPatch>[0]),
         );
         setToast({ message: 'Patch copied to clipboard', path: null });
         return;
       }
 
-      const saved = await window.devdiff.report.save(format, payload);
+      const saved = await window.twinscope.report.save(format, payload);
       if (saved.path !== null) setToast({ message: 'Report saved', path: saved.path });
     } catch (cause) {
       setToast({
@@ -125,7 +125,7 @@ export function ExportMenu() {
                 variant="ghost"
                 size="sm"
                 data-testid="reveal-report"
-                onClick={() => void window.devdiff.report.reveal(toast.path as string)}
+                onClick={() => void window.twinscope.report.reveal(toast.path as string)}
               >
                 Reveal
               </Button>
