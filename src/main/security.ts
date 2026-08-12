@@ -19,7 +19,7 @@ function contentSecurityPolicy(): string {
   const common = [
     "default-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    'img-src \'self\' data: blob:',
+    "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "object-src 'none'",
     "base-uri 'none'",
@@ -28,9 +28,11 @@ function contentSecurityPolicy(): string {
   ];
 
   return isDev
-    ? [...common, "script-src 'self' 'unsafe-inline'", "connect-src 'self' ws: http://localhost:*"].join(
-        '; ',
-      )
+    ? [
+        ...common,
+        "script-src 'self' 'unsafe-inline'",
+        "connect-src 'self' ws: http://localhost:*",
+      ].join('; ')
     : [...common, "script-src 'self'", "connect-src 'self'"].join('; ');
 }
 

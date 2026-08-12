@@ -1,0 +1,7 @@
+node_modules/
+out/
+dist/
+package-lock.json
+e2e/.artifacts/
+test-results/
+reference/

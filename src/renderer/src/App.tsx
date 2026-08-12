@@ -19,7 +19,10 @@ export function App() {
   }, []);
 
   return (
-    <main style={{ height: '100%', display: 'grid', placeItems: 'center' }} data-testid="boot-screen">
+    <main
+      style={{ height: '100%', display: 'grid', placeItems: 'center' }}
+      data-testid="boot-screen"
+    >
       <div style={{ textAlign: 'center' }}>
         <div
           style={{
@@ -41,12 +44,17 @@ export function App() {
           />
         </div>
 
-        <h1 style={{ fontSize: 20, fontWeight: 650, letterSpacing: '-0.02em', margin: 0 }}>DevDiff</h1>
+        <h1 style={{ fontSize: 20, fontWeight: 650, letterSpacing: '-0.02em', margin: 0 }}>
+          DevDiff
+        </h1>
         <p style={{ color: 'var(--tx-2)', margin: '6px 0 0' }}>
           Compare anything. Understand what changed.
         </p>
 
-        <p data-testid="bridge-status" style={{ color: 'var(--tx-3)', marginTop: 22, fontSize: 11.5 }}>
+        <p
+          data-testid="bridge-status"
+          style={{ color: 'var(--tx-3)', marginTop: 22, fontSize: 11.5 }}
+        >
           {error !== null
             ? `bridge error: ${error}`
             : ping
