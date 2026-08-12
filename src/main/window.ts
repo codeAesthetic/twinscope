@@ -88,7 +88,13 @@ export function createMainWindow(): BrowserWindow {
   const devServerUrl = process.env['ELECTRON_RENDERER_URL'];
   if (devServerUrl && !app.isPackaged) {
     void window.loadURL(devServerUrl);
-    window.webContents.openDevTools({ mode: 'detach' });
+    // Devtools are opt-in. Opening them on every `npm run dev` boot takes half
+    // the screen and the focus, for a session that usually does not want them;
+    // ⌥⌘I opens them when it does, and TWINSCOPE_DEVTOOLS=1 restores the old
+    // behaviour for a session that wants them from the first paint.
+    if (process.env['TWINSCOPE_DEVTOOLS'] === '1') {
+      window.webContents.openDevTools({ mode: 'detach' });
+    }
   } else {
     void window.loadFile(join(__dirname, '../renderer/index.html'));
   }
