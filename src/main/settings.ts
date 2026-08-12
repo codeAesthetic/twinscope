@@ -4,8 +4,8 @@ import { join } from 'node:path';
 
 /**
  * Small, boot-critical preferences in a plain JSON file. Comparison history
- * moves to SQLite at MVP-8; this file stays tiny so startup never waits on a
- * database.
+ * lives in SQLite (`history.ts`); this file stays tiny so startup never waits on
+ * a database — the window has to size itself before anything else happens.
  *
  * Never store file *contents* here — window geometry and preferences only.
  */
@@ -18,12 +18,31 @@ export interface WindowState {
   maximized: boolean;
 }
 
+export type ThemePreference = 'system' | 'dark' | 'light';
+
+export interface Preferences {
+  theme: ThemePreference;
+  /**
+   * Per-engine option defaults, seeded into every new comparison. Keyed by
+   * engine id so `{ text: { ignoreWhitespace: false } }` only affects text.
+   */
+  engineDefaults: Record<string, Record<string, unknown>>;
+  checkUpdates: boolean;
+}
+
 interface Settings {
   version: 1;
   window?: WindowState;
+  preferences: Preferences;
 }
 
-const DEFAULTS: Settings = { version: 1 };
+const DEFAULT_PREFERENCES: Preferences = {
+  theme: 'dark',
+  engineDefaults: {},
+  checkUpdates: true,
+};
+
+const DEFAULTS: Settings = { version: 1, preferences: DEFAULT_PREFERENCES };
 
 let cache: Settings | null = null;
 
@@ -48,6 +67,23 @@ function parseWindowState(value: unknown): WindowState | undefined {
   };
 }
 
+/** Same principle: unknown or malformed preferences fall back, never throw. */
+function parsePreferences(value: unknown): Preferences {
+  if (typeof value !== 'object' || value === null) return { ...DEFAULT_PREFERENCES };
+  const candidate = value as Record<string, unknown>;
+  const theme = candidate['theme'];
+  const engineDefaults = candidate['engineDefaults'];
+
+  return {
+    theme: theme === 'dark' || theme === 'light' || theme === 'system' ? theme : 'dark',
+    engineDefaults:
+      typeof engineDefaults === 'object' && engineDefaults !== null
+        ? (engineDefaults as Record<string, Record<string, unknown>>)
+        : {},
+    checkUpdates: candidate['checkUpdates'] !== false,
+  };
+}
+
 export function readSettings(): Settings {
   if (cache) return cache;
 
@@ -55,20 +91,40 @@ export function readSettings(): Settings {
     const raw: unknown = JSON.parse(readFileSync(settingsPath(), 'utf8'));
     const record = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {};
     const window = parseWindowState(record['window']);
-    cache = { version: 1, ...(window ? { window } : {}) };
+    cache = {
+      version: 1,
+      ...(window ? { window } : {}),
+      preferences: parsePreferences(record['preferences']),
+    };
   } catch {
-    cache = { ...DEFAULTS };
+    cache = { ...DEFAULTS, preferences: { ...DEFAULT_PREFERENCES } };
   }
 
   return cache;
 }
 
-export function saveWindowState(state: WindowState): void {
-  cache = { ...readSettings(), window: state };
+function persist(): void {
   try {
     writeFileSync(settingsPath(), JSON.stringify(cache, null, 2), 'utf8');
   } catch (error) {
     // A failed preference write must never take the app down.
     console.error('[settings] failed to persist:', error);
   }
+}
+
+export function saveWindowState(state: WindowState): void {
+  cache = { ...readSettings(), window: state };
+  persist();
+}
+
+export function readPreferences(): Preferences {
+  return readSettings().preferences;
+}
+
+/** Shallow merge, so a caller can save one preference without reading them all. */
+export function savePreferences(patch: Partial<Preferences>): Preferences {
+  const current = readSettings();
+  cache = { ...current, preferences: { ...current.preferences, ...patch } };
+  persist();
+  return cache.preferences;
 }

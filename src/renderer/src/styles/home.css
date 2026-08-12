@@ -299,3 +299,27 @@
   text-align: right;
   flex: 0 0 auto;
 }
+
+/* Reopening a comparison whose input has moved (MVP-8). */
+.dd-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 760px;
+  margin: 0 auto 14px;
+  padding: 8px 10px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--mod) 35%, var(--line-2));
+  background: var(--mod-bg);
+  border-radius: var(--r);
+  color: var(--tx-2);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+/* Empty states for the recent list and history (MVP-8). */
+.dd-empty {
+  margin: 0;
+  padding: 18px 4px;
+  color: var(--tx-3);
+  font-size: 12.5px;
+}

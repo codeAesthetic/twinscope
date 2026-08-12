@@ -29,6 +29,7 @@ const api: DevDiffApi = {
   input: {
     read: (side, path): Promise<InputPayload> => ipcRenderer.invoke(IPC.readInput, { side, path }),
     bytes: (path: string): Promise<Uint8Array> => ipcRenderer.invoke(IPC.readBytes, path),
+    resolve: (requests) => ipcRenderer.invoke(IPC.resolveInputs, requests),
     // Synchronous and local: it only maps a File the user already dropped onto
     // this window to its path. No IPC, no filesystem access.
     pathForFile: (file: File): string => webUtils.getPathForFile(file),
@@ -37,6 +38,20 @@ const api: DevDiffApi = {
   clipboard: {
     read: (side): Promise<InputPayload | null> => ipcRenderer.invoke(IPC.readClipboard, side),
     write: (text: string): Promise<void> => ipcRenderer.invoke(IPC.writeClipboard, text),
+  },
+
+  history: {
+    list: (options) => ipcRenderer.invoke(IPC.historyList, options),
+    record: (entry) => ipcRenderer.invoke(IPC.historyRecord, entry),
+    open: (id: number) => ipcRenderer.invoke(IPC.historyOpen, id),
+    star: (id: number, starred: boolean) => ipcRenderer.invoke(IPC.historyStar, id, starred),
+    remove: (id: number) => ipcRenderer.invoke(IPC.historyRemove, id),
+    clear: () => ipcRenderer.invoke(IPC.historyClear),
+  },
+
+  settings: {
+    read: () => ipcRenderer.invoke(IPC.settingsRead),
+    write: (patch) => ipcRenderer.invoke(IPC.settingsWrite, patch),
   },
 
   compare: {

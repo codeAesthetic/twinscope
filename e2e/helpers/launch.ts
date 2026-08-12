@@ -41,13 +41,22 @@ export interface Harness {
   close(): Promise<void>;
 }
 
+export interface LaunchOptions {
+  /**
+   * Reuse a specific profile directory instead of a throwaway one. Pass the same
+   * path to two launches to test what survives a restart (MVP-8); the caller
+   * owns cleanup in that case.
+   */
+  userDataDir?: string;
+}
+
 /**
  * Boots the app (or the fixture) and wires up console/error capture.
  *
  * Always close it in a `finally` — a leaked Electron process will block the
  * next run.
  */
-export async function launchApp(): Promise<Harness> {
+export async function launchApp(options: LaunchOptions = {}): Promise<Harness> {
   const { entry, target } = resolveTarget();
 
   if (target === 'fixture') {
@@ -60,7 +69,8 @@ export async function launchApp(): Promise<Harness> {
   // A private user-data dir per launch. Without it the app's single-instance
   // lock makes the second launch in a run quit immediately, and runs would
   // leak settings into each other.
-  const userDataDir = mkdtempSync(join(tmpdir(), 'devdiff-e2e-'));
+  const ownsProfile = options.userDataDir === undefined;
+  const userDataDir = options.userDataDir ?? mkdtempSync(join(tmpdir(), 'devdiff-e2e-'));
 
   const app = await electron.launch({
     args: [entry, `--user-data-dir=${userDataDir}`],
@@ -128,7 +138,9 @@ export async function launchApp(): Promise<Harness> {
     },
     async close() {
       await app.close();
-      rmSync(userDataDir, { recursive: true, force: true });
+      // A caller-supplied profile is the caller's to delete — it is the whole
+      // point of passing one in.
+      if (ownsProfile) rmSync(userDataDir, { recursive: true, force: true });
     },
   };
 }

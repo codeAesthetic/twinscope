@@ -2,13 +2,20 @@ import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
 import { readClipboard, writeClipboard } from './clipboard';
 import { readBytes, readInput } from './input';
+import { clear, get, list, record, remove, setStarred, touch } from './history';
+import { readPreferences, savePreferences } from './settings';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
 import { z } from 'zod';
 import {
   CompareRequestSchema,
+  HistoryIdSchema,
+  HistoryListSchema,
+  HistoryRecordSchema,
   JobIdSchema,
+  PreferencesPatchSchema,
   ReadBytesSchema,
   ReadInputSchema,
+  ResolveInputsSchema,
   SideSchema,
 } from '../shared/schemas';
 
@@ -67,6 +74,16 @@ export function registerIpcHandlers(): void {
     return readInput(side, path);
   });
 
+  ipcMain.handle(
+    IPC.resolveInputs,
+    async (_event, payload: unknown): Promise<Array<InputPayload | null>> => {
+      const requests = ResolveInputsSchema.parse(payload);
+      // A missing file is the answer, not a failure: reopening a stored
+      // comparison months later finds one side gone all the time.
+      return Promise.all(requests.map(({ side, path }) => readInput(side, path).catch(() => null)));
+    },
+  );
+
   ipcMain.handle(IPC.readBytes, async (_event, rawPath: unknown): Promise<Uint8Array> => {
     return readBytes(ReadBytesSchema.parse(rawPath));
   });
@@ -88,5 +105,39 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.compareCancel, (_event, rawJobId: unknown): void => {
     cancelComparison(JobIdSchema.parse(rawJobId));
+  });
+
+  // --- history (MD §36). `record` strips file contents inside history.ts, so a
+  // compromised renderer cannot persuade the app to persist them.
+  ipcMain.handle(IPC.historyList, (_event, payload: unknown) => {
+    return list(HistoryListSchema.parse(payload) ?? {});
+  });
+
+  ipcMain.handle(IPC.historyRecord, (_event, payload: unknown) => {
+    return record(HistoryRecordSchema.parse(payload) as Parameters<typeof record>[0]);
+  });
+
+  ipcMain.handle(IPC.historyOpen, (_event, rawId: unknown) => {
+    const id = HistoryIdSchema.parse(rawId);
+    const row = get(id);
+    if (row !== null) touch(id);
+    return row;
+  });
+
+  ipcMain.handle(IPC.historyStar, (_event, rawId: unknown, rawStarred: unknown): void => {
+    setStarred(HistoryIdSchema.parse(rawId), z.boolean().parse(rawStarred));
+  });
+
+  ipcMain.handle(IPC.historyRemove, (_event, rawId: unknown): void => {
+    remove(HistoryIdSchema.parse(rawId));
+  });
+
+  ipcMain.handle(IPC.historyClear, (): void => clear());
+
+  // --- preferences
+  ipcMain.handle(IPC.settingsRead, () => readPreferences());
+
+  ipcMain.handle(IPC.settingsWrite, (_event, payload: unknown) => {
+    return savePreferences(PreferencesPatchSchema.parse(payload));
   });
 }

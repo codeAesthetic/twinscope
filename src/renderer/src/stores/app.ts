@@ -8,7 +8,14 @@ export type View = 'compare' | 'workspace' | 'history' | 'projects' | 'settings'
 
 interface AppState {
   view: View;
+  /**
+   * A one-line message pinned to the Compare screen — used when reopening a
+   * comparison whose input has since moved or been deleted. It belongs to the
+   * app rather than to the compare store because it outlives the failed run.
+   */
+  notice: string | null;
   setView: (next: View) => void;
+  setNotice: (message: string | null) => void;
 }
 
 /**
@@ -17,5 +24,7 @@ interface AppState {
  */
 export const useAppStore = create<AppState>((set) => ({
   view: 'compare',
+  notice: null,
   setView: (next) => set({ view: next }),
+  setNotice: (message) => set({ notice: message }),
 }));

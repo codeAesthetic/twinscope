@@ -52,6 +52,37 @@ export const CompareRequestSchema = z.object({
 
 export const JobIdSchema = z.string().uuid();
 
+export const SummarySchema = z.object({
+  added: z.number().int().nonnegative(),
+  removed: z.number().int().nonnegative(),
+  modified: z.number().int().nonnegative(),
+  extra: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
+  suppressed: z.number().int().nonnegative().optional(),
+});
+
+export const HistoryRecordSchema = z.object({
+  a: InputPayloadSchema,
+  b: InputPayloadSchema,
+  engineId: z.string().regex(/^[a-z][a-z0-9-]{0,31}$/),
+  options: z.record(z.string(), z.unknown()),
+  summary: SummarySchema,
+});
+
+export const HistoryListSchema = z
+  .object({
+    limit: z.number().int().positive().max(500).optional(),
+    starredOnly: z.boolean().optional(),
+  })
+  .optional();
+
+export const HistoryIdSchema = z.number().int().positive();
+
+export const PreferencesPatchSchema = z.object({
+  theme: z.enum(['system', 'dark', 'light']).optional(),
+  engineDefaults: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
+  checkUpdates: z.boolean().optional(),
+});
+
 /** Bytes are only ever read for images; the cap is a denial-of-service guard. */
 export const ReadBytesSchema = z.string().min(1).max(4096);
 
@@ -60,3 +91,5 @@ export const ReadInputSchema = z.object({
   side: SideSchema,
   path: z.string().min(1).max(4096),
 });
+
+export const ResolveInputsSchema = z.array(ReadInputSchema).max(16);

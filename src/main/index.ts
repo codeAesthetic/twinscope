@@ -1,5 +1,6 @@
 import { BrowserWindow, app } from 'electron';
 import { killWorkerForTesting, shutdownEngineHost } from './engine-host';
+import { closeHistory } from './history';
 import { registerIpcHandlers } from './ipc';
 import { applySecurityPolicy } from './security';
 import { createMainWindow } from './window';
@@ -51,5 +52,8 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   // A busy worker must not outlive the app.
-  app.on('before-quit', shutdownEngineHost);
+  app.on('before-quit', () => {
+    shutdownEngineHost();
+    closeHistory();
+  });
 }

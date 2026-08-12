@@ -27,12 +27,30 @@ function readPreference(): ThemePreference {
 }
 
 /**
- * Dark-mode-first (MD §33): the default is dark, not system. Preference is
- * persisted locally; main-process settings take over in MVP-8.
+ * Dark-mode-first (MD §33): the default is dark, not system.
+ *
+ * The preference is written twice on purpose. `localStorage` is read
+ * synchronously at first paint, so the window never flashes the wrong theme;
+ * main's `settings.json` is the durable copy and wins once it arrives, since it
+ * is the one that survives a cleared web profile.
  */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [preference, setPreferenceState] = useState<ThemePreference>(readPreference);
   const [systemValue, setSystemValue] = useState<ResolvedTheme>(systemTheme);
+
+  // Main's copy is authoritative, but arrives a tick later than first paint.
+  useEffect(() => {
+    let cancelled = false;
+    void window.devdiff.settings
+      .read()
+      .then((preferences) => {
+        if (!cancelled) setPreferenceState(preferences.theme);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: light)');
@@ -50,6 +68,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
     localStorage.setItem(STORAGE_KEY, next);
+    void window.devdiff.settings.write({ theme: next }).catch(() => undefined);
   }, []);
 
   const toggle = useCallback(() => {

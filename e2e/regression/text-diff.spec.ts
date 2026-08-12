@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { pasteInput } from '../helpers/seed';
 
 /**
  * REGRESSION — MVP-4: the text/code engine and its view.
@@ -14,14 +15,9 @@ const AFTER = `header beta\n${BODY}`;
 test('text diff: pairing, word marks, folding, view modes', async () => {
   const harness = await launchApp();
 
-  const paste = async (text: string): Promise<void> => {
-    await harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
-    await harness.page.keyboard.press('Meta+Shift+V');
-  };
-
   try {
-    await paste(BEFORE);
-    await paste(AFTER);
+    await pasteInput(harness, BEFORE, 'before');
+    await pasteInput(harness, AFTER, 'after');
 
     // Plain prose, so detection lands on the text engine rather than JSON.
     await expect(harness.page.getByTestId('detected-bar')).toContainText('Text diff');

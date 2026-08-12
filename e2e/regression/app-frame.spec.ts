@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { seedComparison } from '../helpers/seed';
 
 /**
  * REGRESSION — HOME-1 / HOME-4: the app frame and screen shells.
@@ -47,9 +48,18 @@ test('app frame: chrome, navigation and themes', async () => {
     await expect(harness.page.getByTestId('nav-projects')).toContainText('soon');
 
     // --- history: buckets stick, star states differ ---
+    // Rows are live since MVP-8, so the spec makes its own.
+    await seedComparison(harness, 'alpha\nshared', 'beta\nshared');
+    await seedComparison(harness, 'gamma\nshared', 'delta\nshared');
+
     await harness.page.getByTestId('nav-history').click();
-    await expect(harness.page.locator('.dd-hgroup')).toHaveCount(3);
-    await expect(harness.page.locator('.dd-hitem')).toHaveCount(8);
+    await expect(harness.page.locator('.dd-hgroup')).toHaveCount(1);
+    await expect(harness.page.locator('.dd-hitem')).toHaveCount(2);
+
+    // One starred, one not, so both states are on screen to compare.
+    await harness.page.locator('[data-testid^="star-"]').first().click();
+    await expect(harness.page.locator('.dd-hitem-star[data-starred="true"]')).toHaveCount(1);
+
     const history = await harness.page.evaluate(() => ({
       sticky: getComputedStyle(document.querySelector('.dd-hgroup')!).position,
       starOn: getComputedStyle(document.querySelector('.dd-hitem-star[data-starred="true"]')!)

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { seedComparison } from '../helpers/seed';
 
 /**
  * REGRESSION — HOME-2 / HOME-3: the Compare screen's layout.
@@ -59,8 +60,13 @@ test('compare screen: hero, drop zones, quick cards and recent list', async () =
 
     // --- recent list ---
     const recent = harness.page.getByTestId('recent-list');
-    await expect(recent.locator('.dd-ritem')).toHaveCount(5);
-    await expect(harness.page.getByTestId('recent-r1')).toContainText('users-v2.4.json');
+    // Empty until something has been compared — and it says so rather than
+    // rendering an empty box.
+    await expect(harness.page.getByTestId('recent-empty')).toBeVisible();
+
+    await seedComparison(harness, 'alpha\nshared', 'beta\nshared');
+    await expect(recent.locator('.dd-ritem')).toHaveCount(1);
+    await expect(recent).toContainText('clipboard-a.txt ↔ clipboard-b.txt');
 
     // Name and path must stack — spans are inline, and this collapsed once.
     const rows = await harness.page.evaluate(() => {
@@ -88,7 +94,9 @@ test('compare screen: hero, drop zones, quick cards and recent list', async () =
         ).color,
       };
     });
-    expect(chips.count).toBe(10);
+    // ＋1 added and －1 removed (the two lines share no words, so they do not
+    // pair), plus the text engine's own line-count extra.
+    expect(chips.count).toBe(3);
     expect(chips.allVariants).toBe(true);
     expect(chips.anyInline).toBe(false);
     expect(chips.addColor).toBe('rgb(63, 185, 80)'); // the --add token

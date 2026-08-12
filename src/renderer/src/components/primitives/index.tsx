@@ -134,10 +134,13 @@ export function Switch({
   checked,
   onChange,
   label,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
+  /** For a setting that is a statement of fact rather than a choice. */
+  disabled?: boolean;
 }) {
   return (
     <button
@@ -146,6 +149,7 @@ export function Switch({
       role="switch"
       aria-checked={checked}
       aria-label={label}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
     />
   );

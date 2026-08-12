@@ -1,25 +1,36 @@
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { Kbd, Seg, Switch } from '../components/primitives';
 import { SHORTCUTS } from '../lib/mockData';
+import { useSettingsStore } from '../stores/settings';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
 
 /**
  * Settings, with progressive disclosure (MD §33) — four short groups rather
  * than every option at once.
  *
- * Static for HOME-4 except the theme control, which is genuinely live: the
- * provider already exists, and a theme picker that does nothing is a worse lie
- * than an obviously unfinished screen. The rest lands with its feature.
+ * The comparison defaults are real: they persist to main and seed every new
+ * comparison (see `stores/settings.ts`). The two privacy switches are
+ * deliberately fixed — DevDiff has no telemetry to turn on, and history stores
+ * no file contents to opt into. They are shown as facts, not as controls that
+ * pretend to do something.
  */
 export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
-  const [ignoreWhitespace, setIgnoreWhitespace] = useState(true);
-  const [collapseUnchanged, setCollapseUnchanged] = useState(true);
-  const [ignoreKeyOrder, setIgnoreKeyOrder] = useState(true);
-  const [telemetry, setTelemetry] = useState(false);
-  const [storeContents, setStoreContents] = useState(false);
-  const [checkUpdates, setCheckUpdates] = useState(true);
+  const preferences = useSettingsStore((state) => state.preferences);
+  const load = useSettingsStore((state) => state.load);
+  const update = useSettingsStore((state) => state.update);
+  const setEngineDefault = useSettingsStore((state) => state.setEngineDefault);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const textDefaults = preferences.engineDefaults['text'] ?? {};
+  const jsonDefaults = preferences.engineDefaults['json'] ?? {};
+  const ignoreWhitespace = textDefaults['ignoreWhitespace'] !== false;
+  const collapseUnchanged = textDefaults['collapseUnchanged'] !== false;
+  const ignoreKeyOrder = jsonDefaults['ignoreKeyOrder'] !== false;
 
   return (
     <div className="dd-settings" data-testid="screen-settings">
@@ -54,7 +65,7 @@ export function SettingsScreen() {
         <Row title="Ignore whitespace" desc="Applies to the text and code engines.">
           <Switch
             checked={ignoreWhitespace}
-            onChange={setIgnoreWhitespace}
+            onChange={(next) => void setEngineDefault('text', { ignoreWhitespace: next })}
             label="Ignore whitespace"
           />
         </Row>
@@ -64,32 +75,41 @@ export function SettingsScreen() {
         >
           <Switch
             checked={collapseUnchanged}
-            onChange={setCollapseUnchanged}
+            onChange={(next) => void setEngineDefault('text', { collapseUnchanged: next })}
             label="Collapse unchanged sections"
           />
         </Row>
         <Row title="Ignore JSON key order" desc="Recommended for API responses.">
-          <Switch checked={ignoreKeyOrder} onChange={setIgnoreKeyOrder} label="Ignore key order" />
+          <Switch
+            checked={ignoreKeyOrder}
+            onChange={(next) => void setEngineDefault('json', { ignoreKeyOrder: next })}
+            label="Ignore key order"
+          />
         </Row>
       </div>
 
       <h2>Privacy</h2>
       <div className="dd-card">
-        <Row title="Telemetry" desc="Off by default and opt-in only. Nothing leaves this machine.">
-          <Switch checked={telemetry} onChange={setTelemetry} label="Telemetry" />
+        <Row title="Telemetry" desc="There is none. DevDiff makes no network calls at all.">
+          <Switch checked={false} onChange={() => undefined} label="Telemetry" disabled />
         </Row>
         <Row
           title="Store file contents in history"
           desc="Off — history keeps paths, types and settings only."
         >
           <Switch
-            checked={storeContents}
-            onChange={setStoreContents}
+            checked={false}
+            onChange={() => undefined}
             label="Store file contents in history"
+            disabled
           />
         </Row>
         <Row title="Check for updates" desc="Signed releases, verified before install.">
-          <Switch checked={checkUpdates} onChange={setCheckUpdates} label="Check for updates" />
+          <Switch
+            checked={preferences.checkUpdates}
+            onChange={(next) => void update({ checkUpdates: next })}
+            label="Check for updates"
+          />
         </Row>
       </div>
 

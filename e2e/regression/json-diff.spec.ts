@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
+import { pasteInput } from '../helpers/seed';
 
 /**
  * REGRESSION — MVP-5: the JSON engine and its tree view.
@@ -46,14 +47,9 @@ const AFTER = JSON.stringify(
 test('json diff: tree, normalisation round-trip, search, copy path', async () => {
   const harness = await launchApp();
 
-  const paste = async (text: string): Promise<void> => {
-    await harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
-    await harness.page.keyboard.press('Meta+Shift+V');
-  };
-
   try {
-    await paste(BEFORE);
-    await paste(AFTER);
+    await pasteInput(harness, BEFORE, 'before');
+    await pasteInput(harness, AFTER, 'after');
 
     await expect(harness.page.getByTestId('detected-bar')).toContainText('Structural JSON diff');
     await harness.page.getByTestId('compare-button').click();
@@ -143,14 +139,9 @@ test('json diff: tree, normalisation round-trip, search, copy path', async () =>
 test('json diff: unparseable input offers the text engine instead', async () => {
   const harness = await launchApp();
 
-  const paste = async (text: string): Promise<void> => {
-    await harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
-    await harness.page.keyboard.press('Meta+Shift+V');
-  };
-
   try {
-    await paste('{ "a": 1 }');
-    await paste('{ "a": 1, }');
+    await pasteInput(harness, '{ "a": 1 }', 'before');
+    await pasteInput(harness, '{ "a": 1, }', 'after');
 
     // The trailing comma means detection sees plain text, so this is the
     // "I know these are JSON" path: pick the engine by hand.

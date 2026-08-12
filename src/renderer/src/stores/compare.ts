@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { cancelImageJob, isRendererEngine, startImageJob } from '../lib/imageCompare';
+import { useAppStore } from './app';
+import { useHistoryStore } from './history';
+import { defaultsFor } from './settings';
 import { selectEngine } from '../../../engines/registry';
-import type { CompareEvent, CompareRequest, InputPayload, Summary } from '../../../shared/channels';
+import type {
+  CompareEvent,
+  CompareRequest,
+  HistoryRow,
+  InputPayload,
+  Summary,
+} from '../../../shared/channels';
 
 /**
  * State for the current comparison: the two inputs, the running job, and its
@@ -74,6 +83,8 @@ interface CompareState {
   setOptions: (patch: Record<string, unknown>) => Promise<void>;
   /** Opens a nested comparison, remembering the current one. */
   drillInto: (a: InputPayload, b: InputPayload) => Promise<void>;
+  /** Re-runs a stored comparison, re-reading both inputs from disk. */
+  reopen: (row: HistoryRow) => Promise<void>;
   /** Returns to the remembered comparison without re-running it. */
   popDrill: () => void;
   swap: () => void;
@@ -109,6 +120,24 @@ function engineFor(request: CompareRequest): string {
     size: payload.size,
   });
   return selectEngine(asRef(request.a), asRef(request.b))?.meta.id ?? '';
+}
+
+/**
+ * Records a completed comparison. Deliberately fire-and-forget: a history write
+ * that fails must never turn a successful comparison into a failed one.
+ */
+async function remember(state: CompareState, engineId: string, summary: Summary): Promise<void> {
+  const { a, b, options, parent } = state;
+  // A drill-in is a step *inside* a comparison, not a comparison the user chose
+  // to run — recording it would bury the folder diff under its own files.
+  if (a === null || b === null || parent !== null) return;
+
+  try {
+    await window.devdiff.history.record({ a, b, engineId, options, summary });
+    await useHistoryStore.getState().refresh();
+  } catch (cause) {
+    console.warn('[history] could not record this comparison:', cause);
+  }
 }
 
 export const useCompareStore = create<CompareState>((set, get) => ({
@@ -158,6 +187,44 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     await get().run();
   },
 
+  reopen: async (row) => {
+    const requests: Array<{ side: 'A' | 'B'; path: string }> = [];
+    if (row.a.path !== undefined) requests.push({ side: 'A', path: row.a.path });
+    if (row.b.path !== undefined) requests.push({ side: 'B', path: row.b.path });
+
+    const resolved = await window.devdiff.input.resolve(requests);
+    const a = row.a.path === undefined ? null : (resolved.shift() ?? null);
+    const b = row.b.path === undefined ? null : (resolved.shift() ?? null);
+
+    // A comparison is only as durable as its inputs: if one has moved, load what
+    // is left and say plainly which side needs picking again (MD §36).
+    const missing = [a === null ? row.a.name : null, b === null ? row.b.name : null].filter(
+      (name) => name !== null,
+    );
+
+    set({ a, b, engineOverride: row.engineId, options: row.options, parent: null, ...IDLE });
+
+    if (missing.length > 0) {
+      useAppStore
+        .getState()
+        .setNotice(
+          `${missing.join(' and ')} could not be opened — it may have moved. Pick a replacement to compare again.`,
+        );
+      useAppStore.getState().setView('compare');
+      return;
+    }
+
+    useAppStore.getState().setNotice(null);
+    // Same as running from the Compare screen: move first, so the progress bar
+    // is what the user sees rather than a frozen list.
+    useAppStore.getState().setView('workspace');
+    try {
+      await get().run();
+    } catch {
+      // The store holds the failure; the workspace renders it.
+    }
+  },
+
   popDrill: () => {
     const { parent } = get();
     if (parent === null) return;
@@ -197,11 +264,16 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     // describe the request being made, not the reply.
     set({ ...IDLE, options, status: 'running' });
 
+    const engineId = engineOverride ?? undefined;
+    // The user's saved defaults seed the run; anything the engine view has
+    // already changed for this pair still wins.
+    const merged = { ...defaultsFor(engineId ?? engineFor({ a, b })), ...options };
+
     const request: CompareRequest = {
       a,
       b,
-      ...(engineOverride !== null ? { engineId: engineOverride } : {}),
-      ...(Object.keys(options).length > 0 ? { options } : {}),
+      ...(engineId !== undefined ? { engineId } : {}),
+      ...(Object.keys(merged).length > 0 ? { options: merged } : {}),
       ...overrides,
     };
 
@@ -252,6 +324,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
           ms: event.ms,
         },
       });
+      void remember(get(), event.engineId, event.summary);
       return;
     }
 

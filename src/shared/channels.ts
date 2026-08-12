@@ -20,11 +20,25 @@ export const IPC = {
   readInput: 'input:read',
   /** Raw bytes for a path. Only the image path needs this — see `input.bytes`. */
   readBytes: 'input:bytes',
+  /** Read several paths, tolerating ones that no longer exist. */
+  resolveInputs: 'input:resolve',
   /** Read the system clipboard as an input (MD §34). */
   readClipboard: 'clipboard:read',
   /** Copy text out. Goes through main because the renderer denies all
       permission requests, including clipboard-write. */
   writeClipboard: 'clipboard:write',
+
+  /** Comparison history (MD §36). */
+  historyList: 'history:list',
+  historyRecord: 'history:record',
+  historyOpen: 'history:open',
+  historyStar: 'history:star',
+  historyRemove: 'history:remove',
+  historyClear: 'history:clear',
+
+  /** Preferences that outlive the window. */
+  settingsRead: 'settings:read',
+  settingsWrite: 'settings:write',
 
   /** Comparison job lifecycle. */
   compareStart: 'compare:start',
@@ -105,6 +119,37 @@ export interface CompareFailed {
 
 export type CompareEvent = CompareProgress | CompareDone | CompareFailed;
 
+/** One side of a stored comparison. Contents are never persisted (Rule 2). */
+export interface StoredInput {
+  kind: string;
+  name: string;
+  path?: string;
+  size: number;
+}
+
+export interface HistoryRow {
+  id: number;
+  title: string;
+  engineId: string;
+  a: StoredInput;
+  b: StoredInput;
+  options: Record<string, unknown>;
+  summary: Summary;
+  starred: boolean;
+  /** SQLite `datetime('now')`, i.e. UTC `YYYY-MM-DD HH:MM:SS`. */
+  createdAt: string;
+  openedAt: string;
+}
+
+export type ThemePreference = 'system' | 'dark' | 'light';
+
+export interface Preferences {
+  theme: ThemePreference;
+  /** Per-engine option defaults, seeded into every new comparison. */
+  engineDefaults: Record<string, Record<string, unknown>>;
+  checkUpdates: boolean;
+}
+
 /** Cheap re-export so callers need not reach into the engines directory. */
 export type { InputRef, InputKind, Summary };
 
@@ -137,6 +182,14 @@ export interface DevDiffApi {
      */
     bytes(path: string): Promise<Uint8Array>;
     /**
+     * Reads several paths at once, returning `null` for any that no longer
+     * exist. Reopening a months-old comparison is exactly that case, and it is
+     * an expected outcome rather than an error.
+     */
+    resolve(
+      requests: Array<{ side: 'A' | 'B'; path: string }>,
+    ): Promise<Array<InputPayload | null>>;
+    /**
      * Resolves a dropped `File` to its absolute path.
      *
      * `File.path` was removed in Electron 32; `webUtils.getPathForFile` is the
@@ -149,6 +202,28 @@ export interface DevDiffApi {
     /** Null when the clipboard holds nothing usable. */
     read(side: 'A' | 'B'): Promise<InputPayload | null>;
     write(text: string): Promise<void>;
+  };
+
+  history: {
+    list(options?: { limit?: number; starredOnly?: boolean }): Promise<HistoryRow[]>;
+    /** Called after a comparison completes; main strips contents before storing. */
+    record(entry: {
+      a: InputPayload;
+      b: InputPayload;
+      engineId: string;
+      options: Record<string, unknown>;
+      summary: Summary;
+    }): Promise<HistoryRow>;
+    /** Bumps `openedAt` and returns the row, or null if it is gone. */
+    open(id: number): Promise<HistoryRow | null>;
+    star(id: number, starred: boolean): Promise<void>;
+    remove(id: number): Promise<void>;
+    clear(): Promise<void>;
+  };
+
+  settings: {
+    read(): Promise<Preferences>;
+    write(patch: Partial<Preferences>): Promise<Preferences>;
   };
 
   compare: {
