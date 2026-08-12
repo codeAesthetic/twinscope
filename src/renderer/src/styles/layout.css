@@ -356,3 +356,20 @@ html[data-theme='light'] .dd-pal {
   color: var(--tx-3);
   font-size: 11px;
 }
+
+/* Find-bar count inside the toolbar search (MVP-4's deferred ⌘F). */
+.dd-searchwrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.dd-searchcount {
+  position: absolute;
+  right: 10px;
+  font: 600 10.5px/1 var(--mono);
+  color: var(--tx-3);
+  pointer-events: none;
+  background: var(--panel-2);
+  padding: 3px 4px;
+  border-radius: 5px;
+}

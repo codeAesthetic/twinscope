@@ -145,3 +145,19 @@
   background: var(--hover);
   color: var(--tx-2);
 }
+
+/* --- search hits (⌘F) ---
+ * A hit and a changed word can be the same run of text, so the hit is drawn as
+ * an outline + tint rather than a background swap: it has to remain legible on
+ * top of .dd-word, not replace it.
+ */
+[data-hit='true'] {
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--mod) 30%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--mod) 60%, transparent);
+}
+[data-hit-current='true'] {
+  background: var(--acc);
+  color: #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 55%, transparent);
+}

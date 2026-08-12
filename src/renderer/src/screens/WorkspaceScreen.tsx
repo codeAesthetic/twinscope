@@ -252,6 +252,10 @@ export function WorkspaceScreen() {
 /**
  * The toolbar's search box. Disabled until an engine view opts in, because a
  * search field that silently does nothing is worse than one that says it can't.
+ *
+ * When the view registers matches (the text diff does; JSON and folder filter
+ * instead) the box also becomes a find bar: an `n/m` badge, ⏎ and ⇧⏎ to walk
+ * the hits, Esc to give the diff its focus back.
  */
 function WorkspaceSearch() {
   const enabled = useSearchStore((state) => state.enabled);
@@ -260,6 +264,10 @@ function WorkspaceSearch() {
   const setQuery = useSearchStore((state) => state.setQuery);
   const focusRequest = useSearchStore((state) => state.focusRequest);
   const requestFocus = useSearchStore((state) => state.requestFocus);
+  const matches = useSearchStore((state) => state.matches);
+  const currentMatch = useSearchStore((state) => state.current);
+  const nextMatch = useSearchStore((state) => state.next);
+  const previousMatch = useSearchStore((state) => state.previous);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -277,16 +285,37 @@ function WorkspaceSearch() {
     if (focusRequest > 0 && enabled) inputRef.current?.focus();
   }, [focusRequest, enabled]);
 
+  // Only a find-style view reports a total; a filtering view leaves it at 0.
+  const showCount = enabled && query.trim() !== '' && matches > 0;
+
   return (
-    <SearchInput
-      ref={inputRef}
-      placeholder={placeholder}
-      hint="⌘F"
-      disabled={!enabled}
-      value={query}
-      onChange={(event) => setQuery(event.target.value)}
-      data-testid="workspace-search"
-    />
+    <span className="dd-searchwrap">
+      <SearchInput
+        ref={inputRef}
+        placeholder={placeholder}
+        hint={showCount ? undefined : '⌘F'}
+        disabled={!enabled}
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            if (event.shiftKey) previousMatch();
+            else nextMatch();
+          } else if (event.key === 'Escape') {
+            event.preventDefault();
+            setQuery('');
+            inputRef.current?.blur();
+          }
+        }}
+        data-testid="workspace-search"
+      />
+      {showCount && (
+        <span className="dd-searchcount" data-testid="search-count">
+          {currentMatch === -1 ? '–' : currentMatch + 1} / {matches}
+        </span>
+      )}
+    </span>
   );
 }
 

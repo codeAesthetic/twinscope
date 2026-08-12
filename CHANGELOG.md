@@ -8,6 +8,13 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+### Added
+
+- **Search within a diff (`⌘F`)** for text and code comparisons: a match count,
+  `⏎` / `⇧⏎` to walk the hits, and `Esc` to clear. Matches are highlighted
+  without hiding anything — a find, not a filter. A hit inside a changed word
+  keeps both highlights.
+
 ### Fixed
 
 - **Plain `⌘V` now starts a comparison** when nothing is focused, alongside
