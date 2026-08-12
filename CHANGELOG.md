@@ -6,6 +6,26 @@ project uses [semantic versioning][semver].
 [kac]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
 
+## Unreleased
+
+### Added
+
+- **The JSON comparison opens side by side**, and switches view the way the text
+  one does: side-by-side, unified, inline, tree and raw. Every diff mode draws the
+  same structural comparison — the change count never depends on which one you are
+  looking at — so side-by-side aligns by path rather than by line, and reformatting
+  a file still changes nothing. Raw shows the two documents as they arrived, and
+  says so by disabling the filter and the change stepper.
+
+### Fixed
+
+- **⌘\ cycles the view mode.** It was declared, printed in Settings and listened
+  for by nothing — the known limit recorded in 0.1.0 below. Both the text and JSON
+  views now cycle with it, and the mode survives a normalisation toggle instead of
+  snapping back to the default.
+- **A history row's star and delete buttons are on the row**, at its right edge on
+  hover or focus, rather than stacked underneath it.
+
 ## 0.1.0 — 2026-08-13
 
 First release. Drop two things in, get a comparison that explains itself.
