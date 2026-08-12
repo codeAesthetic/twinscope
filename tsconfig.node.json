@@ -9,6 +9,7 @@
     "src/preload/**/*",
     "src/shared/**/*",
     "electron.vite.config.ts",
-    "src/engines/**/*"
+    "src/engines/**/*",
+    "src/engine-worker/**/*"
   ]
 }

@@ -5,5 +5,12 @@
     "types": ["vite/client"],
     "jsx": "react-jsx"
   },
-  "include": ["src/renderer/**/*", "src/shared/**/*"]
+  "include": ["src/renderer/**/*", "src/shared/**/*"],
+  // Two shared modules are main-side only and must stay out of this project:
+  // `schemas.ts` (zod, imported solely by main/ipc.ts) and `paths.ts` (node-only
+  // path hygiene, needed by main and the engine worker). Omitting node types
+  // here is what enforces the renderer/node boundary, so these sit outside the
+  // project rather than weaken it. The renderer gets its types from
+  // `shared/channels.ts`, which stays dependency-free for the sandboxed preload.
+  "exclude": ["src/shared/paths.ts", "src/shared/paths.test.ts", "src/shared/schemas.ts"]
 }

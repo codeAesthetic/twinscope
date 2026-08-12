@@ -1,4 +1,4 @@
-import { nodeHostFs } from './hostFs';
+import { nodeHostFs, scopedHostFs } from './hostFs';
 import { engineById, selectEngine } from '../engines/registry';
 import { EngineInputError } from '../engines/types';
 import type { EngineCtx, HostFs, InputRef } from '../engines/types';
@@ -36,12 +36,26 @@ const running = new Map<string, AbortController>();
 /** Filesystem access handed to engines, so they never import `fs` themselves. */
 const hostFs: HostFs = nodeHostFs;
 
+/**
+ * The same filesystem, confined to the two inputs of one job (plan §3.7).
+ *
+ * A comparison has no business reading anything the user did not choose, and a
+ * folder scan must not follow a symlink out of the tree it was pointed at.
+ */
+function fsForJob(message: StartMessage): HostFs {
+  const roots = [message.a.path, message.b.path].filter(
+    (path): path is string => typeof path === 'string' && path !== '',
+  );
+  // Nothing to confine to — an all-clipboard comparison never touches the disk.
+  return roots.length === 0 ? hostFs : scopedHostFs(hostFs, roots);
+}
+
 function send(event: CompareEvent): void {
   process.parentPort.postMessage(event);
 }
 
 /** Inline text is used when present; otherwise the bytes are read here. */
-async function materialize(payload: InputPayload): Promise<InputRef> {
+async function materialize(payload: InputPayload, fs: HostFs): Promise<InputRef> {
   const ref: InputRef = {
     side: payload.side,
     kind: payload.kind,
@@ -59,7 +73,7 @@ async function materialize(payload: InputPayload): Promise<InputRef> {
     ref.kind !== 'image';
 
   if (needsText) {
-    ref.text = await hostFs.readText(ref.path as string);
+    ref.text = await fs.readText(ref.path as string);
   }
 
   return ref;
@@ -70,7 +84,11 @@ async function runJob(message: StartMessage): Promise<void> {
   running.set(message.jobId, controller);
 
   try {
-    const [a, b] = await Promise.all([materialize(message.a), materialize(message.b)]);
+    const jobFs = fsForJob(message);
+    const [a, b] = await Promise.all([
+      materialize(message.a, jobFs),
+      materialize(message.b, jobFs),
+    ]);
 
     const engine = message.engineId ? engineById(message.engineId) : selectEngine(a, b);
     if (!engine) {
@@ -92,7 +110,7 @@ async function runJob(message: StartMessage): Promise<void> {
           percent: Math.max(0, Math.min(100, Math.round(percent))),
           ...(text !== undefined ? { message: text } : {}),
         }),
-      fs: hostFs,
+      fs: jobFs,
     };
 
     const options = { ...(engine.defaultOptions() as object), ...(message.options ?? {}) };

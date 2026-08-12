@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalisePath } from './paths';
 
 /**
  * Runtime validation for everything the renderer sends.
@@ -109,7 +110,31 @@ export const ReportPayloadSchema = z.object({
     .optional(),
 });
 
-export const RevealPathSchema = z.string().min(1).max(4096);
+/**
+ * Every filesystem path arriving from the renderer (plan §3.7 item 5).
+ *
+ * Normalisation happens *here*, in the schema, rather than in each handler:
+ * that way a new channel that takes a path cannot forget it, which is the whole
+ * argument for validating at the boundary. Downstream code only ever sees an
+ * absolute, NUL-free, canonical path.
+ */
+export const PathSchema = z
+  .string()
+  .min(1)
+  .max(4096)
+  .transform((raw, ctx) => {
+    try {
+      return normalisePath(raw);
+    } catch (cause) {
+      ctx.addIssue({
+        code: 'custom',
+        message: cause instanceof Error ? cause.message : 'That path cannot be opened.',
+      });
+      return z.NEVER;
+    }
+  });
+
+export const RevealPathSchema = PathSchema;
 
 export const PreferencesPatchSchema = z.object({
   theme: z.enum(['system', 'dark', 'light']).optional(),
@@ -118,12 +143,12 @@ export const PreferencesPatchSchema = z.object({
 });
 
 /** Bytes are only ever read for images; the cap is a denial-of-service guard. */
-export const ReadBytesSchema = z.string().min(1).max(4096);
+export const ReadBytesSchema = PathSchema;
 
 /** A path arriving from the renderer, before we touch the filesystem with it. */
 export const ReadInputSchema = z.object({
   side: SideSchema,
-  path: z.string().min(1).max(4096),
+  path: PathSchema,
 });
 
 export const ResolveInputsSchema = z.array(ReadInputSchema).max(16);

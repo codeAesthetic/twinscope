@@ -21,6 +21,10 @@ export default tseslint.config(
       'playwright-report/',
       'reference/',
       'coverage/',
+      // Agent tooling, including git worktrees. A worktree is a second copy of
+      // the repo with its own tsconfigs, and typescript-eslint refuses to run at
+      // all when it can see two candidate roots ("No tsconfigRootDir was set").
+      '.claude/',
     ],
   },
 
