@@ -20,6 +20,9 @@ export const IPC = {
   readInput: 'input:read',
   /** Read the system clipboard as an input (MD §34). */
   readClipboard: 'clipboard:read',
+  /** Copy text out. Goes through main because the renderer denies all
+      permission requests, including clipboard-write. */
+  writeClipboard: 'clipboard:write',
 
   /** Comparison job lifecycle. */
   compareStart: 'compare:start',
@@ -121,8 +124,6 @@ export interface DevDiffApi {
 
   input: {
     read(side: 'A' | 'B', path: string): Promise<InputPayload>;
-    /** Null when the clipboard holds nothing usable. */
-    readClipboard(side: 'A' | 'B'): Promise<InputPayload | null>;
     /**
      * Resolves a dropped `File` to its absolute path.
      *
@@ -130,6 +131,12 @@ export interface DevDiffApi {
      * replacement, and it must be called in the preload.
      */
     pathForFile(file: File): string;
+  };
+
+  clipboard: {
+    /** Null when the clipboard holds nothing usable. */
+    read(side: 'A' | 'B'): Promise<InputPayload | null>;
+    write(text: string): Promise<void>;
   };
 
   compare: {

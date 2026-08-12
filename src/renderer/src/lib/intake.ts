@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { useChangeNavStore } from '../stores/changeNav';
 import { useCompareStore } from '../stores/compare';
 import type { InputPayload } from '../../../shared/channels';
 
@@ -56,7 +57,7 @@ export function useIntake(): {
     async (side?: 'A' | 'B') => {
       const { a, b } = useCompareStore.getState();
       const target = side ?? nextEmptySide(a, b);
-      const payload = await window.devdiff.input.readClipboard(target);
+      const payload = await window.devdiff.clipboard.read(target);
       if (payload !== null) setInput(target, payload);
     },
     [setInput],
@@ -75,6 +76,8 @@ export function useIntake(): {
 export function useIntakeShortcuts(onRun: () => void): void {
   const { fromClipboard } = useIntake();
   const swap = useCompareStore((state) => state.swap);
+  const nextChange = useChangeNavStore((state) => state.next);
+  const previousChange = useChangeNavStore((state) => state.previous);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -99,6 +102,16 @@ export function useIntakeShortcuts(onRun: () => void): void {
         return;
       }
 
+      // ⌥↓ / ⌥↑ — step through changes (MD §11).
+      if (event.altKey && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        if (useChangeNavStore.getState().count > 0) {
+          event.preventDefault();
+          if (event.key === 'ArrowDown') nextChange();
+          else previousChange();
+          return;
+        }
+      }
+
       // Enter — run, unless the user is typing in a field.
       if (event.key === 'Enter' && !typing && !meta) {
         const { a, b, status } = useCompareStore.getState();
@@ -111,5 +124,5 @@ export function useIntakeShortcuts(onRun: () => void): void {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [fromClipboard, swap, onRun]);
+  }, [fromClipboard, swap, onRun, nextChange, previousChange]);
 }

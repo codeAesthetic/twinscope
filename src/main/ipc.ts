@@ -1,8 +1,9 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
-import { readClipboard } from './clipboard';
+import { readClipboard, writeClipboard } from './clipboard';
 import { readInput } from './input';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
+import { z } from 'zod';
 import { CompareRequestSchema, JobIdSchema, ReadInputSchema, SideSchema } from '../shared/schemas';
 
 /**
@@ -62,6 +63,12 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.readClipboard, async (_event, rawSide: unknown) => {
     return readClipboard(SideSchema.parse(rawSide));
+  });
+
+  ipcMain.handle(IPC.writeClipboard, (_event, rawText: unknown): void => {
+    // Bounded: this exists for "copy details" and copied diff lines, not as a
+    // channel for a renderer to push arbitrary volume into the system.
+    writeClipboard(z.string().max(2_000_000).parse(rawText));
   });
 
   ipcMain.handle(IPC.compareStart, (event, payload: unknown) => {

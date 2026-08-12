@@ -28,11 +28,14 @@ const api: DevDiffApi = {
 
   input: {
     read: (side, path): Promise<InputPayload> => ipcRenderer.invoke(IPC.readInput, { side, path }),
-    readClipboard: (side): Promise<InputPayload | null> =>
-      ipcRenderer.invoke(IPC.readClipboard, side),
     // Synchronous and local: it only maps a File the user already dropped onto
     // this window to its path. No IPC, no filesystem access.
     pathForFile: (file: File): string => webUtils.getPathForFile(file),
+  },
+
+  clipboard: {
+    read: (side): Promise<InputPayload | null> => ipcRenderer.invoke(IPC.readClipboard, side),
+    write: (text: string): Promise<void> => ipcRenderer.invoke(IPC.writeClipboard, text),
   },
 
   compare: {

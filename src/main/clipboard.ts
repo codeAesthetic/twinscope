@@ -55,3 +55,7 @@ export async function readClipboard(side: 'A' | 'B'): Promise<InputPayload | nul
     text,
   };
 }
+
+export function writeClipboard(text: string): void {
+  clipboard.writeText(text);
+}
