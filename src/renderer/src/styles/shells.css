@@ -209,6 +209,9 @@
   position: relative;
   cursor: pointer;
 }
+select.dd-selectish {
+  appearance: none;
+}
 .dd-selectish::after {
   content: '⌄';
   position: absolute;

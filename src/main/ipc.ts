@@ -1,5 +1,6 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
+import { readClipboard } from './clipboard';
 import { readInput } from './input';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
 import { CompareRequestSchema, JobIdSchema, ReadInputSchema, SideSchema } from '../shared/schemas';
@@ -57,6 +58,10 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.readInput, async (_event, payload: unknown): Promise<InputPayload> => {
     const { side, path } = ReadInputSchema.parse(payload);
     return readInput(side, path);
+  });
+
+  ipcMain.handle(IPC.readClipboard, async (_event, rawSide: unknown) => {
+    return readClipboard(SideSchema.parse(rawSide));
   });
 
   ipcMain.handle(IPC.compareStart, (event, payload: unknown) => {

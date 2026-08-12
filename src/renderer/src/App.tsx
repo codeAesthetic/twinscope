@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
-import { useCompareEvents } from './lib/compareClient';
+import { useCompareEvents, useRunComparison } from './lib/compareClient';
+import { useIntakeShortcuts } from './lib/intake';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
@@ -40,6 +41,10 @@ export function App() {
   // Subscribed once at the root: a per-screen subscription would drop events
   // whenever the user navigated mid-comparison.
   useCompareEvents();
+
+  // ⌘⇧V paste-to-compare, ⌘⇧S swap, ⏎ run (MD §34).
+  const runComparison = useRunComparison();
+  useIntakeShortcuts(() => void runComparison());
 
   useEffect(() => {
     const onHashChange = (): void => setHash(window.location.hash);

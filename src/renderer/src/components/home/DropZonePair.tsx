@@ -1,6 +1,7 @@
 import { DropZone } from './DropZone';
 import { SwapControl } from './SwapControl';
 import { useCompareStore } from '../../stores/compare';
+import { useIntake } from '../../lib/intake';
 import type { InputPayload } from '../../../../shared/channels';
 
 /**
@@ -23,6 +24,7 @@ export function DropZonePair({
   const b = useCompareStore((state) => state.b);
   const setInput = useCompareStore((state) => state.setInput);
   const swap = useCompareStore((state) => state.swap);
+  const { fromDrop } = useIntake();
 
   if (isStatic) {
     return (
@@ -51,6 +53,7 @@ export function DropZonePair({
         onPickFile={() => void pick('A', 'file')}
         onPickFolder={() => void pick('A', 'folder')}
         onClear={() => setInput('A', null)}
+        onDrop={(dataTransfer) => void fromDrop('A', dataTransfer)}
       />
       <SwapControl onSwap={swap} />
       <DropZone
@@ -59,6 +62,7 @@ export function DropZonePair({
         onPickFile={() => void pick('B', 'file')}
         onPickFolder={() => void pick('B', 'folder')}
         onClear={() => setInput('B', null)}
+        onDrop={(dataTransfer) => void fromDrop('B', dataTransfer)}
       />
     </div>
   );

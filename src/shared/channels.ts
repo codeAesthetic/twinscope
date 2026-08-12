@@ -18,6 +18,8 @@ export const IPC = {
 
   /** Turn a path into an InputRef: stat, sniff the kind, read small text. */
   readInput: 'input:read',
+  /** Read the system clipboard as an input (MD §34). */
+  readClipboard: 'clipboard:read',
 
   /** Comparison job lifecycle. */
   compareStart: 'compare:start',
@@ -119,6 +121,15 @@ export interface DevDiffApi {
 
   input: {
     read(side: 'A' | 'B', path: string): Promise<InputPayload>;
+    /** Null when the clipboard holds nothing usable. */
+    readClipboard(side: 'A' | 'B'): Promise<InputPayload | null>;
+    /**
+     * Resolves a dropped `File` to its absolute path.
+     *
+     * `File.path` was removed in Electron 32; `webUtils.getPathForFile` is the
+     * replacement, and it must be called in the preload.
+     */
+    pathForFile(file: File): string;
   };
 
   compare: {

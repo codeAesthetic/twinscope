@@ -33,7 +33,11 @@ interface CompareState {
   result: CompareResult | null;
   error: { message: string; reason: 'failed' | 'cancelled' | 'crash' } | null;
 
+  /** Manual engine choice. Detection still decides when this is null (Rule 1). */
+  engineOverride: string | null;
+
   setInput: (side: 'A' | 'B', input: InputPayload | null) => void;
+  setEngineOverride: (engineId: string | null) => void;
   swap: () => void;
   reset: () => void;
 
@@ -57,6 +61,7 @@ const IDLE = {
 export const useCompareStore = create<CompareState>((set, get) => ({
   a: null,
   b: null,
+  engineOverride: null,
   ...IDLE,
 
   setInput: (side, input) => {
@@ -72,7 +77,9 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     });
   },
 
-  reset: () => set({ a: null, b: null, ...IDLE }),
+  setEngineOverride: (engineId) => set({ engineOverride: engineId, ...IDLE }),
+
+  reset: () => set({ a: null, b: null, engineOverride: null, ...IDLE }),
 
   run: async (overrides) => {
     const { a, b } = get();
@@ -80,8 +87,15 @@ export const useCompareStore = create<CompareState>((set, get) => ({
 
     set({ ...IDLE, status: 'running' });
 
+    const { engineOverride } = get();
+
     try {
-      const started = await window.devdiff.compare.start({ a, b, ...overrides });
+      const started = await window.devdiff.compare.start({
+        a,
+        b,
+        ...(engineOverride !== null ? { engineId: engineOverride } : {}),
+        ...overrides,
+      });
       set({ jobId: started.jobId, engineLabel: started.engineLabel });
       return started.jobId;
     } catch (cause) {

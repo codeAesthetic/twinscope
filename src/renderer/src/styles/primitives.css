@@ -308,3 +308,12 @@ html[data-theme='light'] .dd-ftype[data-kind='md'] {
   border-color: rgba(21, 128, 61, 0.35);
   background: rgba(21, 128, 61, 0.08);
 }
+
+/*
+ * A key hint inside a primary button sits on the accent fill, where the muted
+ * token it normally uses is unreadable.
+ */
+.dd-btn[data-variant='primary'] .dd-kbd {
+  color: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.38);
+}

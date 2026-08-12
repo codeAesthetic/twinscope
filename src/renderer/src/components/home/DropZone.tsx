@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button, FileTypeBadge } from '../primitives';
 import type { FileKind } from '../primitives';
 import type { InputPayload } from '../../../../shared/channels';
@@ -26,16 +27,17 @@ function formatSize(bytes: number): string {
 
 function preview(input: InputPayload): string {
   if (input.kind === 'folder') return 'folder';
+  if (input.kind === 'image') return input.lang ?? 'image';
   if (input.large === true) return `${formatSize(input.size)} — read on demand`;
   if (input.text === undefined) return input.kind;
   return input.text.split('\n').slice(0, 4).join('\n');
 }
 
 /**
- * One half of the compare input. Two states, both from the mockup: empty
- * (dashed border, call to action) and filled (accent border, file card).
+ * One half of the compare input: empty (dashed, call to action) or filled
+ * (accent border, file card), plus the drag-over highlight.
  *
- * Handlers are optional — without them the buttons stay inert, which is how the
+ * Handlers are optional — without them the zone is inert, which is how the
  * `#gallery` renders both states without touching the filesystem.
  */
 export function DropZone({
@@ -44,21 +46,43 @@ export function DropZone({
   onPickFile,
   onPickFolder,
   onClear,
+  onDrop,
 }: {
   side: DropZoneSide;
   input?: InputPayload | null;
   onPickFile?: () => void;
   onPickFolder?: () => void;
   onClear?: () => void;
+  onDrop?: (dataTransfer: DataTransfer) => void;
 }) {
+  const [isOver, setIsOver] = useState(false);
   const filled = input !== undefined && input !== null;
+  const state = isOver ? 'over' : filled ? 'filled' : 'empty';
+
+  const dragProps =
+    onDrop === undefined
+      ? {}
+      : {
+          onDragOver: (event: React.DragEvent) => {
+            // Without preventDefault the browser navigates to the dropped file.
+            event.preventDefault();
+            setIsOver(true);
+          },
+          onDragLeave: () => setIsOver(false),
+          onDrop: (event: React.DragEvent) => {
+            event.preventDefault();
+            setIsOver(false);
+            onDrop(event.dataTransfer);
+          },
+        };
 
   return (
     <section
       className="dd-drop"
-      data-state={filled ? 'filled' : 'empty'}
+      data-state={state}
       data-testid={`drop-${side.toLowerCase()}`}
       aria-label={`${side} input`}
+      {...dragProps}
     >
       <div className="dd-drop-label">{side}</div>
 
@@ -91,7 +115,7 @@ export function DropZone({
           <span className="dd-drop-glyph" aria-hidden="true">
             ⤓
           </span>
-          <strong>Drop anything</strong>
+          <strong>{isOver ? 'Release to compare' : 'Drop anything'}</strong>
           <span style={{ fontSize: 11.5 }}>file · folder · image · or paste with ⌘⇧V</span>
           <div className="dd-drop-actions">
             <Button
