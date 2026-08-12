@@ -5,3 +5,7 @@ package-lock.json
 e2e/.artifacts/
 test-results/
 reference/
+
+# Packaged artifacts (MVP-12) — thousands of vendored files, none of them ours.
+release/
+build/

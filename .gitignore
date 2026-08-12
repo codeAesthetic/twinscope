@@ -7,6 +7,8 @@ CLAUDE.md
 node_modules/
 out/
 dist/
+# Packaged artifacts — built on demand, never committed. (No inline comments:
+# gitignore treats them as part of the pattern.)
 release/
 *.tsbuildinfo
 

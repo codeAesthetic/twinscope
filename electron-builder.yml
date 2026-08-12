@@ -1,0 +1,58 @@
+# Packaging (MVP-12). Kept declarative — the build itself is `npm run build`.
+#
+# There is no native module to rebuild: history uses Node's built-in
+# `node:sqlite` (D9a), which is why `npmRebuild` can stay off and the packaged
+# app has nothing to compile on a user's machine.
+appId: com.devdiff.desktop
+productName: DevDiff
+copyright: © 2026 codeAesthetic
+
+directories:
+  output: release
+  buildResources: build
+
+# An allowlist, not an ignore list: anything not named here cannot end up in the
+# bundle by accident. `out/` is the electron-vite build.
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+
+asar: true
+npmRebuild: false
+
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  # Hardened runtime is required for notarisation; signing itself is an owner
+  # action (see docs/release.md) and is skipped when no identity is present.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  darkModeSupport: true
+
+dmg:
+  title: DevDiff ${version}
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+
+linux:
+  category: Development
+  target:
+    - AppImage
+    - deb
+
+# No auto-update server yet: shipping an updater that points nowhere is worse
+# than not having one. Revisit when there is a release channel to point at.
+publish: null

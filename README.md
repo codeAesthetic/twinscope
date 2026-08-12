@@ -6,7 +6,37 @@ A local-first universal comparison tool for developers. Drop two files, folders,
 
 Your files never leave your machine: no telemetry, no uploads, no account.
 
-> **Status: early development.** The Electron shell, design system and engine contract are in place; the comparison engines themselves are next. Not yet usable as a product.
+> **Status: 0.1.0.** All five engines work, comparisons persist, and results
+> export. macOS builds are unsigned unless you build them with your own
+> Developer ID — see [`docs/release.md`](docs/release.md).
+
+![Structural JSON comparison](docs/screenshots/json.png)
+
+---
+
+## What it does
+
+|                   |                                                                                                                                                                   |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Text and code** | Side-by-side, unified and inline. Edited lines pair up and are marked word by word rather than appearing as unrelated deletes and adds. Long unchanged runs fold. |
+| **JSON**          | A structural tree, not a line diff — reformat a file and nothing changes. Arrays match by identity, objects compare as key sets, type changes get their own row.  |
+| **Folders**       | Recursive, with per-file status, rename pairing, filters, and drill-in to any file pair.                                                                          |
+| **Images**        | Side-by-side, overlay, blink and difference, with changed regions boxed and an adjustable threshold.                                                              |
+| **Binary**        | A verdict from sizes and a SHA-256, instead of pages of mojibake.                                                                                                 |
+
+Every comparison opens with counts, then the detail. Normalisation is
+explainable and reversible: anything hidden is counted, named, and one click
+from coming back.
+
+<details>
+<summary>More screenshots</summary>
+
+![Text diff](docs/screenshots/text.png)
+![Folder comparison](docs/screenshots/folder.png)
+![Image comparison](docs/screenshots/image.png)
+![Command palette](docs/screenshots/palette.png)
+
+</details>
 
 ---
 
@@ -30,15 +60,19 @@ That's the whole setup. If `npm run dev` complains that Electron is missing, re-
 
 ## Scripts
 
-| Command             | What it does                                                   |
-| ------------------- | -------------------------------------------------------------- |
-| `npm run dev`       | Electron + Vite with hot reload                                |
-| `npm run build`     | Production build into `out/`                                   |
-| `npm run verify`    | Builds, boots the app, and checks it really works (Playwright) |
-| `npm run typecheck` | TypeScript across three projects: main/preload, renderer, e2e  |
-| `npm test`          | Unit tests (vitest)                                            |
-| `npm run lint`      | ESLint, including the import-boundary rules                    |
-| `npm run format`    | Prettier                                                       |
+| Command                   | What it does                                                   |
+| ------------------------- | -------------------------------------------------------------- |
+| `npm run dev`             | Electron + Vite with hot reload                                |
+| `npm run build`           | Production build into `out/`                                   |
+| `npm run verify`          | Builds, boots the app, and checks it really works (Playwright) |
+| `npm run typecheck`       | TypeScript across three projects: main/preload, renderer, e2e  |
+| `npm test`                | Unit tests (vitest)                                            |
+| `npm run lint`            | ESLint, including the import-boundary rules                    |
+| `npm run format`          | Prettier                                                       |
+| `npm run gate`            | Everything above, in the order CI runs it                      |
+| `npm run package:mac`     | Builds `release/DevDiff-<version>.dmg`                         |
+| `npm run verify:packaged` | Boots the packaged app and compares in it                      |
+| `npm run icon`            | Regenerates `build/icon.png` from `scripts/make-icon.mjs`      |
 
 ## Layout
 

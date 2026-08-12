@@ -60,3 +60,34 @@ jobs:
           name: verification-screenshots
           path: e2e/.artifacts/screenshots/
           if-no-files-found: ignore
+
+  package:
+    name: package (macOS)
+    # Only on main: a dmg per pull request is 116 MB of artifact nobody reads.
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Unsigned: signing needs a Developer ID certificate, which is an owner
+      # action (docs/release.md). The point here is that packaging still works.
+      - name: Build the macOS package
+        run: npm run package:mac
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - name: Smoke-test the packaged app
+        run: npm run verify:packaged
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: devdiff-macos
+          path: release/*.dmg
+          if-no-files-found: error
