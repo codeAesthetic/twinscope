@@ -38,6 +38,16 @@ export interface TextDiffOptions {
   collapseUnchanged: boolean;
 }
 
+/**
+ * Shared with the view, which renders the toggles: a default that lived in two
+ * places would eventually show "on" for something the engine ran as off.
+ */
+export const DEFAULT_TEXT_OPTIONS: TextDiffOptions = {
+  ignoreWhitespace: true,
+  ignoreCase: false,
+  collapseUnchanged: true,
+};
+
 export interface TextDiffData {
   rows: TextRow[];
   lines: { before: number; after: number };

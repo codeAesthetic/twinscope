@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
 import { pasteInput } from '../helpers/seed';
@@ -172,5 +175,73 @@ test('text diff: ⌘F finds, counts, cycles and highlights', async () => {
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {
     await harness.close();
+  }
+});
+
+/**
+ * REGRESSION — syntax highlighting and the normalisation toggles, the last two
+ * items of MVP-4.
+ *
+ * Driven through the file picker so the inputs carry a `.ts` extension: the
+ * language comes from detection, and a clipboard paste has none.
+ */
+test('text diff: highlighting, and toggles that re-run the engine', async () => {
+  const harness = await launchApp();
+  const dir = await mkdtemp(join(tmpdir(), 'twinscope-hl-'));
+
+  try {
+    const before = join(dir, 'client.ts');
+    const after = join(dir, 'client.next.ts');
+    await writeFile(before, 'const timeout = 5000;\nexport function request() {}\n');
+    await writeFile(after, 'const timeout = 8000;\nexport function REQUEST() {}\n');
+
+    await harness.app.evaluate(
+      ({ dialog }, paths: string[]) => {
+        let call = 0;
+        dialog.showOpenDialog = () =>
+          Promise.resolve({ canceled: false, filePaths: [paths[call++] ?? paths[0]!] });
+      },
+      [before, after],
+    );
+
+    await harness.page.getByTestId('pick-file-before').click();
+    await harness.page.getByTestId('pick-file-after').click();
+    await harness.page.getByTestId('compare-button').click();
+
+    const diff = harness.page.getByTestId('text-diff');
+    await expect(diff).toBeVisible({ timeout: 20_000 });
+
+    // ---------- grammars load lazily, so colour arrives a tick later ----------
+    const coloured = diff.locator('.dd-dtext span[style*="color"]');
+    await expect(coloured.first()).toBeVisible({ timeout: 20_000 });
+
+    // Different token kinds get different colours — one uniform colour would
+    // mean the theme loaded but the grammar did not.
+    const palette = await diff.evaluate((root) => {
+      const spans = [...root.querySelectorAll('.dd-dtext span[style*="color"]')];
+      return [...new Set(spans.map((span) => (span as HTMLElement).style.color))].length;
+    });
+    expect(palette).toBeGreaterThan(1);
+
+    await harness.screenshot('text-diff-highlighted');
+
+    // ---------- highlighting must not displace the change marks ----------
+    await expect(diff.locator('.dd-word').first()).toBeVisible();
+
+    // ---------- ignore case: a toggle that re-runs the engine ----------
+    const strip = harness.page.getByTestId('summary-strip');
+    await expect(strip).toContainText('～2 modified');
+
+    await harness.page.getByRole('button', { name: 'Ignore case' }).click();
+    // REQUEST vs request is no longer a difference, so one modification goes.
+    await expect(strip).toContainText('～1 modified', { timeout: 20_000 });
+
+    await harness.page.getByRole('button', { name: 'Ignore case' }).click();
+    await expect(strip).toContainText('～2 modified', { timeout: 20_000 });
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    await harness.close();
+    await rm(dir, { recursive: true, force: true });
   }
 });

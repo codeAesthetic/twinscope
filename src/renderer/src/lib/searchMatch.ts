@@ -3,10 +3,10 @@ import { MARK_CLOSE, MARK_OPEN } from '../../../engines/text';
 /**
  * Splitting a diff row into what the view has to paint (MVP-4's deferred ⌘F).
  *
- * Two highlight systems overlap on the same text: the engine's word-level
- * `⟦…⟧` marks, which say *what changed*, and the user's search matches, which
- * say *what they are looking for*. Resolving them in one pass is what keeps a
- * search hit inside a changed word from losing either colour.
+ * Three systems overlap on the same text: the engine's word-level `⟦…⟧` marks
+ * (*what changed*), the user's search matches (*what they are looking for*), and
+ * syntax tokens (*what the code means*). Resolving them in one pass is what
+ * keeps a search hit inside a changed keyword from losing any of the three.
  *
  * Pure and DOM-free so it can be tested directly — the view only maps segments
  * to spans.
@@ -24,6 +24,15 @@ export interface Segment {
    * pick out the *current* match among several on one line.
    */
   hitIndex: number;
+  /** Syntax colour, when a grammar is loaded and covers this run. */
+  color?: string;
+}
+
+/** A syntax-highlighted range, in offsets into the stripped text. */
+export interface TokenRange {
+  start: number;
+  end: number;
+  color: string;
 }
 
 /** Marks travel inside the row text; nothing outside this module should see them. */
@@ -58,16 +67,25 @@ export function countMatches(text: string, query: string): number {
  * is why a match spanning a mark boundary highlights correctly instead of
  * disappearing.
  */
-export function segmentRow(text: string, query: string, hitOffset = 0): Segment[] {
+export function segmentRow(
+  text: string,
+  query: string,
+  hitOffset = 0,
+  tokens: readonly TokenRange[] = [],
+): Segment[] {
   const marks = markRanges(text);
   const stripped = stripMarks(text);
   const hits = hitRanges(stripped, query);
 
-  // Every boundary from either system, so each run is uniform in both.
+  // Every boundary from every system, so each run is uniform in all three.
   const bounds = new Set<number>([0, stripped.length]);
   for (const [start, end] of [...marks, ...hits]) {
     bounds.add(start);
     bounds.add(end);
+  }
+  for (const token of tokens) {
+    bounds.add(token.start);
+    bounds.add(token.end);
   }
 
   const edges = [...bounds].sort((one, two) => one - two);
@@ -79,11 +97,13 @@ export function segmentRow(text: string, query: string, hitOffset = 0): Segment[
     if (end <= start) continue;
 
     const hit = hits.findIndex(([from, to]) => start >= from && end <= to);
+    const token = tokens.find((range) => start >= range.start && end <= range.end);
     segments.push({
       text: stripped.slice(start, end),
       marked: marks.some(([from, to]) => start >= from && end <= to),
       hit: hit !== -1,
       hitIndex: hit === -1 ? -1 : hit + hitOffset,
+      ...(token !== undefined ? { color: token.color } : {}),
     });
   }
 

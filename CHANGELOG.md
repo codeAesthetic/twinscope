@@ -10,6 +10,11 @@ project uses [semantic versioning][semver].
 
 ### Added
 
+- **Syntax highlighting** for text and code diffs across the nine MVP languages,
+  loaded on demand. Changed-word marks and search hits stay visible on top of it.
+- **Ignore whitespace / Ignore case / Collapse unchanged** toggles in the text
+  toolbar. They re-run the comparison, so the counts always describe what is on
+  screen.
 - **Search within a diff (`⌘F`)** for text and code comparisons: a match count,
   `⏎` / `⇧⏎` to walk the hits, and `Esc` to clear. Matches are highlighted
   without hiding anything — a find, not a filter. A hit inside a changed word

@@ -1,8 +1,13 @@
-import { diffText, type TextDiffData, type TextDiffOptions } from './textDiff';
+import {
+  DEFAULT_TEXT_OPTIONS,
+  diffText,
+  type TextDiffData,
+  type TextDiffOptions,
+} from './textDiff';
 import type { DiffEngine, DiffResult, InputRef } from '../types';
 
 export type { TextDiffData, TextDiffOptions, TextRow, TextRowKind } from './textDiff';
-export { MARK_OPEN, MARK_CLOSE } from './textDiff';
+export { MARK_OPEN, MARK_CLOSE, DEFAULT_TEXT_OPTIONS } from './textDiff';
 
 /** Anything textual can be line-diffed, so this is the universal fallback. */
 const COMPARABLE = new Set(['text', 'code', 'json', 'yaml', 'csv', 'md']);
@@ -25,11 +30,7 @@ export const textEngine: DiffEngine<TextDiffOptions, TextDiffData> = {
 
   canHandle: (a, b) => COMPARABLE.has(a.kind) && COMPARABLE.has(b.kind),
 
-  defaultOptions: () => ({
-    ignoreWhitespace: true,
-    ignoreCase: false,
-    collapseUnchanged: true,
-  }),
+  defaultOptions: () => ({ ...DEFAULT_TEXT_OPTIONS }),
 
   async compare(a, b, options, ctx): Promise<DiffResult<TextDiffData>> {
     const startedAt = Date.now();

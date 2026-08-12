@@ -6,7 +6,16 @@ import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { useSearchStore } from '../../stores/search';
 import { countMatches, segmentRow, stripMarks } from '../../lib/searchMatch';
-import { MARK_CLOSE, MARK_OPEN, type TextDiffData, type TextRow } from '../../../../engines/text';
+import { ensureLanguage, isHighlightable, tokenizeLine } from '../../lib/highlight';
+import { useTheme } from '../../theme/ThemeProvider';
+import {
+  DEFAULT_TEXT_OPTIONS,
+  MARK_CLOSE,
+  MARK_OPEN,
+  type TextDiffData,
+  type TextDiffOptions,
+  type TextRow,
+} from '../../../../engines/text';
 import type { EngineViewProps } from './engineViews';
 
 type ViewMode = 'side' | 'unified' | 'inline';
@@ -26,6 +35,18 @@ export default function TextDiffView({ result }: EngineViewProps) {
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
   const a = useCompareStore((state) => state.a);
   const b = useCompareStore((state) => state.b);
+  const storeOptions = useCompareStore((state) => state.options);
+  const setOptions = useCompareStore((state) => state.setOptions);
+
+  /**
+   * Normalisation is the engine's business, not the view's: these re-run the
+   * comparison rather than filtering rows, so the counts in the strip always
+   * describe the diff on screen (Rule 3).
+   */
+  const options: TextDiffOptions = useMemo(
+    () => ({ ...DEFAULT_TEXT_OPTIONS, ...(storeOptions as Partial<TextDiffOptions>) }),
+    [storeOptions],
+  );
   const register = useChangeNavStore((state) => state.register);
   const clearNav = useChangeNavStore((state) => state.clear);
   const current = useChangeNavStore((state) => state.current);
@@ -35,6 +56,28 @@ export default function TextDiffView({ result }: EngineViewProps) {
   const disableSearch = useSearchStore((state) => state.disable);
   const registerMatches = useSearchStore((state) => state.registerMatches);
   const currentMatch = useSearchStore((state) => state.current);
+
+  const { theme } = useTheme();
+
+  /**
+   * The language comes from whichever side detection identified — a `.ts` file
+   * compared against a clipboard paste still highlights as TypeScript.
+   */
+  const lang = a?.lang ?? b?.lang;
+  const [highlightReady, setHighlightReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHighlightReady(false);
+    // Grammars and themes load on demand; until they resolve the diff renders
+    // as plain text, which is also the permanent answer for a log file.
+    void ensureLanguage(lang, theme).then((ok) => {
+      if (!cancelled) setHighlightReady(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lang, theme]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   /**
@@ -147,6 +190,24 @@ export default function TextDiffView({ result }: EngineViewProps) {
           ]}
         />
         <Toggle
+          pressed={options.ignoreWhitespace}
+          onChange={(next) => void setOptions({ ignoreWhitespace: next })}
+        >
+          Ignore whitespace
+        </Toggle>
+        <Toggle
+          pressed={options.ignoreCase}
+          onChange={(next) => void setOptions({ ignoreCase: next })}
+        >
+          Ignore case
+        </Toggle>
+        <Toggle
+          pressed={options.collapseUnchanged}
+          onChange={(next) => void setOptions({ collapseUnchanged: next })}
+        >
+          Collapse unchanged
+        </Toggle>
+        <Toggle
           pressed={expanded.size > 0}
           onChange={(next) =>
             setExpanded(
@@ -211,6 +272,8 @@ export default function TextDiffView({ result }: EngineViewProps) {
                     isCurrent={item.index === currentRowIndex}
                     query={query.trim()}
                     activeHit={activeMatch?.row === item.index ? activeMatch.hit : -1}
+                    lang={highlightReady ? lang : undefined}
+                    theme={theme}
                   />
                 )}
               </div>
@@ -228,6 +291,8 @@ function Row({
   isCurrent,
   query,
   activeHit,
+  lang,
+  theme,
 }: {
   row: TextRow;
   mode: ViewMode;
@@ -235,6 +300,9 @@ function Row({
   query: string;
   /** Index of the hit *within this row* that search is currently on, or -1. */
   activeHit: number;
+  /** Undefined until a grammar is loaded, or for plain text. */
+  lang: string | undefined;
+  theme: 'dark' | 'light';
 }) {
   // A modified row shows two texts; the right side's hits continue the left's
   // numbering so the store's flat match list lines up with what is painted.
@@ -262,8 +330,22 @@ function Row({
 
     return (
       <div className="dd-drow" data-current={isCurrent ? 'true' : undefined}>
-        <Cell {...left} query={query} activeHit={activeHit} hitOffset={0} />
-        <Cell {...right} query={query} activeHit={activeHit} hitOffset={rightOffset} />
+        <Cell
+          {...left}
+          query={query}
+          activeHit={activeHit}
+          hitOffset={0}
+          lang={lang}
+          theme={theme}
+        />
+        <Cell
+          {...right}
+          query={query}
+          activeHit={activeHit}
+          hitOffset={rightOffset}
+          lang={lang}
+          theme={theme}
+        />
       </div>
     );
   }
@@ -275,7 +357,14 @@ function Row({
           <span className="dd-dln">{row.right}</span>
           <span className="dd-dmark">~</span>
           <span className="dd-dtext">
-            <Painted text={row.text} tone="del" query={query} activeHit={activeHit} />
+            <Painted
+              text={row.text}
+              tone="del"
+              query={query}
+              activeHit={activeHit}
+              lang={lang}
+              theme={theme}
+            />
             <span style={{ color: 'var(--tx-3)' }}> ⇢ </span>
             <Painted
               text={row.textRight ?? ''}
@@ -283,6 +372,8 @@ function Row({
               query={query}
               activeHit={activeHit}
               hitOffset={rightOffset}
+              lang={lang}
+              theme={theme}
             />
           </span>
         </div>
@@ -303,6 +394,8 @@ function Row({
             tone={row.kind === 'add' ? 'add' : 'del'}
             query={query}
             activeHit={activeHit}
+            lang={lang}
+            theme={theme}
           />
         </span>
       </div>
@@ -318,6 +411,8 @@ function Cell({
   query,
   activeHit,
   hitOffset,
+  lang,
+  theme,
 }: {
   kind: TextRow['kind'] | 'nil';
   no: number | undefined;
@@ -326,6 +421,8 @@ function Cell({
   query: string;
   activeHit: number;
   hitOffset: number;
+  lang: string | undefined;
+  theme: 'dark' | 'light';
 }) {
   return (
     <div className="dd-dcell" data-kind={kind}>
@@ -338,6 +435,8 @@ function Cell({
           query={query}
           activeHit={activeHit}
           hitOffset={hitOffset}
+          lang={lang}
+          theme={theme}
         />
       </span>
     </div>
@@ -357,14 +456,22 @@ function Painted({
   query,
   activeHit,
   hitOffset = 0,
+  lang,
+  theme,
 }: {
   text: string;
   tone: 'add' | 'del';
   query: string;
   activeHit: number;
   hitOffset?: number;
+  lang: string | undefined;
+  theme: 'dark' | 'light';
 }) {
-  if (query === '') {
+  const tokens = isHighlightable(lang) ? tokenizeLine(stripMarks(text), lang, theme) : [];
+
+  // Nothing to resolve: no query and no grammar. This is the common case for a
+  // plain-text diff, and it runs for every visible row on every scroll frame.
+  if (query === '' && tokens.length === 0) {
     if (!text.includes(MARK_OPEN)) return <>{text}</>;
     const parts = text.split(new RegExp(`${MARK_OPEN}|${MARK_CLOSE}`));
     return (
@@ -385,15 +492,21 @@ function Painted({
 
   return (
     <>
-      {segmentRow(text, query, hitOffset).map((segment, index) => {
-        if (!segment.marked && !segment.hit) return segment.text;
+      {segmentRow(text, query, hitOffset, tokens).map((segment, index) => {
+        if (!segment.marked && !segment.hit && segment.color === undefined) return segment.text;
+        const isCurrentHit = segment.hit && segment.hitIndex === activeHit;
         return (
           <span
             key={index}
             className={segment.marked ? 'dd-word' : undefined}
             data-tone={segment.marked ? tone : undefined}
             data-hit={segment.hit ? 'true' : undefined}
-            data-hit-current={segment.hit && segment.hitIndex === activeHit ? 'true' : undefined}
+            data-hit-current={isCurrentHit ? 'true' : undefined}
+            // The current hit paints its own foreground, so syntax colour yields
+            // to it rather than fighting for contrast against the accent.
+            style={
+              segment.color !== undefined && !isCurrentHit ? { color: segment.color } : undefined
+            }
           >
             {segment.text}
           </span>
