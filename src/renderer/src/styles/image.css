@@ -56,25 +56,55 @@
   color: var(--tx-3);
 }
 
+/*
+ * The shot *is* the compared canvas — its aspect ratio is set inline from the
+ * union of both images — and each image is placed inside it at its own share of
+ * that union. That is what keeps a 50×50 "before" from being stretched onto a
+ * 100×50 union, and what keeps the percentage region boxes exact.
+ */
+/*
+ * The frame is an `outline`, not a `border`, because a border is 2px of layout:
+ * `aspect-ratio` would then apply to the border box while the images and the
+ * region boxes resolve against the content box inside it, putting every region
+ * marker ~0.3% off the pixels it claims to describe. An outline is painted
+ * outside the box and costs no geometry at all.
+ */
 .dd-shot {
   position: relative;
-  border: 1px solid var(--line-2);
+  outline: 1px solid var(--line-2);
   border-radius: 8px;
   overflow: hidden;
   background: var(--panel);
   line-height: 0;
+  width: 100%;
 }
 .dd-shot img {
-  width: 100%;
-  height: auto;
+  position: absolute;
+  left: 0;
+  top: 0;
   display: block;
   image-rendering: pixelated;
   user-select: none;
 }
 .dd-shot-overlay {
-  position: absolute;
-  inset: 0;
   mix-blend-mode: difference;
+}
+
+/*
+ * Nearest-neighbour is right when magnifying — the pixels are the subject — and
+ * wrong when a 4000px image is shown at 12%, where it turns detail into moiré.
+ */
+.dd-imgstage[data-smooth='true'] .dd-shot img {
+  image-rendering: auto;
+}
+
+/* Drag to pan, but only once there is somewhere to pan to. */
+.dd-imgstage[data-pannable='true'] {
+  cursor: grab;
+}
+.dd-imgstage[data-panning='true'] {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .dd-imgstage[data-grid='true'] .dd-shot::after {
@@ -88,12 +118,19 @@
   background-size: 10% 10%;
 }
 
+/*
+ * Sized as a percentage of the canvas, so a small region is a few pixels wide
+ * once a large image is fitted. The floor keeps it findable: this is a marker
+ * pointing at a change, and the exact area is in the rail's list beside it.
+ */
 .dd-region {
   position: absolute;
   border: 1px solid var(--del);
   background: color-mix(in srgb, var(--del) 12%, transparent);
   border-radius: 2px;
   pointer-events: none;
+  min-width: 6px;
+  min-height: 6px;
 }
 .dd-region[data-current='true'] {
   border-color: var(--acc);
@@ -218,7 +255,11 @@ html[data-theme='light'] .dd-imgside {
   gap: 2px;
 }
 .dd-zoom-value {
-  min-width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 62px;
   background: none;
   border: 0;
   cursor: pointer;
@@ -227,4 +268,17 @@ html[data-theme='light'] .dd-imgside {
 }
 .dd-zoom-value:hover {
   color: var(--tx);
+}
+/*
+ * Says *why* the number is 12%. Without it a fitted view of a large pair reads
+ * as a broken zoom rather than as the whole image on screen.
+ */
+.dd-zoom-tag {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--acc-bg);
+  color: var(--acc);
+  font: 600 9.5px/1.4 var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }

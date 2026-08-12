@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
-import { Button, Seg, Toggle } from '../../components/primitives';
+import { Button, Chip, Seg, Toggle } from '../../components/primitives';
 import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { useSearchStore } from '../../stores/search';
@@ -229,9 +229,13 @@ export default function TextDiffView({ result }: EngineViewProps) {
           <div className="dd-diff-header">
             <div>
               <b>{a?.name}</b>
+              {/* Per-side totals, mockup parity: what this side lost, what the
+                  other gained. Modified lines appear in the strip's ~ count. */}
+              {result.summary.removed > 0 && <Chip variant="del">－{result.summary.removed}</Chip>}
             </div>
             <div>
               <b>{b?.name}</b>
+              {result.summary.added > 0 && <Chip variant="add">＋{result.summary.added}</Chip>}
             </div>
           </div>
         )}

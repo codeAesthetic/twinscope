@@ -247,13 +247,24 @@ export const useCompareStore = create<CompareState>((set, get) => ({
   },
 
   swap: () => {
-    const { a, b } = get();
+    const { a, b, result, options } = get();
+    // Swapping while a diff is open should show the same comparison the other
+    // way round, not dump the user into an empty workspace. Options survive for
+    // the same reason they survive `run`: they describe the request.
+    const wasShowingResult = result !== null;
+
     set({
       a: b ? { ...b, side: 'A' } : null,
       b: a ? { ...a, side: 'B' } : null,
-      options: {},
+      options,
       ...IDLE,
     });
+
+    if (wasShowingResult && get().a !== null && get().b !== null) {
+      void get()
+        .run()
+        .catch(() => undefined);
+    }
   },
 
   setEngineOverride: (engineId) => set({ engineOverride: engineId, options: {}, ...IDLE }),

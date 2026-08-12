@@ -15,6 +15,7 @@ project uses [semantic versioning][semver].
 - **Ignore whitespace / Ignore case / Collapse unchanged** toggles in the text
   toolbar. They re-run the comparison, so the counts always describe what is on
   screen.
+- **Per-side `＋`/`－` totals** on the text diff's file headers.
 - **Search within a diff (`⌘F`)** for text and code comparisons: a match count,
   `⏎` / `⇧⏎` to walk the hits, and `Esc` to clear. Matches are highlighted
   without hiding anything — a find, not a filter. A hit inside a changed word
@@ -22,6 +23,8 @@ project uses [semantic versioning][semver].
 
 ### Fixed
 
+- **Swapping sides keeps your comparison.** With a diff open, swap now re-runs
+  it the other way round instead of emptying the workspace.
 - **Plain `⌘V` now starts a comparison** when nothing is focused, alongside
   `⌘⇧V`. The approved design specified both; only `⌘⇧V` had been wired. Pasting
   into a text field is untouched — the field still gets the paste.

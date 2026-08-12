@@ -159,3 +159,52 @@ describe('similarity', () => {
     expect(similarity('anything', '')).toBe(0);
   });
 });
+
+describe('scale', () => {
+  /** Generates a pair with a change every 50 lines — a realistic edit density. */
+  function pair(lines: number): [string, string] {
+    const before: string[] = [];
+    const after: string[] = [];
+    for (let index = 0; index < lines; index += 1) {
+      before.push(`const value${index} = ${index};`);
+      after.push(
+        index % 50 === 0
+          ? `const value${index} = ${index + 1};`
+          : `const value${index} = ${index};`,
+      );
+    }
+    return [before.join('\n'), after.join('\n')];
+  }
+
+  it('diffs a 20k-line pair well inside the interactive budget', () => {
+    const [before, after] = pair(20_000);
+
+    const startedAt = Date.now();
+    const { stats, data } = diffText(before, after, {
+      ignoreWhitespace: true,
+      ignoreCase: false,
+      collapseUnchanged: true,
+    });
+    const elapsed = Date.now() - startedAt;
+
+    // The engine found the planted edits...
+    expect(stats.modified).toBe(400);
+    expect(data.lines.before).toBe(20_000);
+    // ...and did it fast enough that the UI never waits on it (plan §3.8).
+    expect(elapsed).toBeLessThan(1000);
+  });
+
+  it('folds a large mostly-unchanged pair down to a readable number of rows', () => {
+    const [before, after] = pair(20_000);
+    const { data } = diffText(before, after, {
+      ignoreWhitespace: true,
+      ignoreCase: false,
+      collapseUnchanged: true,
+    });
+
+    // 20k lines with 400 changes must not render as 20k rows: folding is what
+    // keeps the virtualiser's job small and the diff readable.
+    expect(data.rows.length).toBeLessThan(4000);
+    expect(data.rows.some((row) => row.kind === 'fold')).toBe(true);
+  });
+});

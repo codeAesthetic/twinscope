@@ -1,17 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Button, Chip, Seg, Toggle } from '../../components/primitives';
 import { useChangeNavStore } from '../../stores/changeNav';
 import { useCompareStore } from '../../stores/compare';
 import { DEFAULT_IMAGE_OPTIONS, type ImageDiffOptions } from '../../../../engines/image';
 import type { ImageViewData } from '../../lib/imageCompare';
+import {
+  clampZoom,
+  fitZoom,
+  isFitZoom,
+  scrollForZoom,
+  stepZoom,
+  zoomPercent,
+  type StageBox,
+} from '../../lib/imageZoom';
 import type { EngineViewProps } from './engineViews';
 
 type Mode = 'side' | 'overlay' | 'blink' | 'difference';
 
 const BLINK_MS = 1100;
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 4;
+/** Pointer travel before a press becomes a pan rather than a click. */
+const PAN_THRESHOLD = 3;
+
+/**
+ * Zoom held either as "whatever fits" or as a number the user picked.
+ *
+ * The distinction is the whole trick: while it is `fit`, resizing the window and
+ * switching to a single-pane mode re-fit for free, and the moment the user zooms
+ * it stops moving under them.
+ */
+type Zoom = { kind: 'fit' } | { kind: 'manual'; value: number };
 
 /**
  * The visual comparison (MD §14): four ways of looking at the same two images.
@@ -24,11 +42,13 @@ export default function ImageDiffView({ result }: EngineViewProps) {
   const data = result.data as ImageViewData;
 
   const [mode, setMode] = useState<Mode>('side');
-  const [zoom, setZoom] = useState(1);
+  const [zoomState, setZoomState] = useState<Zoom>({ kind: 'fit' });
+  const [stage, setStage] = useState<StageBox>({ width: 0, height: 0 });
   const [opacity, setOpacity] = useState(0.5);
   const [showRegions, setShowRegions] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [blinkAfter, setBlinkAfter] = useState(false);
+  const [panning, setPanning] = useState(false);
   const [threshold, setThreshold] = useState<number>(
     (useCompareStore.getState().options as Partial<ImageDiffOptions>).threshold ??
       DEFAULT_IMAGE_OPTIONS.threshold,
@@ -41,6 +61,54 @@ export default function ImageDiffView({ result }: EngineViewProps) {
 
   const stageRef = useRef<HTMLDivElement | null>(null);
   const committedThreshold = useRef(threshold);
+
+  const paneCount = mode === 'side' ? 2 : 1;
+  const measured = stage.width > 0;
+  const fit = useMemo(
+    () => fitZoom(stage, data.compared, paneCount),
+    [stage, data.compared, paneCount],
+  );
+  const zoom = zoomState.kind === 'fit' ? fit : zoomState.value;
+  const atFit = isFitZoom(zoom, fit);
+
+  // Refs as well as values: the wheel listener is attached once, and must not be
+  // torn down and rebuilt on every frame of a pinch. `zoomTo` writes the ref
+  // itself as well, because wheel events arrive faster than React re-renders and
+  // a gesture that kept re-reading the last rendered zoom would crawl.
+  const zoomRef = useRef(zoom);
+  const fitRef = useRef(fit);
+  useEffect(() => {
+    zoomRef.current = zoom;
+    fitRef.current = fit;
+  }, [zoom, fit]);
+
+  /**
+   * Zoom about a point, so the pixels under it stay under it. Without the scroll
+   * correction, zooming in from a fitted view of a large image lands in the
+   * top-left corner and whatever the user was looking at is gone.
+   */
+  const zoomTo = useCallback((next: number, anchor?: { x: number; y: number }) => {
+    const element = stageRef.current;
+    const from = zoomRef.current;
+    const value = clampZoom(next, fitRef.current);
+    if (value === from) return;
+
+    zoomRef.current = value;
+    setZoomState(isFitZoom(value, fitRef.current) ? { kind: 'fit' } : { kind: 'manual', value });
+
+    if (element === null) return;
+    const to = scrollForZoom(element, from, value, anchor);
+    // Once the browser has laid the panes out at their new size.
+    requestAnimationFrame(() => {
+      element.scrollLeft = to.left;
+      element.scrollTop = to.top;
+    });
+  }, []);
+
+  const step = useCallback(
+    (direction: 1 | -1) => zoomTo(stepZoom(zoomRef.current, direction, fitRef.current)),
+    [zoomTo],
+  );
 
   // Each run is a full pixel pass over both images, so the slider settles before
   // it re-runs rather than firing on every frame of a drag.
@@ -63,15 +131,38 @@ export default function ImageDiffView({ result }: EngineViewProps) {
     return () => clearInterval(timer);
   }, [mode]);
 
+  // The stage's own size is what a fit is a fit *to*, so it is measured rather
+  // than assumed. The observer fires once on observe, before the first paint,
+  // which is why the panes wait for it instead of flashing at 100%.
+  useEffect(() => {
+    const element = stageRef.current;
+    if (element === null) return;
+
+    const observer = new ResizeObserver(() =>
+      setStage({ width: element.clientWidth, height: element.clientHeight }),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
   useEffect(() => {
     register(data.regions.length, (index) => {
       const region = data.regions[index];
-      const stage = stageRef.current;
-      if (region === undefined || stage === null) return;
-      // Bring the region roughly to the middle of the viewport.
-      stage.scrollTo({
-        left: (region.left / 100) * stage.scrollWidth - stage.clientWidth / 2,
-        top: (region.top / 100) * stage.scrollHeight - stage.clientHeight / 2,
+      const element = stageRef.current;
+      if (region === undefined || element === null) return;
+
+      // Regions are percentages of the *compared canvas*, so they resolve
+      // against a pane — not against the scroller, which also spans the second
+      // pane, the gap and the padding.
+      const pane = element.querySelector<HTMLElement>('.dd-shot');
+      if (pane === null) return;
+
+      const left = pane.offsetLeft + ((region.left + region.width / 2) / 100) * pane.offsetWidth;
+      const top = pane.offsetTop + ((region.top + region.height / 2) / 100) * pane.offsetHeight;
+
+      element.scrollTo({
+        left: left - element.clientWidth / 2,
+        top: top - element.clientHeight / 2,
         behavior: 'smooth',
       });
     });
@@ -83,36 +174,115 @@ export default function ImageDiffView({ result }: EngineViewProps) {
       if (!(event.metaKey || event.ctrlKey)) return;
       if (event.key === '=' || event.key === '+') {
         event.preventDefault();
-        setZoom((value) => Math.min(ZOOM_MAX, value * 1.25));
+        step(1);
       } else if (event.key === '-') {
         event.preventDefault();
-        setZoom((value) => Math.max(ZOOM_MIN, value / 1.25));
+        step(-1);
       } else if (event.key === '0') {
         event.preventDefault();
-        setZoom(1);
+        // ⌘0 fits, ⌥⌘0 is actual size — ⌘1 is already Go to Compare.
+        if (event.altKey) zoomTo(1);
+        else setZoomState({ kind: 'fit' });
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+  }, [step, zoomTo]);
+
+  // ⌘/ctrl-scroll and trackpad pinch, which Chromium delivers as the same event.
+  // Attached by hand because it has to be non-passive to preventDefault, and
+  // React's onWheel is passive.
+  useEffect(() => {
+    const element = stageRef.current;
+    if (element === null) return;
+
+    const onWheel = (event: WheelEvent): void => {
+      if (!(event.ctrlKey || event.metaKey)) return;
+      event.preventDefault();
+
+      const box = element.getBoundingClientRect();
+      // deltaY arrives in lines or in pixels depending on the device; the
+      // exponent keeps either proportional instead of jumping.
+      zoomTo(zoomRef.current * Math.exp(-event.deltaY / 320), {
+        x: event.clientX - box.left,
+        y: event.clientY - box.top,
+      });
+    };
+
+    element.addEventListener('wheel', onWheel, { passive: false });
+    return () => element.removeEventListener('wheel', onWheel);
+  }, [zoomTo]);
+
+  /** Drag to pan, which is what an image viewer is expected to do when zoomed. */
+  const onPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>): void => {
+    const element = stageRef.current;
+    if (element === null || event.button !== 0) return;
+    // Nothing to pan: leave the press alone so it stays an ordinary click.
+    if (
+      element.scrollWidth <= element.clientWidth &&
+      element.scrollHeight <= element.clientHeight
+    ) {
+      return;
+    }
+
+    const origin = { x: event.clientX, y: event.clientY };
+    const from = { left: element.scrollLeft, top: element.scrollTop };
+    let moved = false;
+
+    const onMove = (move: PointerEvent): void => {
+      const dx = move.clientX - origin.x;
+      const dy = move.clientY - origin.y;
+      if (!moved && Math.hypot(dx, dy) < PAN_THRESHOLD) return;
+      if (!moved) {
+        moved = true;
+        setPanning(true);
+      }
+      element.scrollLeft = from.left - dx;
+      element.scrollTop = from.top - dy;
+    };
+
+    const onUp = (): void => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      setPanning(false);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
   }, []);
 
   const panes = useMemo(() => {
-    if (mode === 'difference') return [{ key: 'diff', label: 'Difference', src: data.maskUrl }];
-    if (mode === 'overlay') return [{ key: 'overlay', label: 'Overlay', src: data.beforeUrl }];
+    const before = { src: data.beforeUrl, size: data.scaled.before };
+    const after = { src: data.afterUrl, size: data.scaled.after };
+
+    if (mode === 'difference') {
+      return [{ key: 'diff', label: 'Difference', src: data.maskUrl, size: data.compared }];
+    }
+    if (mode === 'overlay') return [{ key: 'overlay', label: 'Overlay', ...before }];
     if (mode === 'blink') {
       return [
         {
           key: 'blink',
           label: blinkAfter ? 'AFTER' : 'BEFORE',
-          src: blinkAfter ? data.afterUrl : data.beforeUrl,
+          ...(blinkAfter ? after : before),
         },
       ];
     }
     return [
-      { key: 'before', label: 'BEFORE', src: data.beforeUrl },
-      { key: 'after', label: 'AFTER', src: data.afterUrl },
+      { key: 'before', label: 'BEFORE', ...before },
+      { key: 'after', label: 'AFTER', ...after },
     ];
   }, [mode, blinkAfter, data]);
+
+  /**
+   * An image takes its own share of the union canvas, anchored top-left — the
+   * same place the engine padded it to. Filling the pane instead stretches a
+   * smaller image, which reads as a difference that is not there.
+   */
+  const inUnion = (size: readonly [number, number]): CSSProperties => ({
+    width: `${(size[0] / data.compared[0]) * 100}%`,
+    height: `${(size[1] / data.compared[1]) * 100}%`,
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%', minHeight: 0 }}>
@@ -129,27 +299,38 @@ export default function ImageDiffView({ result }: EngineViewProps) {
           ]}
         />
         <div className="dd-zoom" data-testid="zoom-controls">
-          <Button
-            size="sm"
-            variant="ghost"
-            aria-label="Zoom out"
-            onClick={() => setZoom((value) => Math.max(ZOOM_MIN, value / 1.25))}
-          >
+          <Button size="sm" variant="ghost" aria-label="Zoom out" onClick={() => step(-1)}>
             −
           </Button>
-          <button type="button" className="dd-zoom-value" onClick={() => setZoom(1)}>
-            {Math.round(zoom * 100)}%
+          <button
+            type="button"
+            className="dd-zoom-value"
+            data-testid="zoom-value"
+            data-fit={atFit ? 'true' : 'false'}
+            title={atFit ? 'Fitted to the window — click for actual size' : 'Click to fit'}
+            onClick={() => (atFit ? zoomTo(1) : setZoomState({ kind: 'fit' }))}
+          >
+            {atFit && <span className="dd-zoom-tag">Fit</span>}
+            {zoomPercent(zoom)}%
           </button>
+          <Button size="sm" variant="ghost" aria-label="Zoom in" onClick={() => step(1)}>
+            +
+          </Button>
           <Button
             size="sm"
             variant="ghost"
-            aria-label="Zoom in"
-            onClick={() => setZoom((value) => Math.min(ZOOM_MAX, value * 1.25))}
+            title="Fit both images in the window (⌘0)"
+            onClick={() => setZoomState({ kind: 'fit' })}
           >
-            +
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setZoom(1)}>
             Fit
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            title="Actual pixel size (⌥⌘0)"
+            onClick={() => zoomTo(1)}
+          >
+            1:1
           </Button>
         </div>
       </ToolbarSlot>
@@ -161,50 +342,67 @@ export default function ImageDiffView({ result }: EngineViewProps) {
           data-testid="image-stage"
           data-mode={mode}
           data-grid={showGrid ? 'true' : 'false'}
+          data-panning={panning ? 'true' : 'false'}
+          // Fit is by definition the zoom at which everything is on screen, so
+          // anything above it is exactly the case where panning has a job.
+          data-pannable={zoom > fit ? 'true' : 'false'}
+          // Below 1:1 the image is being downsampled, and nearest-neighbour
+          // turns a photograph into moiré. Above it, pixels are the point.
+          data-smooth={zoom < 1 ? 'true' : 'false'}
+          onPointerDown={onPointerDown}
         >
-          {panes.map((pane) => (
-            <figure
-              className="dd-shotwrap"
-              key={pane.key}
-              data-testid={`pane-${pane.key}`}
-              style={{ width: `${data.compared[0] * zoom}px` }}
-            >
-              <div className="dd-shot">
-                <img src={pane.src} alt={pane.label} draggable={false} />
-
-                {/* Overlay blends the after image on top of the before one. */}
-                {mode === 'overlay' && (
+          {measured &&
+            panes.map((pane) => (
+              <figure
+                className="dd-shotwrap"
+                key={pane.key}
+                data-testid={`pane-${pane.key}`}
+                style={{ width: `${data.compared[0] * zoom}px` }}
+              >
+                <div
+                  className="dd-shot"
+                  style={{ aspectRatio: `${data.compared[0]} / ${data.compared[1]}` }}
+                >
                   <img
-                    className="dd-shot-overlay"
-                    src={data.afterUrl}
-                    alt="AFTER"
+                    src={pane.src}
+                    alt={pane.label}
                     draggable={false}
-                    style={{ opacity }}
+                    style={inUnion(pane.size)}
                   />
-                )}
 
-                {/* Boxes go on the AFTER side only: drawing them twice in
-                    side-by-side reads as twice as many changes. */}
-                {showRegions &&
-                  pane.key !== 'before' &&
-                  mode !== 'difference' &&
-                  data.regions.map((region, index) => (
-                    <span
-                      key={`${region.left}-${region.top}-${index}`}
-                      className="dd-region"
-                      data-current={index === current ? 'true' : 'false'}
-                      style={{
-                        left: `${region.left}%`,
-                        top: `${region.top}%`,
-                        width: `${region.width}%`,
-                        height: `${region.height}%`,
-                      }}
+                  {/* Overlay blends the after image on top of the before one. */}
+                  {mode === 'overlay' && (
+                    <img
+                      className="dd-shot-overlay"
+                      src={data.afterUrl}
+                      alt="AFTER"
+                      draggable={false}
+                      style={{ ...inUnion(data.scaled.after), opacity }}
                     />
-                  ))}
-              </div>
-              <figcaption>{pane.label}</figcaption>
-            </figure>
-          ))}
+                  )}
+
+                  {/* Boxes go on the AFTER side only: drawing them twice in
+                    side-by-side reads as twice as many changes. */}
+                  {showRegions &&
+                    pane.key !== 'before' &&
+                    mode !== 'difference' &&
+                    data.regions.map((region, index) => (
+                      <span
+                        key={`${region.left}-${region.top}-${index}`}
+                        className="dd-region"
+                        data-current={index === current ? 'true' : 'false'}
+                        style={{
+                          left: `${region.left}%`,
+                          top: `${region.top}%`,
+                          width: `${region.width}%`,
+                          height: `${region.height}%`,
+                        }}
+                      />
+                    ))}
+                </div>
+                <figcaption>{pane.label}</figcaption>
+              </figure>
+            ))}
         </div>
 
         <aside className="dd-imgside" data-testid="image-side">

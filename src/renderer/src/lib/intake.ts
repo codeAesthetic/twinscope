@@ -28,11 +28,28 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 }
 
 /** Fills A first, then B — the order the user is reading in. */
-function nextEmptySide(a: InputPayload | null, b: InputPayload | null): 'A' | 'B' {
+export function nextEmptySide(a: InputPayload | null, b: InputPayload | null): 'A' | 'B' {
   if (a === null) return 'A';
   if (b === null) return 'B';
   // Both taken: replace BEFORE, which is what a third paste most likely means.
   return 'A';
+}
+
+/**
+ * A text selection dragged in from another app, as an input.
+ *
+ * Returns null for whitespace-only content: an accidental drag should leave the
+ * zone alone rather than fill it with nothing.
+ */
+export function droppedText(side: 'A' | 'B', text: string): InputPayload | null {
+  if (text.trim().length === 0) return null;
+  return {
+    side,
+    kind: 'text',
+    name: `dropped-${side.toLowerCase()}.txt`,
+    size: text.length,
+    text,
+  };
 }
 
 export function useIntake(): {
@@ -57,15 +74,8 @@ export function useIntake(): {
 
       // No file path — a text selection dragged from another app.
       const text = dataTransfer.getData('text/plain');
-      if (text.trim().length > 0) {
-        setInput(side, {
-          side,
-          kind: 'text',
-          name: `dropped-${side.toLowerCase()}.txt`,
-          size: text.length,
-          text,
-        });
-      }
+      const payload = droppedText(side, text);
+      if (payload !== null) setInput(side, payload);
     },
     [setInput],
   );

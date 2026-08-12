@@ -33,6 +33,12 @@ export interface ImageDiffData {
   sameSize: boolean;
   /** The size actually compared, after padding and downscale. */
   compared: [number, number];
+  /**
+   * Each side's size *within* the compared canvas, after downscale but before
+   * padding. The view needs this to lay a smaller image out at its own size
+   * against the union rather than stretching it to fill one.
+   */
+  scaled: { before: [number, number]; after: [number, number] };
   /** `data:` URL of the difference heatmap. */
   maskUrl: string;
 }
@@ -157,6 +163,10 @@ export const imageEngine: DiffEngine<ImageDiffOptions, ImageDiffData> = {
         dims: { before: before.natural, after: after.natural },
         sameSize,
         compared: [width, height],
+        scaled: {
+          before: [before.width, before.height],
+          after: [after.width, after.height],
+        },
         maskUrl,
       },
       normalizationNotes: notes,
