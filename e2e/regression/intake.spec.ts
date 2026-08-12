@@ -61,11 +61,9 @@ test('intake: clipboard paste, detection, override and run', async () => {
     // ---------- ⏎ runs, and routing reaches the real engine ----------
     await harness.page.keyboard.press('Enter');
     await expect(harness.page.getByTestId('screen-workspace')).toBeVisible();
-    // The text engine is still a stub, so this proves the request reached it
-    // rather than dying in the plumbing.
-    await expect(harness.page.getByTestId('job-error')).toContainText('not implemented yet', {
-      timeout: 10_000,
-    });
+    // The mismatched pair fell back to the text engine, which now produces a
+    // real diff — this assertion used to expect "not implemented yet".
+    await expect(harness.page.getByTestId('text-diff')).toBeVisible({ timeout: 10_000 });
 
     // ---------- clearing a side retracts the ready state ----------
     await harness.page.getByTestId('back-button').click();

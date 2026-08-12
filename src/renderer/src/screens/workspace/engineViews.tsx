@@ -20,7 +20,7 @@ export interface EngineViewProps {
  */
 export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<EngineViewProps>>> = {
   demo: lazy(() => import('./DemoResultView')),
-  // text:   MVP-4
+  text: lazy(() => import('./TextDiffView')),
   // json:   MVP-5
   // folder: MVP-6
   // image:  MVP-7

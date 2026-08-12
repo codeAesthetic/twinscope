@@ -68,6 +68,19 @@
   overflow: auto;
   padding: 24px;
   text-align: center;
+  min-height: 0;
+}
+
+/*
+ * A result view fills the pane instead of being centred in it — and resets the
+ * centred text, which a diff inherits as right-looking alignment.
+ */
+.dd-comparison-area[data-fill='true'] {
+  display: flex;
+  place-items: initial;
+  padding: 0;
+  text-align: left;
+  overflow: hidden;
 }
 
 /* --- history --- */

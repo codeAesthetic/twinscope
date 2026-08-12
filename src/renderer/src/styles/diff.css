@@ -1,0 +1,147 @@
+/*
+ * Diff rows — ported from reference/devdiff-mockup.html.
+ *
+ * Every row is exactly --dd-row-height tall so the virtualiser can use a fixed
+ * measurement; a variable-height diff makes scrollbar position meaningless on
+ * large files.
+ */
+.dd-diff {
+  --dd-row-height: 20px;
+  flex: 1;
+  overflow: auto;
+  background: var(--panel);
+  font: 12px/20px var(--mono);
+  min-height: 0;
+  width: 100%;
+}
+
+.dd-diff-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  font-family: var(--sans);
+}
+.dd-diff-header > div {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--tx-2);
+}
+.dd-diff-header > div + div {
+  border-left: 1px solid var(--line);
+}
+.dd-diff-header b {
+  color: var(--tx);
+  font: 600 11.5px var(--mono);
+}
+
+/* --- rows --- */
+.dd-drow {
+  display: flex;
+  height: var(--dd-row-height);
+  align-items: stretch;
+}
+.dd-dcell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+.dd-dcell + .dd-dcell {
+  border-left: 1px solid var(--line);
+}
+
+.dd-dln {
+  width: 46px;
+  flex: 0 0 auto;
+  text-align: right;
+  padding-right: 10px;
+  color: var(--tx-3);
+  user-select: none;
+  border-right: 1px solid var(--line);
+  font-size: 10.5px;
+}
+.dd-dmark {
+  width: 14px;
+  flex: 0 0 auto;
+  text-align: center;
+  color: var(--tx-3);
+  user-select: none;
+}
+.dd-dtext {
+  flex: 1;
+  padding: 0 10px 0 2px;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dd-dcell[data-kind='add'] {
+  background: var(--add-bg);
+}
+.dd-dcell[data-kind='add'] .dd-dmark {
+  color: var(--add);
+}
+.dd-dcell[data-kind='del'] {
+  background: var(--del-bg);
+}
+.dd-dcell[data-kind='del'] .dd-dmark {
+  color: var(--del);
+}
+/* An absent side: striped so it reads as "nothing here", not "empty line". */
+.dd-dcell[data-kind='nil'] {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(128, 128, 128, 0.05) 6px,
+    rgba(128, 128, 128, 0.05) 12px
+  );
+}
+
+/* Word-level marks inside a modified line. */
+.dd-word {
+  border-radius: 3px;
+  padding: 1px 0;
+}
+.dd-dcell[data-kind='add'] .dd-word {
+  background: var(--add-bg-2);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--add) 30%, transparent);
+}
+.dd-dcell[data-kind='del'] .dd-word {
+  background: var(--del-bg-2);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--del) 30%, transparent);
+}
+
+/* The current change, driven by the shared change-nav store. */
+.dd-drow[data-current='true'] .dd-dcell {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+
+/* --- fold --- */
+.dd-fold {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--dd-row-height);
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--tx-3);
+  font: 11.5px var(--sans);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.dd-fold:hover {
+  background: var(--hover);
+  color: var(--tx-2);
+}

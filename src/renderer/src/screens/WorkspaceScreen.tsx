@@ -112,7 +112,7 @@ export function WorkspaceScreen() {
           />
         )}
 
-        <div className="dd-comparison-area">
+        <div className="dd-comparison-area" data-fill={status === 'done' ? 'true' : undefined}>
           {status === 'running' && (
             <div data-testid="job-progress" style={{ width: 320 }}>
               <p style={{ margin: 0, color: 'var(--tx-2)', fontSize: 13, fontWeight: 600 }}>

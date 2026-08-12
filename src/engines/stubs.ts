@@ -1,3 +1,4 @@
+import { textEngine } from './text';
 import { NotImplementedError } from './types';
 import type { DiffEngine, InputRef } from './types';
 
@@ -40,19 +41,6 @@ export const jsonEngine = stub(
   { id: 'json', label: 'Structural JSON diff', priority: 20 },
   bothAre('json'),
   { ignoreKeyOrder: true, ignoreNulls: false, ignoreArrayOrder: true, ignorePaths: [] as string[] },
-);
-
-/**
- * The universal fallback: anything textual can be line-diffed, so this accepts
- * any pair no more specific engine claimed. Lowest priority by definition.
- */
-export const textEngine = stub(
-  { id: 'text', label: 'Text diff', priority: 0 },
-  (a, b) => {
-    const comparable = new Set(['text', 'code', 'json', 'yaml', 'csv', 'md']);
-    return comparable.has(a.kind) && comparable.has(b.kind);
-  },
-  { ignoreWhitespace: true, ignoreCase: false, collapseUnchanged: true },
 );
 
 /**
