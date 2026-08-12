@@ -73,6 +73,47 @@ test.describe('packaged app', () => {
       await expect(page.getByTestId('json-tree')).toBeVisible({ timeout: 30_000 });
       await expect(page.getByTestId('summary-strip')).toContainText('～2 modified');
 
+      // ---------- syntax highlighting: the path most likely to break only here
+      // Shiki's grammars are dynamic imports, and in a packaged build those
+      // chunks live inside the asar and load over file://. Nothing in the
+      // unpackaged suite proves that resolves. ----------
+      await page.getByTestId('back-button').click();
+
+      const codeBefore = join(files, 'client.ts');
+      const codeAfter = join(files, 'client.next.ts');
+      await writeFile(codeBefore, 'const timeout = 5000;\nexport function request() {}\n');
+      await writeFile(codeAfter, 'const timeout = 8000;\nexport function request(x) {}\n');
+
+      await app.evaluate(
+        ({ dialog }, paths: string[]) => {
+          let call = 0;
+          dialog.showOpenDialog = () =>
+            Promise.resolve({ canceled: false, filePaths: [paths[call++] ?? paths[0]!] });
+        },
+        [codeBefore, codeAfter],
+      );
+
+      await page.getByTestId('pick-file-before').click();
+      await page.getByTestId('pick-file-after').click();
+      await page.getByTestId('compare-button').click();
+
+      const diff = page.getByTestId('text-diff');
+      await expect(diff).toBeVisible({ timeout: 30_000 });
+      await expect(diff.locator('.dd-dtext span[style*="color"]').first()).toBeVisible({
+        timeout: 30_000,
+      });
+      const distinctColours = await diff.evaluate((root) => {
+        const spans = [...root.querySelectorAll('.dd-dtext span[style*="color"]')];
+        return new Set(spans.map((span) => (span as HTMLElement).style.color)).size;
+      });
+      expect(distinctColours).toBeGreaterThan(1);
+
+      // ---------- and search over the same rows ----------
+      const search = page.getByTestId('workspace-search');
+      await search.fill('timeout');
+      await expect(page.getByTestId('search-count')).toContainText('/ 2');
+      await search.fill('');
+
       // ---------- history landed in userData, not next to the binary ----------
       await page.getByTestId('back-button').click();
       await expect(page.getByTestId('recent-list')).toContainText('a.json ↔ b.json');

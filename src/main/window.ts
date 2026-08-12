@@ -10,6 +10,11 @@ const MIN_SIZE = { width: 1080, height: 640 };
 
 let saveTimer: NodeJS.Timeout | undefined;
 
+/** The harness sets `NODE_ENV=test`; nothing else does. */
+export function isHeadlessTest(): boolean {
+  return process.env['NODE_ENV'] === 'test' && process.env['TWINSCOPE_SHOW_WINDOW'] !== '1';
+}
+
 /** Only restore a saved position if that display still exists. */
 function isOnSomeDisplay(x: number, y: number): boolean {
   return screen.getAllDisplays().some(({ bounds }) => {
@@ -62,7 +67,16 @@ export function createMainWindow(): BrowserWindow {
   if (saved?.maximized) window.maximize();
 
   // Paint before showing, so the window never appears empty.
-  window.once('ready-to-show', () => window.show());
+  //
+  // Under test it is never shown at all: the suite is driven by Playwright, not
+  // watched, and a run that throws twenty windows at the screen cannot be run
+  // while working. Chromium still lays the page out and still paints it
+  // (`paintWhenInitiallyHidden` defaults on), so measurement, `ResizeObserver`
+  // and `page.screenshot` all keep telling the truth — which is the only reason
+  // this is allowed to differ from production.
+  window.once('ready-to-show', () => {
+    if (!isHeadlessTest()) window.show();
+  });
 
   window.on('resize', () => schedulePersist(window));
   window.on('move', () => schedulePersist(window));

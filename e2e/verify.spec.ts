@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { launchApp } from './helpers/launch';
 
@@ -59,7 +60,20 @@ test('app boots, bridges to main, and stays locked down', async () => {
     await harness.page.waitForTimeout(1000);
     expect(harness.page.url()).toBe(before);
 
-    await harness.screenshot(`boot-${harness.target}`);
+    // The suite runs without taking the screen: the window is created but never
+    // shown under test. Asserted here because it is invisible by construction —
+    // a stray `show()` would otherwise only be noticed by whoever is trying to
+    // work while the suite runs.
+    if (harness.target === 'app') {
+      const shown = await harness.app.evaluate(
+        ({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.isVisible() ?? true,
+      );
+      expect(shown, 'the test window must stay hidden').toBe(false);
+    }
+
+    // And it still paints, which is the only reason hiding it is honest.
+    const shot = await harness.screenshot(`boot-${harness.target}`);
+    expect(statSync(shot).size).toBeGreaterThan(10_000);
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
 
     console.log(`[verify] target=${harness.target} versions=${JSON.stringify(ping.versions)}`);
