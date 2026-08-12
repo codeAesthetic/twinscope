@@ -56,6 +56,13 @@ export type IpcChannel = (typeof IPC)[keyof typeof IPC];
 export interface PingResult {
   pong: true;
   versions: { electron: string; chrome: string; node: string };
+  /**
+   * Unpackaged build or test run. Gates development-only affordances — the demo
+   * engine's button is the only one so far. Carried on `ping` rather than as its
+   * own bridge key deliberately: the bridge surface is asserted in
+   * `verify.spec.ts` and every entry in it is a hole in context isolation.
+   */
+  isDev: boolean;
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Chip, Kbd } from '../primitives';
-import { useRunComparison } from '../../lib/compareClient';
+import { useIsDev, useLoadSample, useRunComparison, useRunDemo } from '../../lib/compareClient';
 import { useCompareStore } from '../../stores/compare';
 import { ENGINES, selectEngineForInputs } from '../../../../engines/registry';
 
@@ -28,6 +28,9 @@ export function DetectedBar() {
   const engineOverride = useCompareStore((state) => state.engineOverride);
   const setEngineOverride = useCompareStore((state) => state.setEngineOverride);
   const runComparison = useRunComparison();
+  const loadSample = useLoadSample();
+  const runDemo = useRunDemo();
+  const isDev = useIsDev();
 
   if (a === null || b === null) {
     return (
@@ -37,13 +40,15 @@ export function DetectedBar() {
             ? `Waiting for the ${a !== null ? 'AFTER' : 'BEFORE'} side…`
             : 'Drop, browse or paste two inputs'}
         </Chip>
-        <Button
-          variant="ghost"
-          data-testid="demo-button"
-          onClick={() => void runComparison('demo')}
-        >
-          Load demo comparison
+        <Button variant="ghost" data-testid="sample-button" onClick={() => void loadSample()}>
+          Load sample comparison
         </Button>
+        {/* Development builds only — the pipeline fixture, never shipped. */}
+        {isDev && (
+          <Button variant="ghost" data-testid="demo-button" onClick={() => void runDemo()}>
+            Demo engine
+          </Button>
+        )}
       </div>
     );
   }

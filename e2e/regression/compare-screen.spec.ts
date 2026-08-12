@@ -114,3 +114,45 @@ test('compare screen: hero, drop zones, quick cards and recent list', async () =
     await harness.close();
   }
 });
+
+/**
+ * REGRESSION — "Load sample comparison" shows the real product.
+ *
+ * It used to run the `demo` engine: a two-second sleep that rendered
+ * "change 1 … change 11" above the note "Demo engine — no real comparison was
+ * performed". Everything here asserts the opposite of that — a genuine text
+ * diff, from the genuine engine, over content chosen to show what the view can
+ * do. The demo engine still exists for `job-lifecycle`, just not on a button.
+ */
+test('compare screen: the sample button runs a real diff, not a simulation', async () => {
+  const harness = await launchApp();
+
+  try {
+    await harness.page.getByTestId('sample-button').click();
+
+    // The real text engine, in the real view.
+    await expect(harness.page.getByTestId('text-diff')).toBeVisible({ timeout: 20_000 });
+    await expect(harness.page.getByTestId('workspace-toolbar')).toContainText('Text');
+    await expect(harness.page.getByTestId('demo-result-view')).toHaveCount(0);
+    await expect(harness.page.getByTestId('status-detail')).not.toContainText('demo');
+
+    // Content, not a synthetic count: these lines are in the sample.
+    const stage = harness.page.getByTestId('text-diff');
+    await expect(stage).toContainText('loadConfig');
+    await expect(stage).toContainText('DEFAULT_OPTIONS');
+
+    // The pair was shaped to produce all three kinds of change, so a summary
+    // that reports only one means the sample stopped demonstrating anything.
+    const strip = harness.page.getByTestId('summary-strip');
+    for (const label of ['added', 'removed', 'modified']) {
+      const chip = strip.getByText(new RegExp(`\\d+ ${label}`));
+      await expect(chip).toBeVisible();
+      expect(await chip.textContent()).not.toMatch(/^[+~-]?0 /);
+    }
+
+    await harness.screenshot('compare-sample');
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    await harness.close();
+  }
+});

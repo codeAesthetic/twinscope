@@ -1,19 +1,30 @@
 import { expect, test } from '@playwright/test';
-import { launchApp } from '../helpers/launch';
+import { launchApp, type Harness } from '../helpers/launch';
 
 /**
  * REGRESSION — MVP-1: the comparison job lifecycle.
  *
  * Every engine from MVP-4 onward rides this path, so a break here breaks the
  * whole product. Driven by the demo engine, which reports progress and nothing
- * else — the point is the plumbing, not the diff.
+ * else — the point is the plumbing, not the diff. It is slow and cancellable on
+ * purpose, which is exactly what a real engine on small inputs is not.
+ *
+ * Its button is **development-only** now, gated on `PingResult.isDev` — false in
+ * a packaged build, so a user never sees it. Beside it sits the user-facing
+ * "Load sample comparison", which runs the real text engine, because a demo
+ * whose own footnote admits no comparison happened is not a demo. The harness
+ * always sets `NODE_ENV=test`, so `isDev` is true here and the button is present.
  */
+async function runDemo(harness: Harness): Promise<void> {
+  await harness.page.getByTestId('demo-button').click();
+}
+
 test('job lifecycle: progress, completion, cancellation, crash recovery', async () => {
   const harness = await launchApp();
 
   try {
     // ---------- runs, reports progress, completes ----------
-    await harness.page.getByTestId('demo-button').click();
+    await runDemo(harness);
 
     // Navigation is immediate so progress is visible while the engine works.
     await expect(harness.page.getByTestId('screen-workspace')).toBeVisible();
@@ -68,18 +79,19 @@ test('job lifecycle: progress, completion, cancellation, crash recovery', async 
     await expect(harness.page.getByTestId('normalization-notes')).toHaveCount(0);
 
     // ---------- cancellation ----------
-    // "New comparison" must clear the inputs, or the demo button never returns.
+    // "New comparison" must clear the inputs — the empty-state bar only renders
+    // when both sides are null, so this is what proves it.
     await harness.page.getByTestId('back-button').click();
-    await expect(harness.page.getByTestId('demo-button')).toBeVisible();
+    await expect(harness.page.getByTestId('sample-button')).toBeVisible();
 
-    await harness.page.getByTestId('demo-button').click();
+    await runDemo(harness);
     await expect(harness.page.getByTestId('job-progress')).toBeVisible();
     await harness.page.getByTestId('cancel-button').click();
     await expect(harness.page.getByTestId('job-error')).toContainText('Comparison cancelled');
 
     // ---------- a worker crash is survivable ----------
     await harness.page.getByTestId('back-button').click();
-    await harness.page.getByTestId('demo-button').click();
+    await runDemo(harness);
     await expect(harness.page.getByTestId('job-progress')).toBeVisible();
 
     // Killed from the main process, so the renderer never gets this power.
@@ -103,7 +115,7 @@ test('job lifecycle: progress, completion, cancellation, crash recovery', async 
 
     // ...and the next job succeeds on a freshly spawned worker.
     await harness.page.getByTestId('back-button').click();
-    await harness.page.getByTestId('demo-button').click();
+    await runDemo(harness);
     await expect(harness.page.getByTestId('demo-result-view')).toBeVisible({ timeout: 20_000 });
 
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);

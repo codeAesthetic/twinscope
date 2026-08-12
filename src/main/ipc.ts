@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
 import { readClipboard, writeClipboard } from './clipboard';
 import { readBytes, readInput } from './input';
@@ -40,6 +40,7 @@ export function registerIpcHandlers(): void {
         chrome: process.versions.chrome,
         node: process.versions.node,
       },
+      isDev: !app.isPackaged || process.env['NODE_ENV'] === 'test',
     };
   });
 
