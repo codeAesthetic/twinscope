@@ -8,6 +8,7 @@ import { IPC, type DevDiffApi } from '../shared/channels';
  * `ipcRenderer` (or anything that can reach it) to the page.
  */
 const api: DevDiffApi = {
+  platform: process.platform,
   ping: () => ipcRenderer.invoke(IPC.ping),
 };
 

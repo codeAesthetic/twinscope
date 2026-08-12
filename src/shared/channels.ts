@@ -22,5 +22,11 @@ export interface PingResult {
  * it typed, and never expose `ipcRenderer` itself.
  */
 export interface DevDiffApi {
+  /**
+   * Host platform, read once at preload time. The UI needs it for chrome
+   * details — macOS draws traffic lights over the window, so the titlebar has
+   * to leave room for them.
+   */
+  platform: 'darwin' | 'win32' | 'linux' | string;
   ping(): Promise<PingResult>;
 }

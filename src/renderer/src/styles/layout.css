@@ -1,0 +1,221 @@
+/*
+ * App chrome — titlebar, sidebar, status bar. Ported from
+ * reference/devdiff-mockup.html. Tokens only.
+ */
+
+.dd-frame {
+  height: 100%;
+  display: grid;
+  grid-template-rows: 42px 1fr 28px;
+  grid-template-columns: 100%;
+  overflow: hidden;
+}
+
+/* --- titlebar --- */
+.dd-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(var(--panel-2), var(--panel));
+  /* The whole bar drags the window; interactive bits opt out below. */
+  -webkit-app-region: drag;
+  user-select: none;
+}
+/* macOS draws the traffic lights over the window, so leave them room. */
+.dd-titlebar[data-platform='darwin'] {
+  padding-left: 84px;
+}
+.dd-titlebar button,
+.dd-titlebar input {
+  -webkit-app-region: no-drag;
+}
+.dd-titlebar-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+  color: var(--tx-2);
+  font-size: 12px;
+}
+.dd-titlebar-title b {
+  color: var(--tx);
+  font-weight: 600;
+}
+.dd-titlebar-title .dd-sep {
+  color: var(--tx-3);
+}
+.dd-titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dd-iconbtn {
+  width: 28px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--tx-2);
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+}
+.dd-iconbtn:hover {
+  background: var(--hover);
+  color: var(--tx);
+  border-color: var(--line);
+}
+
+/* --- body row --- */
+.dd-body {
+  display: flex;
+  min-height: 0;
+}
+
+/* --- sidebar --- */
+.dd-sidebar {
+  width: 214px;
+  flex: 0 0 auto;
+  border-right: 1px solid var(--line);
+  background: var(--bg-2);
+  display: flex;
+  flex-direction: column;
+  padding: 12px 10px;
+  overflow-y: auto;
+}
+html[data-theme='light'] .dd-sidebar {
+  background: var(--panel-2);
+}
+.dd-group-label {
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  padding: 10px 8px 6px;
+}
+.dd-navitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  color: var(--tx-2);
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  font: inherit;
+  font-size: 12.5px;
+  width: 100%;
+  text-align: left;
+}
+.dd-navitem:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--tx);
+}
+.dd-navitem[aria-current='page'] {
+  background: var(--acc-bg);
+  color: var(--tx);
+  border-color: color-mix(in srgb, var(--acc) 40%, transparent);
+}
+.dd-navitem[aria-current='page'] svg {
+  color: var(--acc-2);
+}
+html[data-theme='light'] .dd-navitem[aria-current='page'] svg {
+  color: var(--acc);
+}
+.dd-navitem:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+.dd-navitem svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--tx-3);
+}
+.dd-navitem .dd-shortcut {
+  margin-left: auto;
+  font: 600 10px/1 var(--mono);
+  color: var(--tx-3);
+}
+.dd-sidebar-spacer {
+  flex: 1;
+}
+
+/* --- privacy badge --- */
+.dd-privacy {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 9px;
+  padding: 9px 10px;
+  margin-top: 8px;
+}
+.dd-privacy-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.dd-privacy-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--add);
+  box-shadow: 0 0 0 3px var(--add-bg);
+}
+.dd-privacy p {
+  margin: 5px 0 0;
+  color: var(--tx-3);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* --- main stage --- */
+.dd-stage {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* --- status bar --- */
+.dd-statusbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 12px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--tx-3);
+  font-size: 11px;
+}
+html[data-theme='light'] .dd-statusbar {
+  background: var(--panel-2);
+}
+.dd-statusbar-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--add);
+}
+.dd-statusbar-right {
+  margin-left: auto;
+  display: flex;
+  gap: 14px;
+}
+
+/* --- placeholder screen --- */
+.dd-placeholder {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--tx-3);
+  font-size: 12.5px;
+  text-align: center;
+  padding: 24px;
+}

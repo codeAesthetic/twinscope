@@ -30,6 +30,8 @@ export interface Harness {
   app: ElectronApplication;
   page: Page;
   target: LaunchTarget;
+  /** Host platform, for assertions about platform-specific chrome. */
+  platform: NodeJS.Platform;
   /** Renderer console output, newest last. */
   logs: string[];
   /** Renderer console.error lines + uncaught exceptions. Assert this is empty. */
@@ -114,6 +116,7 @@ export async function launchApp(): Promise<Harness> {
     app,
     page,
     target,
+    platform: process.platform,
     logs,
     errors,
     async screenshot(name: string) {

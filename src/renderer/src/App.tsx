@@ -1,11 +1,29 @@
 import { useEffect, useState } from 'react';
-import { BootScreen } from './screens/BootScreen';
+import { AppFrame } from './components/layout/AppFrame';
+import { useAppStore } from './stores/app';
+import { ComparePlaceholder } from './screens/ComparePlaceholder';
 import { Gallery } from './screens/Gallery';
+import { Placeholder } from './screens/Placeholder';
 import { ThemeProvider } from './theme/ThemeProvider';
 
+function CurrentScreen() {
+  const view = useAppStore((state) => state.view);
+
+  switch (view) {
+    case 'compare':
+      return <ComparePlaceholder />;
+    case 'history':
+      return <Placeholder name="History" note="Recent and saved comparisons arrive in HOME-4." />;
+    case 'projects':
+      return <Placeholder name="Projects" note="Scoped at V1-9." />;
+    case 'settings':
+      return <Placeholder name="Settings" note="Settings groups arrive in HOME-4." />;
+  }
+}
+
 /**
- * No router yet (plan D11) — screens switch on state. The only route today is
- * the dev-facing #gallery, used to compare primitives against the mockup.
+ * No router (plan D11) — the sidebar drives a Zustand `view`. The only special
+ * route is the dev-facing #gallery, used to check primitives against the mockup.
  */
 export function App() {
   const [hash, setHash] = useState(() => window.location.hash);
@@ -16,5 +34,19 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, []);
 
-  return <ThemeProvider>{hash === '#gallery' ? <Gallery /> : <BootScreen />}</ThemeProvider>;
+  if (hash === '#gallery') {
+    return (
+      <ThemeProvider>
+        <Gallery />
+      </ThemeProvider>
+    );
+  }
+
+  return (
+    <ThemeProvider>
+      <AppFrame>
+        <CurrentScreen />
+      </AppFrame>
+    </ThemeProvider>
+  );
 }

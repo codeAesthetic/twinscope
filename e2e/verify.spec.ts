@@ -15,13 +15,14 @@ test('app boots, bridges to main, and stays locked down', async () => {
   const harness = await launchApp();
 
   try {
-    await expect(harness.page.getByTestId('boot-screen')).toBeVisible();
+    await expect(harness.page.getByTestId('titlebar')).toBeVisible();
+    await expect(harness.page.getByTestId('sidebar')).toBeVisible();
     expect(await harness.page.title()).toBe('DevDiff');
 
-    // The preload bridge round-trips to main.
+    // The preload bridge round-trips to main, and the UI shows it.
     const ping = await harness.page.evaluate(() => window.devdiff.ping());
     expect(ping.pong).toBe(true);
-    await expect(harness.page.getByTestId('bridge-status')).toContainText('bridge ok');
+    await expect(harness.page.getByTestId('bridge-status')).toContainText('electron');
 
     // Context isolation: node must be unreachable from the page, and the
     // bridge must expose nothing beyond its declared surface.
@@ -34,7 +35,7 @@ test('app boots, bridges to main, and stays locked down', async () => {
     expect(leaks.process).toBe('undefined');
     expect(leaks.require).toBe('undefined');
     expect(leaks.ipcRenderer).toBe('undefined');
-    expect(leaks.bridge).toEqual(['ping']);
+    expect(leaks.bridge.sort()).toEqual(['ping', 'platform']);
 
     // New windows are denied.
     const opened = await harness.page.evaluate(() => window.open('https://example.com') !== null);
