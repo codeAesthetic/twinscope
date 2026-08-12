@@ -1,0 +1,182 @@
+/*
+ * Compare (Home) screen — ported from reference/devdiff-mockup.html.
+ * Tokens only.
+ */
+
+.dd-home {
+  flex: 1;
+  overflow: auto;
+  padding: 34px 30px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dd-home-title {
+  font-size: 25px;
+  font-weight: 680;
+  letter-spacing: -0.025em;
+  margin: 6px 0;
+  text-align: center;
+}
+
+.dd-home-sub {
+  color: var(--tx-2);
+  margin: 0 0 26px;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* --- drop zone pair --- */
+.dd-dropgrid {
+  display: grid;
+  grid-template-columns: 1fr 42px 1fr;
+  align-items: stretch;
+  width: 100%;
+  max-width: 860px;
+}
+
+.dd-drop {
+  border: 1.5px dashed var(--line-2);
+  border-radius: 12px;
+  background: var(--panel-2);
+  padding: 18px;
+  min-height: 172px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Prepared for MVP-2 intake; harmless while the zone is static. */
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+/* Filled: solid accent border and a faint accent wash from the top. */
+.dd-drop[data-state='filled'] {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--acc) 40%, transparent);
+  background: linear-gradient(var(--acc-bg), transparent 70%), var(--panel-2);
+}
+
+/* Drag-over state, styled now so MVP-2 only has to toggle the attribute. */
+.dd-drop[data-state='over'] {
+  border-color: var(--acc);
+  background: var(--acc-bg);
+  box-shadow: 0 0 0 3px var(--acc-bg);
+}
+
+.dd-drop-label {
+  font: 600 10.5px/1 var(--sans);
+  letter-spacing: 0.11em;
+  color: var(--tx-3);
+}
+
+.dd-drop-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--tx-3);
+  text-align: center;
+}
+.dd-drop-empty strong {
+  color: var(--tx-2);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.dd-drop-glyph {
+  font-size: 20px;
+  opacity: 0.5;
+  line-height: 1;
+}
+.dd-drop-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* --- filled card --- */
+.dd-filecard {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+.dd-filecard-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.dd-filecard-name {
+  font-weight: 620;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-filecard-meta {
+  color: var(--tx-3);
+  font-size: 11.5px;
+  font-family: var(--mono);
+}
+.dd-filecard-clear {
+  margin-left: auto;
+}
+.dd-filecard-preview {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 8px 10px;
+  font: 11px/1.6 var(--mono);
+  color: var(--tx-2);
+  overflow: hidden;
+  white-space: pre;
+  margin: 0;
+}
+
+/* --- swap control --- */
+.dd-swap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.dd-swap-line {
+  flex: 1;
+  width: 1px;
+  background: linear-gradient(var(--line), transparent);
+}
+.dd-swap-line:last-child {
+  background: linear-gradient(transparent, var(--line));
+}
+.dd-swapbtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+  background: var(--elev);
+  color: var(--tx-2);
+  cursor: pointer;
+  font: inherit;
+  flex: 0 0 auto;
+}
+.dd-swapbtn:hover {
+  background: var(--hover);
+  color: var(--tx);
+}
+
+/* --- detected bar --- */
+.dd-detected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+  justify-content: center;
+}

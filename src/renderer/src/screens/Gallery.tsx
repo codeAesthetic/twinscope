@@ -9,7 +9,17 @@ import {
   Switch,
   Toggle,
 } from '../components/primitives';
+import { DropZonePair } from '../components/home/DropZonePair';
+import type { DropZoneInput } from '../components/home/types';
 import { useTheme } from '../theme/ThemeProvider';
+
+/** PLACEHOLDER data — real inputs arrive in MVP-2. */
+const FILLED_BEFORE: DropZoneInput = {
+  kind: 'json',
+  name: 'users-v2.3.json',
+  meta: '41.2 KB · json',
+  preview: ['{', '  "user": {', '    "id": "u_10482",', '    "status": "pending",'],
+};
 
 /**
  * Dev-facing gallery of every primitive, for eyeballing against the mockup in
@@ -87,6 +97,12 @@ export function Gallery() {
         <FileTypeBadge kind="folder" />
         <FileTypeBadge kind="md" />
         <FileTypeBadge kind="text" />
+      </Section>
+
+      <Section title="Drop zones — empty and filled">
+        <div style={{ width: '100%' }}>
+          <DropZonePair before={FILLED_BEFORE} />
+        </div>
       </Section>
 
       <Section title="Switch">

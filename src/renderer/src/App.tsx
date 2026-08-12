@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
 import { useAppStore } from './stores/app';
-import { ComparePlaceholder } from './screens/ComparePlaceholder';
+import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
 import { Placeholder } from './screens/Placeholder';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -11,7 +11,7 @@ function CurrentScreen() {
 
   switch (view) {
     case 'compare':
-      return <ComparePlaceholder />;
+      return <CompareScreen />;
     case 'history':
       return <Placeholder name="History" note="Recent and saved comparisons arrive in HOME-4." />;
     case 'projects':
