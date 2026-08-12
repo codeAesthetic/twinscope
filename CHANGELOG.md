@@ -6,6 +6,14 @@ project uses [semantic versioning][semver].
 [kac]: https://keepachangelog.com/en/1.1.0/
 [semver]: https://semver.org/spec/v2.0.0.html
 
+## Unreleased
+
+### Fixed
+
+- **Plain `⌘V` now starts a comparison** when nothing is focused, alongside
+  `⌘⇧V`. The approved design specified both; only `⌘⇧V` had been wired. Pasting
+  into a text field is untouched — the field still gets the paste.
+
 ## 0.1.0 — 2026-08-12
 
 First release. Drop two things in, get a comparison that explains itself.

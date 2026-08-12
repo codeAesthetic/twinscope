@@ -3,7 +3,7 @@ import { AppFrame } from './components/layout/AppFrame';
 import { CommandPalette } from './components/CommandPalette';
 import { useActions } from './lib/actions';
 import { useCompareEvents, useRunComparison } from './lib/compareClient';
-import { useAppShortcuts } from './lib/intake';
+import { useAppShortcuts, useClipboardIntake } from './lib/intake';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
@@ -45,6 +45,8 @@ function Shell() {
   const runComparison = useRunComparison();
   const onAction = useActions();
   useAppShortcuts(() => void runComparison(), onAction);
+  // Plain ⌘V, via the platform's paste event (⌘⇧V is the explicit binding).
+  useClipboardIntake();
 
   return (
     <>

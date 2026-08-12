@@ -14,6 +14,12 @@ export type Scope = 'global' | 'home' | 'workspace';
 export interface Shortcut {
   id: string;
   combo: string;
+  /**
+   * Equivalent bindings that also fire this action. Declared rather than left
+   * implicit so the Settings grid shows every key that works, and so the
+   * duplicate check covers them too.
+   */
+  aliases?: string[];
   label: string;
   detail?: string;
   scope: Scope;
@@ -52,6 +58,9 @@ export const SHORTCUTS: readonly Shortcut[] = [
   {
     id: 'paste-compare',
     combo: '⌘⇧V',
+    // Plain ⌘V works too whenever you are not typing — handled by a `paste`
+    // listener rather than a key binding, so text fields keep their own paste.
+    aliases: ['⌘V'],
     label: 'Compare clipboard',
     detail: 'Paste A, then paste B',
     scope: 'global',
@@ -159,18 +168,27 @@ export function matches(event: KeyboardEvent, combo: string): boolean {
 export function duplicateCombos(shortcuts: readonly Shortcut[] = SHORTCUTS): string[] {
   const seen = new Map<string, Scope[]>();
 
+  // Aliases are bindings like any other: an alias that collides with a primary
+  // combo is exactly as broken as two primaries colliding.
   for (const shortcut of shortcuts) {
-    const scopes = seen.get(shortcut.combo) ?? [];
-    // The same combo may exist in two different scopes; only a clash within one
-    // scope (or against a global) is ambiguous.
-    const clashes = scopes.some(
-      (scope) => scope === shortcut.scope || scope === 'global' || shortcut.scope === 'global',
-    );
-    if (clashes) return [shortcut.combo];
-    seen.set(shortcut.combo, [...scopes, shortcut.scope]);
+    for (const combo of combosFor(shortcut)) {
+      const scopes = seen.get(combo) ?? [];
+      // The same combo may exist in two different scopes; only a clash within
+      // one scope (or against a global) is ambiguous.
+      const clashes = scopes.some(
+        (scope) => scope === shortcut.scope || scope === 'global' || shortcut.scope === 'global',
+      );
+      if (clashes) return [combo];
+      seen.set(combo, [...scopes, shortcut.scope]);
+    }
   }
 
   return [];
+}
+
+/** Every key that fires this action, primary first. */
+export function combosFor(shortcut: Shortcut): string[] {
+  return [shortcut.combo, ...(shortcut.aliases ?? [])];
 }
 
 export function shortcutFor(id: string): Shortcut | undefined {

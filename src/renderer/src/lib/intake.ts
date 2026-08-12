@@ -11,6 +11,22 @@ import type { InputPayload } from '../../../shared/channels';
  * input came from.
  */
 
+/**
+ * Whether a keystroke belongs to whatever the user is typing into.
+ *
+ * The one check that keeps global bindings from stealing keys out of a text
+ * field. Shared deliberately: the keymap and the paste listener must agree, or
+ * ⌘V would fill a drop zone while someone was editing an ignored path.
+ */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  const element = target as HTMLElement | null;
+  return (
+    element?.tagName === 'INPUT' ||
+    element?.tagName === 'TEXTAREA' ||
+    element?.isContentEditable === true
+  );
+}
+
 /** Fills A first, then B — the order the user is reading in. */
 function nextEmptySide(a: InputPayload | null, b: InputPayload | null): 'A' | 'B' {
   if (a === null) return 'A';
@@ -80,11 +96,7 @@ export function useAppShortcuts(onRun: () => void, onAction: (id: string) => voi
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      const target = event.target as HTMLElement | null;
-      const typing =
-        target?.tagName === 'INPUT' ||
-        target?.tagName === 'TEXTAREA' ||
-        target?.isContentEditable === true;
+      const typing = isTypingTarget(event.target);
 
       // ⌥↓ / ⌥↑ — step through changes (MD §11). Only when there are any, so
       // the keys stay available to the OS otherwise.
@@ -118,6 +130,32 @@ export function useAppShortcuts(onRun: () => void, onAction: (id: string) => voi
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [onRun, onAction, nextChange, previousChange]);
+}
+
+/**
+ * Plain ⌘V, the way the approved mockup specified it.
+ *
+ * A `paste` listener rather than a key binding, so the *platform* decides what
+ * counts as a paste — that keeps ⌘V working normally inside every text field,
+ * and picks up the OS variants (Edit menu, middle-click on Linux) for free.
+ *
+ * The event is only a trigger: the payload still comes from `clipboard.read` in
+ * main, so text, images and detection all follow the one path ⌘⇧V already uses.
+ */
+export function useClipboardIntake(): void {
+  const { fromClipboard } = useIntake();
+
+  useEffect(() => {
+    const onPaste = (event: ClipboardEvent): void => {
+      // Someone is typing: the field gets the paste, not the comparison.
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      void fromClipboard();
+    };
+
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [fromClipboard]);
 }
 
 /**

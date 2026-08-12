@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Kbd, Seg, Switch } from '../components/primitives';
-import { SHORTCUTS } from '../lib/shortcuts';
+import { combosFor, SHORTCUTS } from '../lib/shortcuts';
 import { useSettingsStore } from '../stores/settings';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
 
@@ -122,7 +122,11 @@ export function SettingsScreen() {
             <div className="dd-scrow" key={shortcut.id}>
               <span>{shortcut.label}</span>
               <span className="dd-scrow-keys">
-                <Kbd>{shortcut.combo}</Kbd>
+                {/* Every binding, not just the primary — a grid that lists one
+                    key while two work is the drift this table exists to stop. */}
+                {combosFor(shortcut).map((combo) => (
+                  <Kbd key={combo}>{combo}</Kbd>
+                ))}
               </span>
             </div>
           ))}

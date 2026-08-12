@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { duplicateCombos, matches, parseCombo, SHORTCUTS, shortcutFor } from './shortcuts';
+import {
+  combosFor,
+  duplicateCombos,
+  matches,
+  parseCombo,
+  SHORTCUTS,
+  shortcutFor,
+} from './shortcuts';
 
 /** A KeyboardEvent-shaped object; the matcher only reads these four fields. */
 function press(
@@ -66,6 +73,31 @@ describe('the registry', () => {
         { id: 'two', combo: '⌘J', label: 'Two', scope: 'workspace' },
       ]),
     ).toEqual(['⌘J']);
+  });
+
+  it('conflict-checks aliases, not just primary combos', () => {
+    expect(
+      duplicateCombos([
+        { id: 'one', combo: '⌘J', label: 'One', scope: 'global' },
+        { id: 'two', combo: '⌘K', aliases: ['⌘J'], label: 'Two', scope: 'global' },
+      ]),
+    ).toEqual(['⌘J']);
+  });
+
+  it('lists every key that fires an action, primary first', () => {
+    const paste = shortcutFor('paste-compare');
+    expect(paste?.aliases).toEqual(['⌘V']);
+    expect(combosFor(paste!)).toEqual(['⌘⇧V', '⌘V']);
+    // A shortcut with no aliases still reports its one binding.
+    expect(combosFor(shortcutFor('palette')!)).toEqual(['⌘K']);
+  });
+
+  it('parses every declared binding, aliases included', () => {
+    for (const shortcut of SHORTCUTS) {
+      for (const combo of combosFor(shortcut)) {
+        expect(parseCombo(combo).key, `${combo} must parse to a key`).not.toBe('');
+      }
+    }
   });
 
   it('gives every entry a unique id, since ids are how actions are dispatched', () => {
