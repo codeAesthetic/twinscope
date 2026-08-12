@@ -30,16 +30,17 @@ jobs:
         include:
           - os: windows-latest
             platform: win
-            artifacts: 'release/*.exe'
           - os: ubuntu-latest
             platform: linux
-            artifacts: |
-              release/*.AppImage
-              release/*.deb
 
     runs-on: ${{ matrix.os }}
 
     steps:
+      # Checks out the tag, so a released installer is built from released code.
+      # Note the consequence: attaching installers to a tag that predates a build
+      # fix rebuilds the *old* code and fails the same way. v0.1.0's Linux job hit
+      # exactly that (linux.maintainer landed after the tag), and its AppImage and
+      # deb were built locally instead.
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag || github.ref }}
