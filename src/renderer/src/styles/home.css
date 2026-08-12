@@ -195,7 +195,10 @@
   background: var(--panel-2);
   border-radius: 10px;
   padding: 12px;
-  cursor: pointer;
+  /* No pointer: these describe the four fastest routes in, they do not perform
+     them. A pointer would promise a click that goes nowhere. The hover stays —
+     it reads as "this is a surface", which is true. */
+  cursor: default;
   font: inherit;
   color: inherit;
   text-align: left;
