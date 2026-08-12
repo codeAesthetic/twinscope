@@ -163,6 +163,59 @@
   flex: 0 0 auto;
 }
 
+/*
+ * Per-row actions (MVP-8).
+ *
+ * The row itself is a button, so its star and delete buttons cannot live inside
+ * it — they are a sibling inside `.dd-hitem-wrap` (see `HistoryScreen.tsx`).
+ * That makes the wrap the positioning context the actions need: without these
+ * two rules they are ordinary inline content and stack *underneath* every row,
+ * which is what the first documentation stills caught.
+ *
+ * The mockup's history rows have no actions to port (only the static star
+ * glyph), so this is the app's own idiom — ghost `sm` buttons, tokens only.
+ */
+.dd-hitem-wrap {
+  position: relative;
+}
+.dd-hitem-actions {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  /* Faded, never `display: none`: the buttons stay in the tab order, and
+     `:focus-within` is what brings them back for a keyboard user. */
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.dd-hitem-wrap:hover .dd-hitem-actions,
+.dd-hitem-wrap:focus-within .dd-hitem-actions {
+  opacity: 1;
+}
+/*
+ * The actions land on the timestamp, so it steps aside rather than being
+ * covered — one thing in that corner at a time.
+ */
+.dd-hitem-wrap:hover .dd-hitem-ago,
+.dd-hitem-wrap:focus-within .dd-hitem-ago {
+  opacity: 0;
+}
+/* Moving the pointer off the row and onto its actions is still "on the row". */
+.dd-hitem-wrap:hover .dd-hitem {
+  background: var(--hover);
+}
+/*
+ * The row is already at `--hover` by the time these are visible, so a ghost
+ * button's own hover would be invisible; it needs the next surface up.
+ */
+.dd-hitem-actions .dd-btn:hover:not(:disabled) {
+  background: var(--line-2);
+  color: var(--tx);
+}
+
 /* --- settings --- */
 .dd-settings {
   flex: 1;

@@ -78,6 +78,42 @@ test('history: records, reopens, stars, deletes — and never stores contents', 
     await expect(harness.page.getByTestId('history-empty')).toBeVisible();
     await harness.page.getByRole('button', { name: 'Starred only' }).click();
 
+    // ---------- the actions overlay the row's right edge ----------
+    // A button cannot nest inside a button, so the star and delete buttons are a
+    // *sibling* of the row and only CSS puts them on it. With the wrap's
+    // positioning context missing they render as inline content below every row
+    // — laid out, styled, and in the wrong place, which no other assertion here
+    // could see. The first documentation stills shipped that way.
+    const row = harness.page.getByTestId(`history-${id}`);
+    const wrap = harness.page.locator('.dd-hitem-wrap').filter({ has: row });
+    const actions = wrap.locator('.dd-hitem-actions');
+
+    expect(
+      await wrap.evaluate((el) => ({
+        wrap: getComputedStyle(el).position,
+        actions: getComputedStyle(el.querySelector('.dd-hitem-actions')!).position,
+      })),
+    ).toEqual({ wrap: 'relative', actions: 'absolute' });
+
+    const rowBox = (await row.boundingBox())!;
+    const actionsBox = (await actions.boundingBox())!;
+    // Inside the row vertically — the whole bug was "below it instead".
+    expect(actionsBox.y).toBeGreaterThanOrEqual(rowBox.y);
+    expect(actionsBox.y + actionsBox.height).toBeLessThanOrEqual(rowBox.y + rowBox.height);
+    // At the right edge, not floating in the middle of the row.
+    expect(actionsBox.x).toBeGreaterThan(rowBox.x + rowBox.width / 2);
+    expect(rowBox.x + rowBox.width - (actionsBox.x + actionsBox.width)).toBeLessThan(24);
+
+    // Revealed on hover, and — the half a keyboard user depends on — kept
+    // revealed by focus alone, with the pointer parked elsewhere.
+    await harness.page.mouse.move(4, 4);
+    await expect(actions).toHaveCSS('opacity', '0');
+    await row.hover();
+    await expect(actions).toHaveCSS('opacity', '1');
+    await harness.page.getByTestId(`star-${id}`).focus();
+    await harness.page.mouse.move(4, 4);
+    await expect(actions).toHaveCSS('opacity', '1');
+
     await harness.page.getByTestId(`star-${id}`).click();
     await expect(harness.page.getByTestId(`star-${id}`)).toHaveAttribute('aria-pressed', 'true');
     await harness.page.getByRole('button', { name: 'Starred only' }).click();
