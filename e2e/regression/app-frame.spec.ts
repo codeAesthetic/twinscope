@@ -43,7 +43,7 @@ test('app frame: chrome, navigation and themes', async () => {
     await harness.page.keyboard.press('Enter');
     await expect(harness.page.getByTestId('screen-compare')).toBeVisible();
 
-    // Projects is visible but deliberately unreachable until v0.2.0-9.
+    // Projects is visible but deliberately unreachable until v0.2.9.
     await expect(harness.page.getByTestId('nav-projects')).toBeDisabled();
     await expect(harness.page.getByTestId('nav-projects')).toContainText('soon');
 

@@ -9,7 +9,7 @@ import type { HostFs } from '../engines/types';
  * The real filesystem, in the shape engines are allowed to see.
  *
  * Engines never import `fs`: they get this through `EngineCtx.fs`, which is what
- * lets the same engine code run in the CLI (v0.2.0-2) and in tests against a fake.
+ * lets the same engine code run in the CLI (v0.2.2) and in tests against a fake.
  * It lives in its own file so the tests can exercise the genuine implementation
  * rather than a copy of it.
  */

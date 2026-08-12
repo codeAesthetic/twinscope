@@ -59,7 +59,7 @@ export interface TextDiffStats {
   modified: number;
 }
 
-/** Beyond this, a naive diff stops being interactive; v0.2.0-8 handles the rest. */
+/** Beyond this, a naive diff stops being interactive; v0.2.8 handles the rest. */
 export const MAX_LINES = 200_000;
 
 /** Unchanged runs longer than this collapse... */

@@ -8,7 +8,7 @@ import { changeRows, formatDate, MARK_CLOSE, MARK_OPEN, total } from './types';
  * point — the recipient needs nothing installed, and GitHub renders the diff
  * block with colour for free.
  *
- * Lives in `shared/` because the CLI (v0.2.0-2) renders the same reports.
+ * Lives in `shared/` because the CLI (v0.2.2) renders the same reports.
  */
 export function renderMarkdown(input: ReportInput): string {
   const { a, b, engineId, summary, options, generatedAt } = input;

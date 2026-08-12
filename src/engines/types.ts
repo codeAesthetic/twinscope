@@ -3,7 +3,7 @@
  *
  * Everything in src/engines is host-agnostic: no Electron, no DOM, no direct
  * filesystem access. Engines receive what they need through `EngineCtx`, which
- * is what will let the CLI (v0.2.0-2) reuse them unchanged. The lint config
+ * is what will let the CLI (v0.2.2) reuse them unchanged. The lint config
  * enforces the Electron half of that.
  */
 

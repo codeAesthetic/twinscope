@@ -51,7 +51,7 @@ electron-builder will say so in its output.
 
 ## Before tagging — OWNER ACTIONS
 
-- **Name availability.** `twinscope` needs checking on npm (the CLI in v0.2.0-2 will
+- **Name availability.** `twinscope` needs checking on npm (the CLI in v0.2.2 will
   want it), on GitHub, and as a domain. Record the outcome in the plan's
   decision log; if it is taken, the fallback list belongs there too.
 - **Smoke-test the packaged app on a clean account.** Install from the dmg on a

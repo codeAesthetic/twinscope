@@ -427,7 +427,7 @@ export async function diffFolders(
 /**
  * Basic rename pairing (mockup parity): an unmatched removal and an unmatched
  * addition of the same size in the same folder is almost always one file that
- * moved. Similarity scoring — the version that survives an edit — is v0.2.0-11.
+ * moved. Similarity scoring — the version that survives an edit — is v0.2.11.
  */
 function detectRenames(
   before: Map<string, WalkEntry>,
