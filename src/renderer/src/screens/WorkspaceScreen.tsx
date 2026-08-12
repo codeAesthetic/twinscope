@@ -27,6 +27,8 @@ export function WorkspaceScreen() {
   const b = useCompareStore((state) => state.b);
   const cancel = useCompareStore((state) => state.cancel);
   const run = useCompareStore((state) => state.run);
+  const parent = useCompareStore((state) => state.parent);
+  const popDrill = useCompareStore((state) => state.popDrill);
   const reset = useCompareStore((state) => state.reset);
   const setView = useAppStore((state) => state.setView);
   const setStatus = useStatusStore((state) => state.set);
@@ -76,6 +78,21 @@ export function WorkspaceScreen() {
         data-testid="screen-workspace"
       >
         <div className="dd-toolbar" data-testid="workspace-toolbar">
+          {/* A drill-in keeps its parent one click away, with the parent's
+              result intact so returning costs nothing. */}
+          {parent !== null && (
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="breadcrumb-back"
+              onClick={() => {
+                clearNav();
+                popDrill();
+              }}
+            >
+              {parent.label}
+            </Button>
+          )}
           {engineLabel !== null && <Chip variant="acc">{engineLabel}</Chip>}
 
           {/* Engine views portal their own controls in here. */}

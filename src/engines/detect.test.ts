@@ -141,10 +141,10 @@ describe('selectEngineForInputs', () => {
 
 describe('engine stubs', () => {
   it('reject compare until their feature lands', async () => {
-    // folder and image are still stubs; text and json are real engines now.
+    // image is the last stub; text, json and folder are real engines now.
     const engine = selectEngine(
-      ref('a', { kind: 'folder' }),
-      ref('b', { kind: 'folder', side: 'B' }),
+      ref('a.png', { kind: 'image' }),
+      ref('b.png', { kind: 'image', side: 'B' }),
     );
     await expect(
       engine?.compare(
@@ -161,8 +161,8 @@ describe('engine stubs', () => {
 
   it('hand out a fresh options object each time, so callers cannot mutate defaults', () => {
     const engine = selectEngine(
-      ref('a', { kind: 'folder' }),
-      ref('b', { kind: 'folder', side: 'B' }),
+      ref('a.png', { kind: 'image' }),
+      ref('b.png', { kind: 'image', side: 'B' }),
     );
     expect(engine?.defaultOptions()).not.toBe(engine?.defaultOptions());
   });

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { nodeHostFs } from './hostFs';
 import { engineById, selectEngine } from '../engines/registry';
 import { EngineInputError } from '../engines/types';
 import type { EngineCtx, HostFs, InputRef } from '../engines/types';
@@ -34,25 +34,7 @@ type IncomingMessage = StartMessage | CancelMessage;
 const running = new Map<string, AbortController>();
 
 /** Filesystem access handed to engines, so they never import `fs` themselves. */
-const hostFs: HostFs = {
-  readText: (path) => readFile(path, 'utf8'),
-  readBytes: async (path) => new Uint8Array(await readFile(path)),
-  listDir: async (path) => {
-    const { readdir } = await import('node:fs/promises');
-    const { join } = await import('node:path');
-    const entries = await readdir(path, { withFileTypes: true });
-    return entries.map((entry) => ({
-      name: entry.name,
-      path: join(path, entry.name),
-      isDirectory: entry.isDirectory(),
-    }));
-  },
-  stat: async (path) => {
-    const { stat } = await import('node:fs/promises');
-    const info = await stat(path);
-    return { size: info.size, mtimeMs: info.mtimeMs };
-  },
-};
+const hostFs: HostFs = nodeHostFs;
 
 function send(event: CompareEvent): void {
   process.parentPort.postMessage(event);

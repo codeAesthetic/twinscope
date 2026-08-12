@@ -24,12 +24,22 @@ export interface InputRef {
   lang?: string;
 }
 
+export interface DirEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  /** Symlinks are never followed — a cycle would hang the walk (MD §15). */
+  isSymlink: boolean;
+}
+
 /** Filesystem access, injected by the host so engines stay portable. */
 export interface HostFs {
   readText(path: string): Promise<string>;
   readBytes(path: string): Promise<Uint8Array>;
-  listDir(path: string): Promise<Array<{ name: string; path: string; isDirectory: boolean }>>;
+  listDir(path: string): Promise<DirEntry[]>;
   stat(path: string): Promise<{ size: number; mtimeMs: number }>;
+  /** Streamed content hash; the host owns the crypto so engines stay pure. */
+  hashFile(path: string): Promise<string>;
 }
 
 export interface EngineCtx {

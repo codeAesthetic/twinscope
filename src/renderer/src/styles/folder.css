@@ -1,0 +1,174 @@
+/*
+ * Folder tree — ported from reference/devdiff-mockup.html (.fhead/.frow/.c).
+ *
+ * Fixed row height for the same reason as the other diffs: the virtualiser must
+ * be able to size the scroll area without measuring.
+ */
+.dd-foldwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  width: 100%;
+}
+
+.dd-foldscroll {
+  --dd-frow-height: 22px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dd-fhead {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  flex: 0 0 auto;
+}
+.dd-fhead > div {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 14px;
+  font-size: 11.5px;
+  color: var(--tx-2);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dd-fhead > div + div {
+  border-left: 1px solid var(--line);
+}
+.dd-fhead b {
+  color: var(--tx);
+  font: 600 11.5px var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl; /* long paths truncate at the front, where they repeat */
+  text-align: left;
+}
+
+.dd-frow {
+  display: flex;
+  height: var(--dd-frow-height);
+  font: 12px/22px var(--mono);
+}
+.dd-frow:hover {
+  background: var(--hover);
+}
+.dd-frow[data-openable='true'] {
+  cursor: pointer;
+}
+.dd-frow[data-selected='true'] {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+.dd-frow[data-current='true'] .dd-fcell {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+.dd-frow:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+
+.dd-fcell {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+}
+.dd-fcell + .dd-fcell {
+  border-left: 1px solid var(--line);
+}
+
+.dd-ftree {
+  color: var(--tx-3);
+  white-space: pre;
+  flex: 0 0 auto;
+}
+.dd-fstatus {
+  width: 14px;
+  text-align: center;
+  flex: 0 0 auto;
+  font-size: 10px;
+}
+.dd-fname {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-fname[data-empty='true'] {
+  color: var(--tx-3);
+}
+.dd-fnote {
+  color: var(--info);
+  font-size: 10.5px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.dd-fsize {
+  margin-left: auto;
+  color: var(--tx-3);
+  font-size: 10.5px;
+  flex: 0 0 auto;
+}
+
+.dd-fcell[data-status='add'] {
+  background: var(--add-bg);
+}
+.dd-fcell[data-status='add'] .dd-fname,
+.dd-fcell[data-status='add'] .dd-fstatus {
+  color: var(--add);
+}
+.dd-fcell[data-status='del'] {
+  background: var(--del-bg);
+}
+.dd-fcell[data-status='del'] .dd-fname {
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--del) 50%, transparent);
+}
+.dd-fcell[data-status='del'] .dd-fstatus {
+  color: var(--del);
+}
+.dd-fcell[data-status='mod'] {
+  background: var(--mod-bg);
+}
+.dd-fcell[data-status='mod'] .dd-fname,
+.dd-fcell[data-status='mod'] .dd-fstatus {
+  color: var(--mod);
+}
+.dd-fcell[data-status='error'] {
+  background: var(--del-bg);
+}
+.dd-fcell[data-status='error'] .dd-fstatus {
+  color: var(--del);
+}
+.dd-fcell[data-status='same'] .dd-fname {
+  color: var(--tx-2);
+}
+/* An absent side, striped so it reads as "nothing here". */
+.dd-fcell[data-status='nil'] {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 6px,
+    rgba(128, 128, 128, 0.05) 6px,
+    rgba(128, 128, 128, 0.05) 12px
+  );
+}
+
+.dd-folder-empty,
+.dd-folder-error {
+  margin: 0;
+  padding: 20px 16px;
+  color: var(--tx-3);
+  font-size: 12.5px;
+  text-align: center;
+}
+.dd-folder-error {
+  color: var(--del);
+}

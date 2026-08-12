@@ -20,6 +20,18 @@ export interface CompareResult {
   ms: number;
 }
 
+/** Everything needed to restore a comparison the user drilled out of. */
+interface ParentComparison {
+  a: InputPayload | null;
+  b: InputPayload | null;
+  result: CompareResult | null;
+  engineLabel: string | null;
+  engineOverride: string | null;
+  options: Record<string, unknown>;
+  /** Breadcrumb text, e.g. `folder ↩`. */
+  label: string;
+}
+
 interface CompareState {
   a: InputPayload | null;
   b: InputPayload | null;
@@ -47,10 +59,21 @@ interface CompareState {
    */
   options: Record<string, unknown>;
 
+  /**
+   * The comparison to return to. Set when a folder diff drills into one of its
+   * files: the parent result is kept whole so coming back is instant and does
+   * not re-scan the tree (MD §15).
+   */
+  parent: ParentComparison | null;
+
   setInput: (side: 'A' | 'B', input: InputPayload | null) => void;
   setEngineOverride: (engineId: string | null) => void;
   /** Merges options into the current set and re-runs the comparison. */
   setOptions: (patch: Record<string, unknown>) => Promise<void>;
+  /** Opens a nested comparison, remembering the current one. */
+  drillInto: (a: InputPayload, b: InputPayload) => Promise<void>;
+  /** Returns to the remembered comparison without re-running it. */
+  popDrill: () => void;
   swap: () => void;
   reset: () => void;
 
@@ -76,18 +99,63 @@ export const useCompareStore = create<CompareState>((set, get) => ({
   b: null,
   engineOverride: null,
   options: {},
+  parent: null,
   ...IDLE,
 
   setInput: (side, input) => {
     // Options belong to the pair that was loaded: a new input means a new
     // comparison, and possibly a different engine whose options are unrelated.
-    set(side === 'A' ? { a: input, options: {}, ...IDLE } : { b: input, options: {}, ...IDLE });
+    set(
+      side === 'A'
+        ? { a: input, options: {}, parent: null, ...IDLE }
+        : { b: input, options: {}, parent: null, ...IDLE },
+    );
   },
 
   setOptions: async (patch) => {
     const options = { ...get().options, ...patch };
     set({ options });
     await get().run();
+  },
+
+  drillInto: async (a, b) => {
+    const state = get();
+    set({
+      parent: {
+        a: state.a,
+        b: state.b,
+        result: state.result,
+        engineLabel: state.engineLabel,
+        engineOverride: state.engineOverride,
+        options: state.options,
+        label: `${state.result?.engineId ?? 'parent'} ↩`,
+      },
+      a,
+      b,
+      // The nested pair is a different kind of thing: neither the parent's
+      // engine choice nor its options mean anything here.
+      engineOverride: null,
+      options: {},
+      ...IDLE,
+    });
+    await get().run();
+  },
+
+  popDrill: () => {
+    const { parent } = get();
+    if (parent === null) return;
+    set({
+      ...IDLE,
+      a: parent.a,
+      b: parent.b,
+      result: parent.result,
+      engineLabel: parent.engineLabel,
+      engineOverride: parent.engineOverride,
+      options: parent.options,
+      status: parent.result !== null ? 'done' : 'idle',
+      percent: parent.result !== null ? 100 : 0,
+      parent: null,
+    });
   },
 
   swap: () => {
@@ -102,7 +170,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
 
   setEngineOverride: (engineId) => set({ engineOverride: engineId, options: {}, ...IDLE }),
 
-  reset: () => set({ a: null, b: null, engineOverride: null, options: {}, ...IDLE }),
+  reset: () => set({ a: null, b: null, engineOverride: null, options: {}, parent: null, ...IDLE }),
 
   run: async (overrides) => {
     const { a, b, options, engineOverride } = get();
