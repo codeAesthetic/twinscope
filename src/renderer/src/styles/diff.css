@@ -95,6 +95,13 @@
 .dd-dcell[data-kind='del'] .dd-dmark {
   color: var(--del);
 }
+/* Inline mode only: one row carrying `old ⇢ new`, so it is neither side. */
+.dd-dcell[data-kind='mod'] {
+  background: var(--mod-bg);
+}
+.dd-dcell[data-kind='mod'] .dd-dmark {
+  color: var(--mod);
+}
 /* An absent side: striped so it reads as "nothing here", not "empty line". */
 .dd-dcell[data-kind='nil'] {
   background: repeating-linear-gradient(
@@ -111,11 +118,17 @@
   border-radius: 3px;
   padding: 1px 0;
 }
-.dd-dcell[data-kind='add'] .dd-word {
+/*
+ * Keyed on the mark's own tone, not on the cell around it. In side-by-side and
+ * unified the two agree, but an inline `mod` row holds a del-toned half and an
+ * add-toned half in ONE cell — under a cell-based rule neither half was marked
+ * at all, which is precisely the row where the marks matter most.
+ */
+.dd-word[data-tone='add'] {
   background: var(--add-bg-2);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--add) 30%, transparent);
 }
-.dd-dcell[data-kind='del'] .dd-word {
+.dd-word[data-tone='del'] {
   background: var(--del-bg-2);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--del) 30%, transparent);
 }

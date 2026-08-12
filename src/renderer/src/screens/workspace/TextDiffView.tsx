@@ -20,6 +20,15 @@ import type { EngineViewProps } from './engineViews';
 
 type ViewMode = 'side' | 'unified' | 'inline';
 
+/** One painted row. See the `rows` memo for why this is not just a `TextRow`. */
+interface DisplayRow {
+  row: TextRow;
+  /** Index into `data.rows` — the key `expanded` uses, not a position here. */
+  dataIndex: number;
+  /** False for the `+ new` half of a unified modification: one change, one stop. */
+  anchor: boolean;
+}
+
 const ROW_HEIGHT = 20;
 
 /**
@@ -94,25 +103,65 @@ export default function TextDiffView({ result }: EngineViewProps) {
     return disableSearch;
   }, [enableSearch, disableSearch]);
 
-  /** Rows with expanded folds spliced in, and one row per line in unified. */
+  /**
+   * Exactly what gets painted, one entry per visual row.
+   *
+   * Unified is the only mode that changes the count: there a modified line
+   * becomes **two** rows, `− old` then `+ new`, which is what unified means
+   * everywhere else. It used to render as a single `del` row carrying only the
+   * old text, so the replacement was absent from the DOM entirely — the diff
+   * showed what went away and never what arrived.
+   */
   const rows = useMemo(() => {
-    const out: TextRow[] = [];
-    data.rows.forEach((row, index) => {
-      if (row.kind === 'fold' && expanded.has(index)) {
-        out.push(...(row.hidden ?? []));
+    const out: DisplayRow[] = [];
+
+    const push = (row: TextRow, dataIndex: number): void => {
+      // A split half is still one change: `anchor: false` keeps the `+` line
+      // from becoming a second stop in change navigation.
+      if (mode === 'unified' && row.kind === 'mod') {
+        // Each half keeps only its own line number, or the `+` line claims a
+        // "before" number it does not have.
+        const { textRight, left, right, ...rest } = row;
+        out.push({
+          row: { ...rest, kind: 'del', ...(left !== undefined && { left }) },
+          dataIndex,
+          anchor: true,
+        });
+        out.push({
+          row: {
+            ...rest,
+            kind: 'add',
+            text: textRight ?? '',
+            ...(right !== undefined && { right }),
+          },
+          dataIndex,
+          anchor: false,
+        });
         return;
       }
-      out.push(row);
+      out.push({ row, dataIndex, anchor: true });
+    };
+
+    data.rows.forEach((row, index) => {
+      if (row.kind === 'fold' && expanded.has(index)) {
+        // `dataIndex` stays the fold's own index, which is what `expanded` is
+        // keyed by. Passing the position in *this* list instead meant that once
+        // one fold had grown the list, every later fold's index was wrong and
+        // clicking it expanded nothing.
+        for (const hiddenRow of row.hidden ?? []) push(hiddenRow, index);
+        return;
+      }
+      push(row, index);
     });
     return out;
-  }, [data.rows, expanded]);
+  }, [data.rows, expanded, mode]);
 
   /** Indices of navigable changes, in document order. */
   const changeRows = useMemo(
     () =>
       rows
-        .map((row, index) => ({ row, index }))
-        .filter(({ row }) => row.kind !== 'ctx' && row.kind !== 'fold'),
+        .map((entry, index) => ({ ...entry, index }))
+        .filter(({ row, anchor }) => anchor && row.kind !== 'ctx' && row.kind !== 'fold'),
     [rows],
   );
 
@@ -127,11 +176,12 @@ export default function TextDiffView({ result }: EngineViewProps) {
     if (needle === '') return [];
 
     const found: Array<{ row: number; hit: number }> = [];
-    rows.forEach((row, index) => {
-      const left = row.kind === 'add' ? '' : row.text;
-      const right = row.kind === 'mod' ? (row.textRight ?? '') : '';
-      const leftCount = countMatches(left, needle);
-      const total = leftCount + countMatches(right, needle);
+    rows.forEach(({ row }, index) => {
+      // Every row paints `text`, including additions — they were excluded here,
+      // so a word that appeared only on an added line could not be found at all.
+      const total =
+        countMatches(row.text, needle) +
+        (row.kind === 'mod' ? countMatches(row.textRight ?? '', needle) : 0);
       for (let hit = 0; hit < total; hit += 1) found.push({ row: index, hit });
     });
     return found;
@@ -168,8 +218,12 @@ export default function TextDiffView({ result }: EngineViewProps) {
   const currentRowIndex = current === -1 ? -1 : (changeRows[current]?.index ?? -1);
   const activeMatch = currentMatch === -1 ? undefined : matches[currentMatch];
 
+  // Mode-independent by construction: in unified a modification is already
+  // split into a `del` half and an `add` half carrying the new text, so the
+  // same filter yields the same lines in every mode.
   const copyChangedLines = async (): Promise<void> => {
     const text = rows
+      .map(({ row }) => row)
       .filter((row) => row.kind === 'add' || row.kind === 'mod')
       .map((row) => stripMarks(row.kind === 'mod' ? (row.textRight ?? '') : row.text))
       .join('\n');
@@ -242,7 +296,7 @@ export default function TextDiffView({ result }: EngineViewProps) {
 
         <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
           {virtualizer.getVirtualItems().map((item) => {
-            const row = rows[item.index]!;
+            const { row, dataIndex } = rows[item.index]!;
             return (
               <div
                 key={item.key}
@@ -262,7 +316,7 @@ export default function TextDiffView({ result }: EngineViewProps) {
                     onClick={() =>
                       setExpanded((previous) => {
                         const next = new Set(previous);
-                        next.add(item.index);
+                        next.add(dataIndex);
                         return next;
                       })
                     }
@@ -357,7 +411,10 @@ function Row({
   if (mode === 'inline' && row.kind === 'mod') {
     return (
       <div className="dd-drow" data-current={isCurrent ? 'true' : undefined}>
-        <div className="dd-dcell" data-kind="ctx">
+        {/* `mod`, not `ctx`: this row holds both versions of a changed line, so
+            it is neither an addition nor a removal — and tagging it as context
+            left the one row that shows a change as the only one with no tint. */}
+        <div className="dd-dcell" data-kind="mod">
           <span className="dd-dln">{row.right}</span>
           <span className="dd-dmark">~</span>
           <span className="dd-dtext">

@@ -65,6 +65,27 @@ test('text diff: pairing, word marks, folding, view modes', async () => {
     // ---------- inline shows before ⇢ after on one line ----------
     await harness.page.getByRole('tab', { name: 'Inline' }).click();
     await expect(diff).toContainText('⇢');
+
+    // A modified row carries both halves in one cell, so it is tagged `mod` and
+    // tinted as such. It shipped tagged `ctx` — the one row that shows a change
+    // was the only one rendered as unchanged, with no background at all.
+    const modCell = diff.locator('.dd-dcell[data-kind="mod"]').first();
+    await expect(modCell).toBeVisible();
+    const tint = await modCell.evaluate((cell) => getComputedStyle(cell).backgroundColor);
+    expect(tint).not.toBe('rgba(0, 0, 0, 0)');
+    expect(tint).toBe('rgba(227, 179, 65, 0.1)'); // the --mod-bg token
+
+    // Both tones of word mark survive in that one cell, which a cell-based rule
+    // could not do: the marks key off their own `data-tone`.
+    const inlineMarks = await modCell.evaluate((cell) =>
+      [...cell.querySelectorAll<HTMLElement>('.dd-word')].map((word) => ({
+        tone: word.dataset['tone'],
+        background: getComputedStyle(word).backgroundColor,
+      })),
+    );
+    expect(inlineMarks.map((mark) => mark.tone).sort()).toEqual(['add', 'del']);
+    for (const mark of inlineMarks) expect(mark.background).not.toBe('rgba(0, 0, 0, 0)');
+
     await harness.screenshot('text-diff-inline');
 
     await harness.page.getByRole('tab', { name: 'Side-by-side' }).click();
@@ -243,5 +264,81 @@ test('text diff: highlighting, and toggles that re-run the engine', async () => 
   } finally {
     await harness.close();
     await rm(dir, { recursive: true, force: true });
+  }
+});
+
+/**
+ * REGRESSION — three defects that shared one cause: the view indexed a single
+ * flat row list for rendering, navigation, search and folding at once.
+ *
+ *  1. Unified showed a modification as one `del` row. The replacement text was
+ *     not in the DOM at all — the diff said what went away and never what
+ *     arrived. Owner-reported against the sample comparison.
+ *  2. Search skipped added lines, so a word only on a `+` line was unfindable.
+ *  3. Expanding one fold shifted the list, so every later fold's stored index
+ *     was wrong and clicking it did nothing.
+ */
+const RUN = (tag: string): string =>
+  Array.from({ length: 20 }, (_, index) => `${tag} body ${index}`).join('\n');
+const UNI_BEFORE = `head alpha\n${RUN('x')}\nmiddle alpha\n${RUN('y')}\ntail alpha`;
+const UNI_AFTER = `head beta\n${RUN('x')}\nmiddle beta\ninserted gamma\n${RUN('y')}\ntail beta`;
+
+test('text diff: unified splits modifications, search sees additions, folds all open', async () => {
+  const harness = await launchApp();
+
+  try {
+    await pasteInput(harness, UNI_BEFORE, 'before');
+    await pasteInput(harness, UNI_AFTER, 'after');
+    await harness.page.getByTestId('compare-button').click();
+
+    const diff = harness.page.getByTestId('text-diff');
+    await expect(diff).toBeVisible({ timeout: 20_000 });
+
+    // 3 modified lines + 1 addition, however the rows are arranged.
+    await expect(harness.page.getByTestId('change-position')).toHaveText('– / 4');
+    const sideRows = await diff.locator('.dd-drow').count();
+
+    // ---------- (1) unified carries both halves, as − then + ----------
+    await harness.page.getByRole('tab', { name: 'Unified' }).click();
+    await expect(diff).toHaveAttribute('data-mode', 'unified');
+
+    const kinds = await diff.evaluate((root) =>
+      [...root.querySelectorAll<HTMLElement>('.dd-dcell')].map((cell) => ({
+        kind: cell.dataset['kind'] ?? '',
+        text: cell.innerText.replace(/\s+/g, ' ').trim(),
+      })),
+    );
+    const removed = kinds.find((cell) => cell.kind === 'del' && cell.text.includes('head alpha'));
+    const added = kinds.find((cell) => cell.kind === 'add' && cell.text.includes('head beta'));
+    expect(removed, 'the old text must still be shown').toBeDefined();
+    expect(added, 'the new text must be shown too — this is what was missing').toBeDefined();
+    // No cell may carry both halves: that is inline's job, not unified's.
+    expect(kinds.some((cell) => cell.text.includes('⇢'))).toBe(false);
+
+    // Splitting adds rows...
+    expect(await diff.locator('.dd-drow').count()).toBeGreaterThan(sideRows);
+    // ...but a modification is still ONE change to navigate.
+    await expect(harness.page.getByTestId('change-position')).toHaveText('– / 4');
+    await harness.page.keyboard.press('Alt+ArrowDown');
+    await expect(harness.page.getByTestId('change-position')).toHaveText('1 / 4');
+
+    // ---------- (2) a word only on an added line is findable ----------
+    const search = harness.page.getByTestId('workspace-search');
+    await search.fill('gamma');
+    await expect(harness.page.getByTestId('search-count')).toHaveText('– / 1');
+    await search.fill('');
+
+    // ---------- (3) every fold opens, not just the first ----------
+    await harness.page.getByRole('tab', { name: 'Side-by-side' }).click();
+    const folds = harness.page.getByTestId('fold-row');
+    await expect(folds).toHaveCount(2);
+    await folds.first().click();
+    await expect(folds).toHaveCount(1);
+    await folds.first().click();
+    await expect(folds).toHaveCount(0);
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    await harness.close();
   }
 });
