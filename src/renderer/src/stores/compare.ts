@@ -196,8 +196,10 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     const a = row.a.path === undefined ? null : (resolved.shift() ?? null);
     const b = row.b.path === undefined ? null : (resolved.shift() ?? null);
 
-    // A comparison is only as durable as its inputs: if one has moved, load what
-    // is left and say plainly which side needs picking again (MD §36).
+    // A comparison is only as durable as its inputs. Two different failures, and
+    // conflating them would be a lie: pasted text was never on disk, while a
+    // file that has moved can be found again.
+    const pasted = row.a.path === undefined || row.b.path === undefined;
     const missing = [a === null ? row.a.name : null, b === null ? row.b.name : null].filter(
       (name) => name !== null,
     );
@@ -208,7 +210,9 @@ export const useCompareStore = create<CompareState>((set, get) => ({
       useAppStore
         .getState()
         .setNotice(
-          `${missing.join(' and ')} could not be opened — it may have moved. Pick a replacement to compare again.`,
+          pasted
+            ? `${row.title} was pasted from the clipboard, so there is nothing to reopen. Paste it again with ⌘⇧V.`
+            : `${missing.join(' and ')} could not be opened — it may have moved. Pick a replacement to compare again.`,
         );
       useAppStore.getState().setView('compare');
       return;

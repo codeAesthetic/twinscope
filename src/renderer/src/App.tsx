@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
+import { CommandPalette } from './components/CommandPalette';
+import { useActions } from './lib/actions';
 import { useCompareEvents, useRunComparison } from './lib/compareClient';
-import { useIntakeShortcuts } from './lib/intake';
+import { useAppShortcuts } from './lib/intake';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
@@ -29,6 +31,32 @@ function CurrentScreen() {
 }
 
 /**
+ * Everything that needs the app's context, one level inside the provider.
+ *
+ * These hooks cannot live in `App`: `useActions` reaches for the theme, and a
+ * component cannot consume a context it is itself rendering.
+ */
+function Shell() {
+  // Subscribed once at the root: a per-screen subscription would drop events
+  // whenever the user navigated mid-comparison.
+  useCompareEvents();
+
+  // The keyboard map (MD §10), from the single registry in lib/shortcuts.ts.
+  const runComparison = useRunComparison();
+  const onAction = useActions();
+  useAppShortcuts(() => void runComparison(), onAction);
+
+  return (
+    <>
+      <AppFrame>
+        <CurrentScreen />
+      </AppFrame>
+      <CommandPalette onAction={onAction} />
+    </>
+  );
+}
+
+/**
  * No router (plan D11) — the sidebar drives a Zustand `view`.
  *
  * Two dev-facing hash routes: #gallery for the design system, and #workspace to
@@ -37,14 +65,6 @@ function CurrentScreen() {
 export function App() {
   const [hash, setHash] = useState(() => window.location.hash);
   const setView = useAppStore((state) => state.setView);
-
-  // Subscribed once at the root: a per-screen subscription would drop events
-  // whenever the user navigated mid-comparison.
-  useCompareEvents();
-
-  // ⌘⇧V paste-to-compare, ⌘⇧S swap, ⏎ run (MD §34).
-  const runComparison = useRunComparison();
-  useIntakeShortcuts(() => void runComparison());
 
   useEffect(() => {
     const onHashChange = (): void => setHash(window.location.hash);
@@ -56,19 +76,5 @@ export function App() {
     if (hash === '#workspace') setView('workspace');
   }, [hash, setView]);
 
-  if (hash === '#gallery') {
-    return (
-      <ThemeProvider>
-        <Gallery />
-      </ThemeProvider>
-    );
-  }
-
-  return (
-    <ThemeProvider>
-      <AppFrame>
-        <CurrentScreen />
-      </AppFrame>
-    </ThemeProvider>
-  );
+  return <ThemeProvider>{hash === '#gallery' ? <Gallery /> : <Shell />}</ThemeProvider>;
 }

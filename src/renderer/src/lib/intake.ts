@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { matches, SHORTCUTS } from './shortcuts';
 import { useChangeNavStore } from '../stores/changeNav';
 import { useCompareStore } from '../stores/compare';
 import type { InputPayload } from '../../../shared/channels';
@@ -67,43 +68,27 @@ export function useIntake(): {
 }
 
 /**
- * App-level shortcuts for intake and running (MD §34, §10).
+ * The app's keyboard map, driven by the registry in `lib/shortcuts.ts` (MD §10).
  *
- * Registered once at the root. The full keyboard map, its conflict checks and
- * the shortcuts UI arrive together in MVP-10; these three are the ones intake
- * would feel broken without.
+ * Registered once at the root. Every binding here comes from that table, so the
+ * Settings screen and the command palette describe exactly what fires — there is
+ * no second list to drift.
  */
-export function useIntakeShortcuts(onRun: () => void): void {
-  const { fromClipboard } = useIntake();
-  const swap = useCompareStore((state) => state.swap);
+export function useAppShortcuts(onRun: () => void, onAction: (id: string) => void): void {
   const nextChange = useChangeNavStore((state) => state.next);
   const previousChange = useChangeNavStore((state) => state.previous);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
-      const meta = event.metaKey || event.ctrlKey;
       const target = event.target as HTMLElement | null;
       const typing =
         target?.tagName === 'INPUT' ||
         target?.tagName === 'TEXTAREA' ||
         target?.isContentEditable === true;
 
-      // ⌘⇧V — paste to compare.
-      if (meta && event.shiftKey && event.key.toLowerCase() === 'v') {
-        event.preventDefault();
-        void fromClipboard();
-        return;
-      }
-
-      // ⌘⇧S — swap sides.
-      if (meta && event.shiftKey && event.key.toLowerCase() === 's') {
-        event.preventDefault();
-        swap();
-        return;
-      }
-
-      // ⌥↓ / ⌥↑ — step through changes (MD §11).
-      if (event.altKey && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+      // ⌥↓ / ⌥↑ — step through changes (MD §11). Only when there are any, so
+      // the keys stay available to the OS otherwise.
+      if (matches(event, '⌥↓') || matches(event, '⌥↑')) {
         if (useChangeNavStore.getState().count > 0) {
           event.preventDefault();
           if (event.key === 'ArrowDown') nextChange();
@@ -112,8 +97,16 @@ export function useIntakeShortcuts(onRun: () => void): void {
         }
       }
 
+      for (const shortcut of SHORTCUTS) {
+        if (!DISPATCHED.has(shortcut.id)) continue;
+        if (!matches(event, shortcut.combo)) continue;
+        event.preventDefault();
+        onAction(shortcut.id);
+        return;
+      }
+
       // Enter — run, unless the user is typing in a field.
-      if (event.key === 'Enter' && !typing && !meta) {
+      if (event.key === 'Enter' && !typing && !event.metaKey && !event.ctrlKey) {
         const { a, b, status } = useCompareStore.getState();
         if (a !== null && b !== null && status !== 'running') {
           event.preventDefault();
@@ -124,5 +117,21 @@ export function useIntakeShortcuts(onRun: () => void): void {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [fromClipboard, swap, onRun, nextChange, previousChange]);
+  }, [onRun, onAction, nextChange, previousChange]);
 }
+
+/**
+ * Bindings this hook owns. The rest belong to the surface that can perform them:
+ * ⌘K to the palette, ⌘F to the toolbar search, ⌘⇧E to the export menu, ⌘\ to
+ * whichever engine view has view modes.
+ */
+const DISPATCHED = new Set([
+  'open-files',
+  'open-folders',
+  'paste-compare',
+  'swap',
+  'theme',
+  'settings',
+  'view-compare',
+  'view-history',
+]);

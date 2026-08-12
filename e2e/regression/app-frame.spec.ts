@@ -70,10 +70,12 @@ test('app frame: chrome, navigation and themes', async () => {
     expect(history.sticky).toBe('sticky');
     expect(history.starOn).not.toBe(history.starOff);
 
-    // --- settings: four groups, 12 shortcuts, live theme switch ---
+    // --- settings: four groups, the generated shortcut grid, live theme switch ---
     await harness.page.getByTestId('nav-settings').click();
     await expect(harness.page.locator('[data-testid="screen-settings"] h2')).toHaveCount(4);
-    await expect(harness.page.getByTestId('shortcuts-grid').locator('.dd-scrow')).toHaveCount(12);
+    // Generated from lib/shortcuts.ts since MVP-10, so this counts the registry
+    // rather than a hand-written list.
+    await expect(harness.page.getByTestId('shortcuts-grid').locator('.dd-scrow')).toHaveCount(15);
 
     await expect(harness.page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await harness.page.getByRole('tab', { name: 'Light' }).click();

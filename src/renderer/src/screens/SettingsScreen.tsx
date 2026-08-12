@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { Kbd, Seg, Switch } from '../components/primitives';
-import { SHORTCUTS } from '../lib/mockData';
+import { SHORTCUTS } from '../lib/shortcuts';
 import { useSettingsStore } from '../stores/settings';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
 
@@ -115,12 +115,14 @@ export function SettingsScreen() {
 
       <h2>Shortcuts</h2>
       <div className="dd-card">
+        {/* Generated from the same registry that binds the keys, so this grid
+            cannot describe a shortcut the app does not have. */}
         <div className="dd-shortcuts" data-testid="shortcuts-grid">
           {SHORTCUTS.map((shortcut) => (
-            <div className="dd-scrow" key={shortcut.label}>
+            <div className="dd-scrow" key={shortcut.id}>
               <span>{shortcut.label}</span>
               <span className="dd-scrow-keys">
-                <Kbd>{shortcut.keys}</Kbd>
+                <Kbd>{shortcut.combo}</Kbd>
               </span>
             </div>
           ))}

@@ -1,9 +1,10 @@
 // PLACEHOLDER content that the product cannot produce yet.
 //
-// The recent-comparison and history fixtures left with MVP-8, which made both
-// lists live. What remains is the quick-start deck (its flows land with the
-// keyboard map in MVP-10) and the shortcut table, which MVP-10 replaces with a
-// generated one. Kept in one module so each removal stays a single deletion.
+// The history fixtures left with MVP-8 and the shortcut table with MVP-10,
+// which generates it from the real registry. What remains is the quick-start
+// deck: two of its four flows (URLs, Git refs) are V1 features, so the cards
+// stay descriptive until then. Kept in one module so each removal is a single
+// deletion.
 
 import type { FileKind } from '../components/primitives';
 
@@ -40,28 +41,4 @@ export const QUICK_STARTS: readonly QuickStart[] = [
     title: 'Git refs',
     description: 'Branch, tag, commit or range.',
   },
-];
-
-export interface ShortcutEntry {
-  label: string;
-  keys: string;
-}
-
-/**
- * Display-only for now. MVP-10 builds the real registry and generates both the
- * bindings and this grid from it, so they cannot disagree.
- */
-export const SHORTCUTS: readonly ShortcutEntry[] = [
-  { label: 'Command palette', keys: '⌘K' },
-  { label: 'Compare files', keys: '⌘O' },
-  { label: 'Compare folders', keys: '⌘⇧O' },
-  { label: 'Paste to compare', keys: '⌘⇧V' },
-  { label: 'Next change', keys: '⌥↓' },
-  { label: 'Previous change', keys: '⌥↑' },
-  { label: 'Toggle view mode', keys: '⌘\\' },
-  { label: 'Swap sides', keys: '⌘⇧S' },
-  { label: 'Find in diff', keys: '⌘F' },
-  { label: 'Export report', keys: '⌘⇧E' },
-  { label: 'Quick Compare window', keys: '⌘⌥D' },
-  { label: 'Settings', keys: '⌘,' },
 ];

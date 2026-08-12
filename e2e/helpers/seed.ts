@@ -43,3 +43,18 @@ export async function seedComparison(
   await expect(harness.page.getByTestId('summary-strip')).toBeVisible({ timeout: 20_000 });
   await harness.page.getByTestId('back-button').click();
 }
+
+/**
+ * Opens the command palette with the real shortcut.
+ *
+ * Retried for the same reason `pasteInput` is: immediately after boot the
+ * renderer may not have attached its keydown listener yet, and the first press
+ * is then silently lost.
+ */
+export async function openPalette(harness: Harness): Promise<void> {
+  const palette = harness.page.getByTestId('command-palette');
+  await expect(async () => {
+    await harness.page.keyboard.press('Meta+k');
+    await expect(palette).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
+}

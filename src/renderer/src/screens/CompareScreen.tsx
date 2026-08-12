@@ -22,7 +22,7 @@ export function CompareScreen() {
 
       {notice !== null && (
         <div className="dd-notice" role="status" data-testid="compare-notice">
-          <Chip variant="mod">Input missing</Chip>
+          <Chip variant="mod">Cannot reopen</Chip>
           <span>{notice}</span>
           <Button variant="ghost" size="sm" aria-label="Dismiss" onClick={() => setNotice(null)}>
             ✕
