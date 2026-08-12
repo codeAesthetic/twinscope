@@ -1,12 +1,14 @@
 import { DetectedBar } from '../components/home/DetectedBar';
 import { DropZonePair } from '../components/home/DropZonePair';
+import { QuickCards } from '../components/home/QuickCards';
+import { RecentList } from '../components/home/RecentList';
 
 /**
  * The Compare screen — the app's front door (MD §9).
  *
- * HOME-2 builds it static: hero, both drop zones, swap control and the
- * detection bar. Quick-start cards and recent comparisons land in HOME-3;
- * real input handling in MVP-2.
+ * Static through Category 2: hero, drop zones, swap control, detection bar,
+ * quick-start cards and recent comparisons. Real input handling lands in MVP-2
+ * and real history in MVP-8.
  */
 export function CompareScreen() {
   return (
@@ -18,6 +20,8 @@ export function CompareScreen() {
 
       <DropZonePair />
       <DetectedBar />
+      <QuickCards />
+      <RecentList />
     </div>
   );
 }

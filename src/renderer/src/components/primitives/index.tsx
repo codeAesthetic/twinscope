@@ -109,7 +109,7 @@ export function Kbd({ children }: { children: ReactNode }) {
   return <span className="dd-kbd">{children}</span>;
 }
 
-export type FileKind = 'json' | 'code' | 'image' | 'folder' | 'md' | 'text';
+export type FileKind = 'json' | 'code' | 'image' | 'folder' | 'md' | 'text' | 'web';
 
 const FILE_LABEL: Record<FileKind, string> = {
   json: '{ }',
@@ -118,6 +118,7 @@ const FILE_LABEL: Record<FileKind, string> = {
   folder: 'DIR',
   md: 'MD',
   text: 'TXT',
+  web: 'GIT',
 };
 
 export function FileTypeBadge({ kind, label }: { kind: FileKind; label?: string }) {

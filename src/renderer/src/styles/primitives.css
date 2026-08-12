@@ -236,6 +236,12 @@ html[data-theme='light'] .dd-seg button[aria-selected='true'] {
   background: rgba(159, 230, 160, 0.08);
 }
 
+.dd-ftype[data-kind='web'] {
+  color: #c4b5ff;
+  border-color: rgba(196, 181, 255, 0.35);
+  background: rgba(196, 181, 255, 0.1);
+}
+
 /* --- switch --- */
 .dd-switch {
   width: 30px;
@@ -291,6 +297,11 @@ html[data-theme='light'] .dd-ftype[data-kind='folder'] {
   color: #0e7490;
   border-color: rgba(14, 116, 144, 0.35);
   background: rgba(14, 116, 144, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='web'] {
+  color: #6d28d9;
+  border-color: rgba(109, 40, 217, 0.35);
+  background: rgba(109, 40, 217, 0.08);
 }
 html[data-theme='light'] .dd-ftype[data-kind='md'] {
   color: #15803d;

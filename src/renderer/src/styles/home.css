@@ -180,3 +180,122 @@
   flex-wrap: wrap;
   justify-content: center;
 }
+
+/* --- quick start cards --- */
+.dd-quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  width: 100%;
+  max-width: 860px;
+  margin-top: 30px;
+}
+.dd-qcard {
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  border-radius: 10px;
+  padding: 12px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  display: block;
+}
+.dd-qcard:hover {
+  background: var(--hover);
+  border-color: var(--line-2);
+}
+.dd-qcard-title {
+  font-weight: 620;
+  font-size: 12.5px;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.dd-qcard-desc {
+  display: block;
+  color: var(--tx-3);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+/* --- recent comparisons --- */
+.dd-recent {
+  width: 100%;
+  max-width: 860px;
+  margin-top: 32px;
+}
+.dd-recent-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dd-recent-head h2 {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  margin: 0;
+  font-weight: 600;
+}
+.dd-rlist {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dd-rlist li + li {
+  border-top: 1px solid var(--line);
+}
+.dd-ritem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  cursor: pointer;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+.dd-ritem:hover {
+  background: var(--hover);
+}
+.dd-ritem-col {
+  min-width: 0;
+}
+.dd-ritem-name {
+  display: block;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+.dd-ritem-path {
+  display: block;
+  color: var(--tx-3);
+  font-size: 11px;
+  font-family: var(--mono);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-ritem-chips {
+  margin-left: auto;
+  display: flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.dd-ritem-ago {
+  color: var(--tx-3);
+  font-size: 11px;
+  width: 84px;
+  text-align: right;
+  flex: 0 0 auto;
+}
