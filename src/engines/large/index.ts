@@ -47,7 +47,18 @@ const MAX_ROWS = 80_000;
 const FOLD_MAX_BYTES = 3 * 1024 * 1024;
 
 /** Kinds a line diff can read, matching the text engine's set. */
-const COMPARABLE = new Set(['text', 'code', 'json', 'yaml', 'csv', 'md', 'api', 'unknown']);
+const COMPARABLE = new Set([
+  'text',
+  'code',
+  'json',
+  'yaml',
+  'csv',
+  'md',
+  'api',
+  'env',
+  'html',
+  'unknown',
+]);
 
 const FALLBACK = { fallbackEngineId: 'text', fallbackLabel: 'Compare as text' };
 

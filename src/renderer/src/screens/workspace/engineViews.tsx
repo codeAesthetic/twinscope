@@ -37,6 +37,8 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   api: lazy(() => import('./ApiView')),
   // v0.3.7: two columns of keys, with masking done in the engine — see EnvView.
   env: lazy(() => import('./EnvView')),
+  // v0.3.2: four sections of one page comparison — structure, style, assets, a11y.
+  web: lazy(() => import('./WebView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

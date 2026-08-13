@@ -26,6 +26,7 @@ export const InputKindSchema = z.enum([
   'deps',
   'api',
   'env',
+  'html',
   'md',
   'image',
   'folder',

@@ -8,6 +8,27 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.2 — 2026-08-13
+
+### Added
+
+- **Page comparison.** Two saved HTML pages, compared as pages rather than as text, in
+  four sections you switch between: **Structure** (which elements moved, what their
+  attributes and text say), **Style** (which declaration of which selector changed),
+  **Assets** (what the page loads) and **Accessibility**.
+- **A cache-busted asset is one change, not two.** `app.a1b2c3.js` becoming
+  `app.998877.js` is the commonest real difference between two builds; it reads as one
+  row, and there are switches for ignoring class changes and asset query strings when
+  comparing two builds of the same site.
+- **The accessibility section reports problems, not only differences.** A changed
+  heading outline, images with no alt text, form controls with no label — including when
+  both versions have the same problem, because that is still worth knowing while you
+  are looking at the markup.
+- **It says what it did not do.** Nothing is fetched, nothing is rendered and no
+  screenshot is taken, so the comparison says so on screen and leaves the visual score
+  blank rather than reporting a zero. Comparing two live URLs needs a decision that has
+  not been made.
+
 ## 0.3.7 — 2026-08-13
 
 ### Added

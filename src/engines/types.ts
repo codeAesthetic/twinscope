@@ -19,6 +19,7 @@ export type InputKind =
   | 'deps'
   | 'api'
   | 'env'
+  | 'html'
   | 'md'
   | 'image'
   | 'folder'

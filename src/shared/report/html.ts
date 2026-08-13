@@ -275,6 +275,8 @@ function bodyFor(input: ReportInput): string {
       return apiBody(input);
     case 'env':
       return envBody(input);
+    case 'web':
+      return webBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -616,6 +618,48 @@ function envBody(input: ReportInput): string {
       ${body}
     </tbody>
   </table>`;
+}
+
+/**
+ * The page report (v0.3.2), grouped by section — a flat list of 300 node changes
+ * followed by four CSS rules is the shape this feature exists to avoid.
+ */
+function webBody(input: ReportInput): string {
+  const rows = (input.data as { rows?: Array<Record<string, unknown>> }).rows ?? [];
+  const sections: Array<[string, string]> = [
+    ['structure', 'Structure'],
+    ['style', 'Style'],
+    ['assets', 'Assets'],
+    ['a11y', 'Accessibility'],
+  ];
+
+  const blocks = sections
+    .map(([id, label]) => {
+      const mine = rows.filter((row) => row['section'] === id);
+      if (mine.length === 0) return '';
+      const body = mine
+        .map(
+          (row) =>
+            `<tr class="${escapeHtml(row['state'])}"><td>${escapeHtml(row['key'])}</td>` +
+            `<td class="old">${escapeHtml(row['before'] ?? '—')}</td>` +
+            `<td class="new">${escapeHtml(row['after'] ?? '—')}</td>` +
+            `<td>${escapeHtml(row['detail'])}</td></tr>`,
+        )
+        .join('\n      ');
+      return section(
+        label,
+        `<table>
+    <thead><tr><th>Where</th><th>Before</th><th>After</th><th>What</th></tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`,
+        `${mine.length}`,
+      );
+    })
+    .join('\n  ');
+
+  return blocks === '' ? '<p class="meta">These two pages are the same.</p>' : blocks;
 }
 
 function imageBody(input: ReportInput): string {

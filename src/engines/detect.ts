@@ -39,7 +39,10 @@ const EXTENSION_KIND: Record<string, InputKind> = {
   cjs: 'code',
   css: 'code',
   scss: 'code',
-  html: 'code',
+  // v0.3.2: a saved page gets a page diff — structure, styles, assets and a11y —
+  // rather than a line diff of its markup. `code` remains one dropdown pick away.
+  html: 'html',
+  htm: 'html',
   py: 'code',
   sql: 'code',
   rs: 'code',

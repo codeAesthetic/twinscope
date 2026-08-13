@@ -11,7 +11,7 @@ export type { TextDiffData, TextDiffOptions, TextRow, TextRowKind } from './text
 export { MARK_OPEN, MARK_CLOSE, DEFAULT_TEXT_OPTIONS } from './textDiff';
 
 /** Anything textual can be line-diffed, so this is the universal fallback. */
-const COMPARABLE = new Set(['text', 'code', 'json', 'yaml', 'csv', 'md', 'api']);
+const COMPARABLE = new Set(['text', 'code', 'json', 'yaml', 'csv', 'md', 'api', 'env', 'html']);
 
 async function textFor(input: InputRef, read: (path: string) => Promise<string>): Promise<string> {
   if (input.text !== undefined) return input.text;
