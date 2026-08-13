@@ -28,6 +28,7 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   yaml: lazy(() => import('./JsonTreeView')),
   xml: lazy(() => import('./JsonTreeView')),
   csv: lazy(() => import('./CsvTableView')),
+  deps: lazy(() => import('./DepsView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

@@ -1,3 +1,4 @@
+import { isDependencyFile } from './deps/manifest';
 import type { InputKind, InputRef } from './types';
 
 /**
@@ -125,6 +126,11 @@ export function detectKind(input: Pick<InputRef, 'name' | 'text' | 'kind'>): Inp
   // Nor is a git ref: it was constructed by the Git panel, and its display name
   // (`repo @ main`) would otherwise be run through the extension map.
   if (input.kind === 'git') return 'git';
+
+  // A manifest or a lockfile is recognised by its *name*: all four are `.json` or
+  // `.yaml` by extension, and a structural diff of two package.json files answers
+  // the wrong question (v0.2.10). The engine dropdown still offers JSON.
+  if (isDependencyFile(input.name)) return 'deps';
 
   const byExtension = EXTENSION_KIND[extensionOf(input.name)];
   if (byExtension) return byExtension;

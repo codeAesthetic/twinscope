@@ -23,6 +23,7 @@ export const InputKindSchema = z.enum([
   'yaml',
   'csv',
   'xml',
+  'deps',
   'md',
   'image',
   'folder',

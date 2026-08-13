@@ -14,6 +14,7 @@ export type InputKind =
   | 'yaml'
   | 'csv'
   | 'xml'
+  | 'deps'
   | 'md'
   | 'image'
   | 'folder'

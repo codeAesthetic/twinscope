@@ -48,6 +48,10 @@ export interface ReportData {
   // csv
   columns?: Array<{ name: string; status: string; ignored?: boolean; isKey?: boolean }>;
   keyColumn?: string | null;
+  // deps
+  source?: { before: string; after: string };
+  resolved?: boolean;
+  transitive?: { before: number; after: number };
   counts?: { before: number; after: number };
   delimiter?: string;
 }
@@ -78,6 +82,13 @@ export interface ReportRow {
   changedCells?: number;
   before?: number;
   after?: number;
+  // deps
+  name?: string;
+  bump?: string;
+  downgrade?: boolean;
+  licenseBefore?: string;
+  licenseAfter?: string;
+  transitive?: boolean;
   // git
   oldPath?: string;
   added?: number;

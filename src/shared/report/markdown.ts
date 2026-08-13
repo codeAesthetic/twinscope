@@ -76,6 +76,8 @@ function body(input: ReportInput): string[] {
       return folderBody(input);
     case 'csv':
       return csvBody(input);
+    case 'deps':
+      return depsBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -152,6 +154,39 @@ function folderBody(input: ReportInput): string[] {
       `| \`${row.path ?? ''}\` | ${row.status ?? ''} | ${size(left?.size)} | ${size(right?.size)} | ${row.note ?? ''} |`,
     );
   }
+  return out;
+}
+
+/** The dependency report (v0.2.10): changed packages only. */
+function depsBody(input: ReportInput): string[] {
+  const rows = (input.data.rows ?? []).filter((row) => row.status !== 'same');
+  if (rows.length === 0) return ['_No dependency changed._'];
+
+  const scope =
+    input.data.resolved === true
+      ? `${input.data.transitive?.before ?? 0} → ${input.data.transitive?.after ?? 0} packages resolved`
+      : 'declared ranges only — compare the lockfiles for resolved versions and licences';
+
+  const out = [
+    `\`${input.data.source?.before ?? ''}\` → \`${input.data.source?.after ?? ''}\` — ${scope}`,
+    '',
+    '| Package | Kind | Before | After | Change | Licence |',
+    '|---|---|---|---|---|---|',
+  ];
+
+  for (const row of rows) {
+    const licence =
+      row.licenseBefore !== undefined &&
+      row.licenseAfter !== undefined &&
+      row.licenseBefore !== row.licenseAfter
+        ? `${row.licenseBefore} → ${row.licenseAfter}`
+        : '';
+    out.push(
+      `| \`${row.name ?? ''}\` | ${row.transitive === true ? 'transitive' : (row.kind ?? '')} | ` +
+        `${row.before ?? ''} | ${row.after ?? ''} | ${row.bump ?? row.status ?? ''} | ${licence} |`,
+    );
+  }
+
   return out;
 }
 

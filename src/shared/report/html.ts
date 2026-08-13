@@ -206,6 +206,8 @@ function bodyFor(input: ReportInput): string {
       return folderBody(input.data.rows ?? []);
     case 'csv':
       return csvBody(input);
+    case 'deps':
+      return depsBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -387,6 +389,50 @@ function csvBody(input: ReportInput): string {
   return `<p class="meta">${input.data.counts?.before ?? 0} → ${input.data.counts?.after ?? 0} rows, ${paired}</p>
   <table>
     <thead><tr><th>Row</th>${head}</tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`;
+}
+
+/**
+ * The dependency report (v0.2.10). Changed packages only, with the bump and any
+ * licence change — the three columns a reviewer reads.
+ */
+function depsBody(input: ReportInput): string {
+  const rows = (input.data.rows ?? []).filter((row) => row.status !== 'same');
+  if (rows.length === 0) return '<p class="meta">No dependency changed.</p>';
+
+  const body = rows
+    .map((row) => {
+      const licence =
+        row.licenseBefore !== undefined &&
+        row.licenseAfter !== undefined &&
+        row.licenseBefore !== row.licenseAfter
+          ? `${escapeHtml(row.licenseBefore)} → ${escapeHtml(row.licenseAfter)}`
+          : '';
+      return (
+        `<tr class="${escapeHtml(row.status)}">` +
+        `<td>${escapeHtml(row.name)}</td>` +
+        `<td>${escapeHtml(row.transitive === true ? 'transitive' : (row.kind ?? ''))}</td>` +
+        `<td class="old">${row.before === undefined ? '' : escapeHtml(row.before)}</td>` +
+        `<td class="new">${row.after === undefined ? '' : escapeHtml(row.after)}</td>` +
+        `<td>${escapeHtml(row.bump ?? row.status)}</td>` +
+        `<td>${licence}</td></tr>`
+      );
+    })
+    .join('\n      ');
+
+  const scope =
+    input.data.resolved === true
+      ? `${input.data.transitive?.before ?? 0} → ${input.data.transitive?.after ?? 0} packages resolved`
+      : 'declared ranges only — compare the lockfiles for resolved versions and licences';
+
+  return `<p class="meta">${escapeHtml(input.data.source?.before ?? '')} → ${escapeHtml(
+    input.data.source?.after ?? '',
+  )} · ${escapeHtml(scope)}</p>
+  <table>
+    <thead><tr><th>Package</th><th>Kind</th><th>Before</th><th>After</th><th>Change</th><th>Licence</th></tr></thead>
     <tbody>
       ${body}
     </tbody>

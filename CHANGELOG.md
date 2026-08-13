@@ -8,6 +8,27 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.10 — 2026-08-13
+
+Built before 0.2.7 on purpose: the Diff Radar's Dependencies axis needs this data
+to be honest, and the plan says not to ship it otherwise.
+
+### Added
+
+- **Dependency comparison.** Two `package.json` files now answer the question you
+  actually asked — which packages were added, removed, or moved, and how far —
+  instead of showing you that a string changed from `^4.17.20` to `^4.18.0`. Every
+  change is sized (major, minor, patch, or just a pinned range), and a version that
+  moved _down_ is flagged as the rollback it is.
+- **Lockfiles too**, for npm, pnpm and yarn: resolved versions rather than ranges,
+  a count of every transitive package, and — for npm lockfiles, the only kind that
+  records them — licence changes. A "needs a look" filter shows just the major
+  bumps, downgrades and licence changes.
+- TwinScope will not read the lockfile sitting next to a manifest, because that
+  would mean giving a comparison access to whole directories rather than the two
+  files you chose. Pick the two lockfiles instead; the app says so when it matters,
+  and says what a manifest pair cannot tell you.
+
 ## 0.2.6 — 2026-08-13
 
 ### Added
