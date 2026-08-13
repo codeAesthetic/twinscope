@@ -5,6 +5,7 @@ import {
   type DepsDiffOptions,
 } from './depsDiff';
 import { DepParseError, isDependencyFile } from './manifest';
+import { deltaScore, radarFrom, ratioScore } from '../radar';
 import { EngineInputError, type DiffEngine, type DiffResult, type InputRef } from '../types';
 
 export type { DepRow, DepStatus, DepsDiffData, DepsDiffOptions } from './depsDiff';
@@ -95,6 +96,23 @@ export const depsEngine: DiffEngine<DepsDiffOptions, DepsDiffData> = {
         removed: stats.removed,
         modified: stats.modified,
         extra,
+        // Radar (v0.2.7) — the axis this engine exists to feed. `dependencies` is the
+        // share of the set that moved at all; `metadata` is licence changes, which
+        // only an npm lockfile can report, so it is absent for the other two.
+        radar: radarFrom({
+          dependencies: ratioScore(
+            stats.added + stats.removed + stats.modified,
+            Math.max(1, data.rows.length),
+          ),
+          structure: ratioScore(stats.added + stats.removed, Math.max(1, data.rows.length)),
+          content: ratioScore(stats.modified, Math.max(1, data.rows.length)),
+          metadata: data.resolved
+            ? ratioScore(stats.licenseChanges, Math.max(1, data.rows.length))
+            : undefined,
+          performance: data.resolved
+            ? deltaScore(data.transitive.before, data.transitive.after)
+            : undefined,
+        }),
       },
       data,
       normalizationNotes: notes,

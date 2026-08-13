@@ -1,5 +1,6 @@
 import { parseXml, XmlParseError } from './xmlDiff';
 import { diffJson, DEFAULT_JSON_OPTIONS } from '../json/jsonDiff';
+import { radarFrom, ratioScore } from '../radar';
 import { EngineInputError, type DiffEngine, type DiffResult, type InputRef } from '../types';
 import type { JsonDiffData, JsonDiffOptions } from '../json/jsonDiff';
 
@@ -96,6 +97,14 @@ export const xmlEngine: DiffEngine<XmlDiffOptions, XmlDiffData> = {
         modified: stats.changed + stats.typeChanged,
         extra,
         suppressed: stats.suppressed,
+        // Radar (v0.2.7): a structural walk counts nodes, so Structure is what
+        // appeared or vanished and Content is what changed in place. A type change is
+        // a fact *about* a value rather than the value itself, so it feeds Metadata.
+        radar: radarFrom({
+          structure: ratioScore(stats.added + stats.removed, data.nodes),
+          content: ratioScore(stats.changed, data.nodes),
+          metadata: ratioScore(stats.typeChanged, data.nodes),
+        }),
       },
       data,
       // The parse notes are the same two sentences for both sides; only the

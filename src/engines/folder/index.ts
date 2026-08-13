@@ -4,6 +4,7 @@ import {
   type FolderDiffData,
   type FolderDiffOptions,
 } from './folderDiff';
+import { deltaScore, radarFrom, ratioScore } from '../radar';
 import type { DiffEngine, DiffResult } from '../types';
 
 export type {
@@ -44,6 +45,10 @@ export const folderEngine: DiffEngine<FolderDiffOptions, FolderDiffData> = {
     const extra: Record<string, number | string> = {
       identical: stats.identical,
     };
+    // Radar denominators: the widest side's file count, and the bytes the BEFORE
+    // side held. `bytesDelta` is signed, so the AFTER total is a sum, not a guess.
+    const files = Math.max(data.files.before, data.files.after);
+    const beforeBytes = data.rows.reduce((sum, row) => sum + (row.left.size ?? 0), 0);
     if (stats.renames > 0) extra.renamed = stats.renames;
     if (stats.errors > 0) extra.unreadable = stats.errors;
     if (stats.bytesDelta !== 0) extra['size'] = formatDelta(stats.bytesDelta);
@@ -56,6 +61,15 @@ export const folderEngine: DiffEngine<FolderDiffOptions, FolderDiffData> = {
         removed: stats.removed,
         modified: stats.modified,
         extra,
+        // Radar (v0.2.7). A rename is a fact about a file rather than its content,
+        // so it feeds Metadata; the byte delta is the one weight signal a tree walk
+        // genuinely has.
+        radar: radarFrom({
+          structure: ratioScore(stats.added + stats.removed, Math.max(1, files)),
+          content: ratioScore(stats.modified, Math.max(1, files)),
+          metadata: ratioScore(stats.renames, Math.max(1, files)),
+          performance: deltaScore(beforeBytes, beforeBytes + stats.bytesDelta),
+        }),
       },
       data,
       normalizationNotes: notes,

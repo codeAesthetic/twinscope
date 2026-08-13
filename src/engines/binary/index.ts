@@ -1,3 +1,4 @@
+import { deltaScore, radarFrom } from '../radar';
 import type { DiffEngine, DiffResult, InputRef } from '../types';
 
 /**
@@ -73,6 +74,14 @@ export const binaryEngine: DiffEngine<BinaryDiffOptions, BinaryDiffData> = {
           verdict: identical ? 'identical' : 'different',
           ...(sizes.after !== sizes.before ? { bytes: sizes.after - sizes.before } : {}),
         },
+        // Radar (v0.2.7). A hash comparison knows two things and admits to nothing
+        // else: whether the bytes differ at all, and by how much they grew. There is
+        // no scale between "identical" and "different" for opaque bytes, so Content
+        // is binary rather than a fabricated percentage.
+        radar: radarFrom({
+          content: identical ? 0 : 100,
+          performance: deltaScore(sizes.before, sizes.after),
+        }),
       },
       data: {
         identical,

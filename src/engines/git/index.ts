@@ -1,5 +1,6 @@
 import { DEFAULT_GIT_OPTIONS, diffRefs, type GitDiffData, type GitDiffOptions } from './gitDiff';
 import { assertSafeRef, WORKTREE } from './refs';
+import { radarFrom, ratioScore } from '../radar';
 import type { DiffEngine, DiffResult } from '../types';
 
 export type { GitDiffData, GitDiffOptions, GitFileRow, GitRefInfo, GitStatus } from './gitDiff';
@@ -77,6 +78,15 @@ export const gitEngine: DiffEngine<GitDiffOptions, GitDiffData> = {
         removed: stats.removed,
         modified: stats.modified,
         extra,
+        // Radar (v0.2.7). Scored on *files*, not lines: git reports how many lines
+        // changed but never how many a file has, so there is no denominator for a
+        // line ratio — and inventing one is exactly what "ship only when the scores
+        // are honest" rules out. A rename is Metadata, as in the folder engine.
+        radar: radarFrom({
+          structure: ratioScore(stats.added + stats.removed, Math.max(1, data.rows.length)),
+          content: ratioScore(stats.modified, Math.max(1, data.rows.length)),
+          metadata: ratioScore(stats.renamed + stats.copied, Math.max(1, data.rows.length)),
+        }),
       },
       data,
       normalizationNotes: notes,

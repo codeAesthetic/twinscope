@@ -372,3 +372,102 @@ select.dd-selectish {
   color: var(--tx-3);
   font-size: 12px;
 }
+
+/*
+ * Diff Radar (v0.2.7) — geometry ported from the mockup's `#radarbox`, styling in
+ * tokens so both themes work without a colour literal.
+ */
+.dd-radarbar {
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  display: flex;
+  justify-content: center;
+}
+
+.dd-radar {
+  padding: 8px 12px 12px;
+  text-align: center;
+  color: var(--tx-2);
+  max-width: 520px;
+  width: 100%;
+}
+.dd-radar svg {
+  width: 100%;
+  height: auto;
+  max-width: 240px;
+}
+
+.dd-radar-ring {
+  fill: none;
+  stroke: currentColor;
+  opacity: 0.18;
+}
+.dd-radar-ring[data-faint='true'] {
+  opacity: 0.12;
+}
+.dd-radar-spoke {
+  stroke: currentColor;
+  opacity: 0.14;
+}
+.dd-radar-shape {
+  fill: var(--acc);
+  fill-opacity: 0.22;
+  stroke: var(--acc-2);
+  stroke-width: 1.6;
+}
+.dd-radar-dot {
+  fill: var(--acc-2);
+}
+/* An unmeasured axis is a hollow ring at the centre, never a filled point: the
+   difference between "nothing changed" and "we cannot know" has to be visible. */
+.dd-radar-dot[data-measured='false'] {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  opacity: 0.5;
+}
+.dd-radar-label {
+  fill: currentColor;
+  opacity: 0.55;
+  font: 600 9px var(--sans);
+}
+
+.dd-radar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+  padding: 0 8px 6px;
+}
+.dd-radar-key {
+  background: none;
+  border: 1px solid var(--line-2);
+  border-radius: 99px;
+  color: var(--tx-2);
+  cursor: pointer;
+  font: 11px var(--sans);
+  padding: 2px 9px;
+}
+.dd-radar-key b {
+  color: var(--tx);
+  font-family: var(--mono);
+}
+.dd-radar-key:hover {
+  border-color: var(--acc);
+}
+.dd-radar-key[data-selected='true'] {
+  border-color: var(--acc);
+  background: var(--acc-bg);
+  color: var(--tx);
+}
+
+.dd-radar-missing,
+.dd-radar-meaning {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: var(--tx-3);
+}
+.dd-radar-meaning b {
+  color: var(--tx-2);
+}

@@ -80,6 +80,12 @@ export const SummarySchema = z.object({
   modified: z.number().int().nonnegative(),
   extra: z.record(z.string(), z.union([z.number(), z.string()])).optional(),
   suppressed: z.number().int().nonnegative().optional(),
+  /**
+   * Diff Radar scores (v0.2.7). Declared rather than left to zod's default
+   * key-stripping: an undeclared field is silently dropped, which would quietly
+   * empty the radar of anything that round-trips through a validated channel.
+   */
+  radar: z.record(z.string().max(32), z.number().min(0).max(100)).optional(),
 });
 
 export const HistoryRecordSchema = z.object({

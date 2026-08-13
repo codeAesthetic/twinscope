@@ -1,4 +1,5 @@
 import { createElement, Suspense, useEffect, useRef, useState } from 'react';
+import { DiffRadar } from '../components/compare/DiffRadar';
 import { ExportMenu } from '../components/compare/ExportMenu';
 import { SummaryStrip } from '../components/compare/SummaryStrip';
 import { ToolbarSlotProvider } from '../components/compare/ToolbarSlot';
@@ -18,6 +19,7 @@ import { engineViewFor } from './workspace/engineViews';
  * body comes from `engineViewFor(engineId)`, code-split per engine.
  */
 export function WorkspaceScreen() {
+  const [radarOpen, setRadarOpen] = useState(false);
   const status = useCompareStore((state) => state.status);
   const percent = useCompareStore((state) => state.percent);
   const progressMessage = useCompareStore((state) => state.progressMessage);
@@ -129,11 +131,34 @@ export function WorkspaceScreen() {
           <SummaryStrip
             summary={result.summary}
             right={
-              <Chip>
-                {a?.name} ↔ {b?.name}
-              </Chip>
+              <>
+                {/* The radar is a *summary* of the summary, so it belongs beside the
+                    counts rather than inside an engine's view — and it is collapsed
+                    by default, because most comparisons are read by their numbers. */}
+                {result.summary.radar !== undefined &&
+                  Object.keys(result.summary.radar).length > 0 && (
+                    <Button
+                      size="sm"
+                      variant={radarOpen ? 'primary' : 'ghost'}
+                      aria-pressed={radarOpen}
+                      data-testid="radar-toggle"
+                      onClick={() => setRadarOpen(!radarOpen)}
+                    >
+                      Radar
+                    </Button>
+                  )}
+                <Chip>
+                  {a?.name} ↔ {b?.name}
+                </Chip>
+              </>
             }
           />
+        )}
+
+        {result?.summary.radar !== undefined && radarOpen && (
+          <div className="dd-radarbar">
+            <DiffRadar radar={result.summary.radar} />
+          </div>
         )}
 
         <div className="dd-comparison-area" data-fill={status === 'done' ? 'true' : undefined}>

@@ -6,6 +6,7 @@ import {
   pixelDiff,
   type ImageRegion,
 } from './pixelDiff';
+import { deltaScore, radarFrom } from '../radar';
 import { EngineInputError, type DiffEngine, type DiffResult, type InputRef } from '../types';
 
 export type { ImageRegion, PixelDiffOptions } from './pixelDiff';
@@ -165,6 +166,19 @@ export const imageEngine: DiffEngine<ImageDiffOptions, ImageDiffData> = {
           // Reads as "size mismatch" in the strip, which renders `value label`.
           ...(sameSize ? {} : { mismatch: 'size' }),
         },
+        // Radar (v0.2.7). The one engine with a real Visual number, and the only
+        // axes it can honestly fill: a picture has no keys, licences or types.
+        // Structure is the *shape* changing; weight is the pixel count.
+        radar: radarFrom({
+          visual: Math.round(Math.min(100, pct)),
+          // Binary on purpose: an image's structure either changed shape or it did
+          // not, and a partial score would imply a scale that does not exist.
+          structure: sameSize ? 0 : 100,
+          performance: deltaScore(
+            before.natural[0] * before.natural[1],
+            after.natural[0] * after.natural[1],
+          ),
+        }),
       },
       data: {
         pct,

@@ -8,6 +8,19 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.7 — 2026-08-13
+
+### Added
+
+- **The Diff Radar.** Six axes — Structure, Content, Visual, Metadata, Deps, Weight —
+  giving the shape of a change at a glance, from a Radar button beside the counts.
+  Every score comes from a number the engine already worked out, and clicking an axis
+  says what it means.
+- **An axis nothing could measure is drawn hollow and named**, not plotted at zero.
+  A comparison of two images has nothing to say about licences, and "we did not
+  measure this" is a different statement from "nothing changed here" — the chart says
+  which. Identical inputs get no radar at all rather than a ring of zeroes.
+
 ## 0.2.10 — 2026-08-13
 
 Built before 0.2.7 on purpose: the Diff Radar's Dependencies axis needs this data

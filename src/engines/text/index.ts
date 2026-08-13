@@ -1,3 +1,4 @@
+import { radarFrom, ratioScore } from '../radar';
 import {
   DEFAULT_TEXT_OPTIONS,
   diffText,
@@ -67,13 +68,22 @@ export const textEngine: DiffEngine<TextDiffOptions, TextDiffData> = {
 
     ctx.progress(100, 'done');
 
+    const lines = Math.max(data.lines.before, data.lines.after);
+
     return {
       engineId: 'text',
       summary: {
         added: stats.added,
         removed: stats.removed,
         modified: stats.modified,
-        extra: { lines: Math.max(data.lines.before, data.lines.after) },
+        extra: { lines },
+        // Radar (v0.2.7). A line diff knows about appearing/disappearing lines and
+        // about edited ones, and nothing whatever about pixels, licences or weight —
+        // so it reports two axes and leaves the other four absent.
+        radar: radarFrom({
+          structure: ratioScore(stats.added + stats.removed, lines),
+          content: ratioScore(stats.modified, lines),
+        }),
       },
       data,
       normalizationNotes: notes,

@@ -1,4 +1,5 @@
 import { DEFAULT_CSV_OPTIONS, diffCsv, type CsvDiffData, type CsvDiffOptions } from './csvDiff';
+import { radarFrom, ratioScore } from '../radar';
 import type { DiffEngine, DiffResult, InputRef } from '../types';
 
 export type {
@@ -74,6 +75,24 @@ export const csvEngine: DiffEngine<CsvDiffOptions, CsvDiffData> = {
         modified: stats.modified,
         extra,
         suppressed: stats.suppressed,
+        // Radar (v0.2.7). Rows appearing or vanishing is Structure; changed *cells*
+        // are Content, scored against the cell count rather than the row count so a
+        // one-cell edit in a wide table does not read as a whole changed row. A
+        // column added or dropped is a fact about the table's shape → Metadata.
+        radar: radarFrom({
+          structure: ratioScore(
+            stats.added + stats.removed,
+            Math.max(data.counts.before, data.counts.after),
+          ),
+          content: ratioScore(
+            stats.changedCells,
+            Math.max(data.counts.before, data.counts.after) * Math.max(1, data.columns.length),
+          ),
+          metadata: ratioScore(
+            stats.addedColumns + stats.removedColumns,
+            Math.max(1, data.columns.length),
+          ),
+        }),
       },
       data,
       normalizationNotes: notes,

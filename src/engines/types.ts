@@ -1,3 +1,5 @@
+import type { RadarScores } from './radar';
+
 /**
  * The comparison engine contract (plan §3.3, MD §23).
  *
@@ -113,6 +115,14 @@ export interface Summary {
   extra?: Record<string, number | string>;
   /** How many differences normalization suppressed (MD §22, Rule 3). */
   suppressed?: number;
+  /**
+   * Diff Radar scores, 0–100 per axis (v0.2.7, MD §21).
+   *
+   * Its own field rather than `extra`, which the strip renders verbatim as chips —
+   * six scores in there would be six chips. An **absent** axis means this engine
+   * cannot measure it, which is not the same as scoring it zero.
+   */
+  radar?: RadarScores;
 }
 
 export interface DiffResult<TData = unknown> {
@@ -124,6 +134,8 @@ export interface DiffResult<TData = unknown> {
   normalizationNotes: string[];
   timings: { ms: number };
 }
+
+export type { RadarAxis, RadarScores } from './radar';
 
 export interface EngineMeta {
   id: string;

@@ -4,6 +4,7 @@ import {
   type JsonDiffData,
   type JsonDiffOptions,
 } from './jsonDiff';
+import { radarFrom, ratioScore } from '../radar';
 import { EngineInputError, type DiffEngine, type DiffResult, type InputRef } from '../types';
 
 export type { JsonDiffData, JsonDiffOptions, JsonRow, JsonRowState } from './jsonDiff';
@@ -97,6 +98,14 @@ export const jsonEngine: DiffEngine<JsonDiffOptions, JsonDiffData> = {
         modified: stats.changed + stats.typeChanged,
         extra,
         suppressed: stats.suppressed,
+        // Radar (v0.2.7): a structural walk counts nodes, so Structure is what
+        // appeared or vanished and Content is what changed in place. A type change is
+        // a fact *about* a value rather than the value itself, so it feeds Metadata.
+        radar: radarFrom({
+          structure: ratioScore(stats.added + stats.removed, data.nodes),
+          content: ratioScore(stats.changed, data.nodes),
+          metadata: ratioScore(stats.typeChanged, data.nodes),
+        }),
       },
       data,
       normalizationNotes: notes,
