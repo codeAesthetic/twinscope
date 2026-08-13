@@ -204,6 +204,8 @@ function bodyFor(input: ReportInput): string {
       return jsonBody(input.data.rows ?? []);
     case 'folder':
       return folderBody(input.data.rows ?? []);
+    case 'csv':
+      return csvBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -340,6 +342,51 @@ function gitBody(input: ReportInput): string {
   }</p>
   <table>
     <thead><tr><th>File</th><th>Status</th><th>Added</th><th>Removed</th><th>Note</th></tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`;
+}
+
+/**
+ * The table report (v0.2.5).
+ *
+ * Changed rows only, and a changed cell shows both values — a static report has no
+ * hover, so `old → new` in the cell is the only way to say what it was.
+ */
+function csvBody(input: ReportInput): string {
+  const columns = (input.data.columns ?? []).filter((column) => column.ignored !== true);
+  const rows = (input.data.rows ?? []).filter((row) => row.status !== 'same');
+  if (rows.length === 0) return '<p class="meta">No rows differ.</p>';
+
+  const head = columns.map((column) => `<th>${escapeHtml(column.name)}</th>`).join('');
+  const body = rows
+    .map((row) => {
+      const cells = (row.cells ?? [])
+        .filter((_, index) => (input.data.columns ?? [])[index]?.ignored !== true)
+        .map((cell) => {
+          if (cell.was === undefined) return `<td>${escapeHtml(cell.value)}</td>`;
+          return (
+            `<td class="new"><span class="old">${escapeHtml(cell.was)}</span> ` +
+            `${escapeHtml(cell.value)}</td>`
+          );
+        })
+        .join('');
+      return (
+        `<tr class="${escapeHtml(row.status)}">` +
+        `<td>${row.before ?? '—'} → ${row.after ?? '—'}</td>${cells}</tr>`
+      );
+    })
+    .join('\n      ');
+
+  const paired =
+    input.data.keyColumn === null || input.data.keyColumn === undefined
+      ? 'paired by position'
+      : `paired on ${escapeHtml(input.data.keyColumn)}`;
+
+  return `<p class="meta">${input.data.counts?.before ?? 0} → ${input.data.counts?.after ?? 0} rows, ${paired}</p>
+  <table>
+    <thead><tr><th>Row</th>${head}</tr></thead>
     <tbody>
       ${body}
     </tbody>

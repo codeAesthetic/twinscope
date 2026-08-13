@@ -1,4 +1,10 @@
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  HTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  Ref,
+} from 'react';
 
 /**
  * Primitives matching reference/devdiff-mockup.html.
@@ -9,15 +15,19 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, Ref } from '
 
 export type ChipVariant = 'default' | 'add' | 'del' | 'mod' | 'info' | 'acc';
 
+/**
+ * Extra props are forwarded to the span, so a caller can hang a `data-testid` or
+ * an `aria-*` attribute on a chip. Without that, `<Chip data-testid="…">` compiled
+ * and rendered fine while silently dropping the attribute — which is a spec that
+ * cannot find an element it can see on screen.
+ */
 export function Chip({
   children,
   variant = 'default',
-}: {
-  children: ReactNode;
-  variant?: ChipVariant;
-}) {
+  ...rest
+}: { children: ReactNode; variant?: ChipVariant } & HTMLAttributes<HTMLSpanElement>) {
   return (
-    <span className="dd-chip" data-variant={variant}>
+    <span className="dd-chip" data-variant={variant} {...rest}>
       {children}
     </span>
   );

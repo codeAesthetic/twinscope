@@ -27,6 +27,7 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   // wrapper files, which would cost a lazy chunk each for no visible difference.
   yaml: lazy(() => import('./JsonTreeView')),
   xml: lazy(() => import('./JsonTreeView')),
+  csv: lazy(() => import('./CsvTableView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

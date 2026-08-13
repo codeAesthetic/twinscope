@@ -8,6 +8,24 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.5 — 2026-08-13
+
+### Added
+
+- **CSV and TSV comparison, as a table.** A grid with a sticky header and a
+  row-number gutter, so you can see which record changed in each file and which
+  _cell_ changed in it — a changed cell shows the old value struck through beside
+  the new one.
+- **Pair rows on a key column.** Two exports of the same table usually differ in
+  row order for no reason at all; pairing on `id` makes order irrelevant, which is
+  the only correct way to compare them. Without a key, rows are aligned first, so
+  inserting one row reports one addition instead of changing every row below it.
+- Columns are compared too: a column only one side has is marked, and columns you
+  do not care about can be ignored — with the differences they hide still counted.
+- The delimiter is detected outside quoted fields, so a semicolon-delimited file
+  whose values contain commas reads correctly, and a `.tsv` is tab-delimited by its
+  name rather than by guesswork.
+
 ## 0.2.4 — 2026-08-13
 
 ### Added

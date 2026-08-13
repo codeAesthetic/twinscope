@@ -45,6 +45,11 @@ export interface ReportData {
   after?: { ref: string; label: string };
   totals?: { added: number; removed: number };
   partial?: boolean;
+  // csv
+  columns?: Array<{ name: string; status: string; ignored?: boolean; isKey?: boolean }>;
+  keyColumn?: string | null;
+  counts?: { before: number; after: number };
+  delimiter?: string;
 }
 
 export interface ReportRow {
@@ -68,6 +73,11 @@ export interface ReportRow {
   // folder
   isDir?: boolean;
   status?: string;
+  // csv
+  cells?: Array<{ value: string; was?: string; state: string }>;
+  changedCells?: number;
+  before?: number;
+  after?: number;
   // git
   oldPath?: string;
   added?: number;

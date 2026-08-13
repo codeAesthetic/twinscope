@@ -1,0 +1,181 @@
+/*
+ * The table diff (v0.2.5) — a virtualised grid, not a tree.
+ *
+ * Fixed row height for the same reason every other diff here has one: the
+ * virtualiser must size the scroll area without measuring. That is also why a
+ * changed cell shows its old value *beside* the new one rather than beneath it.
+ */
+
+.dd-csvwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  width: 100%;
+}
+
+.dd-csvmeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: 11.5px;
+  color: var(--tx-2);
+  flex: 0 0 auto;
+}
+
+/* One scroll container for header and body, so they cannot drift apart. */
+.dd-csvscroll {
+  --dd-csvrow-height: 26px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dd-csvgrid {
+  min-width: max-content;
+  position: relative;
+}
+
+.dd-csvhead {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--line-2);
+}
+
+.dd-csvhcell {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  font: 600 11px var(--sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid var(--line);
+}
+.dd-csvhcell[data-status='add'] {
+  color: var(--add);
+  background: var(--add-bg);
+}
+.dd-csvhcell[data-status='del'] {
+  color: var(--del);
+  background: var(--del-bg);
+}
+.dd-csvhcell[data-ignored='true'] {
+  color: var(--tx-3);
+  font-style: italic;
+  opacity: 0.65;
+}
+.dd-csvhcell[data-key='true']::after {
+  content: ' ⚿';
+  color: var(--acc);
+}
+
+.dd-csvrow {
+  display: flex;
+  height: var(--dd-csvrow-height);
+  font: 12px/26px var(--mono);
+  border-bottom: 1px solid var(--line);
+}
+.dd-csvrow:hover {
+  background: var(--hover);
+}
+.dd-csvrow[data-current='true'] {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+.dd-csvrow[data-status='add'] {
+  background: var(--add-bg);
+}
+.dd-csvrow[data-status='del'] {
+  background: var(--del-bg);
+}
+
+/* The row-number gutter: which record this was in each file. */
+.dd-csvgutter {
+  flex: 0 0 auto;
+  width: 92px;
+  padding: 0 10px;
+  color: var(--tx-3);
+  font-size: 10.5px;
+  border-right: 1px solid var(--line);
+  white-space: nowrap;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: sticky;
+  left: 0;
+  background: inherit;
+  z-index: 1;
+}
+.dd-csvrow:hover .dd-csvgutter {
+  background: var(--hover);
+}
+.dd-csvstatus {
+  width: 12px;
+  text-align: center;
+  flex: 0 0 auto;
+}
+.dd-csvrow[data-status='add'] .dd-csvstatus {
+  color: var(--add);
+}
+.dd-csvrow[data-status='del'] .dd-csvstatus {
+  color: var(--del);
+}
+.dd-csvrow[data-status='mod'] .dd-csvstatus {
+  color: var(--mod);
+}
+
+.dd-csvcell {
+  flex: 0 0 auto;
+  padding: 0 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-right: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dd-csvcell[data-state='chg'] {
+  background: var(--mod-bg);
+}
+.dd-csvcell[data-state='ign'] {
+  color: var(--tx-3);
+  opacity: 0.55;
+}
+
+/* The old value, kept on the same line so the row height stays fixed. */
+.dd-csvwas {
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--del) 55%, transparent);
+  font-size: 11px;
+  flex: 0 0 auto;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-csvnow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-csvcell[data-state='chg'] .dd-csvnow {
+  color: var(--add);
+}
+
+.dd-csv-empty {
+  padding: 14px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--tx-2);
+}

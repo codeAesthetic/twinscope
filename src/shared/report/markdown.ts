@@ -74,6 +74,8 @@ function body(input: ReportInput): string[] {
       return jsonBody(input);
     case 'folder':
       return folderBody(input);
+    case 'csv':
+      return csvBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -150,6 +152,36 @@ function folderBody(input: ReportInput): string[] {
       `| \`${row.path ?? ''}\` | ${row.status ?? ''} | ${size(left?.size)} | ${size(right?.size)} | ${row.note ?? ''} |`,
     );
   }
+  return out;
+}
+
+/** The table report (v0.2.5): changed rows only, with both values in a changed cell. */
+function csvBody(input: ReportInput): string[] {
+  const allColumns = input.data.columns ?? [];
+  const columns = allColumns.filter((column) => column.ignored !== true);
+  const rows = (input.data.rows ?? []).filter((row) => row.status !== 'same');
+  if (rows.length === 0) return ['_No rows differ._'];
+
+  const paired =
+    input.data.keyColumn === null || input.data.keyColumn === undefined
+      ? 'paired by position'
+      : `paired on \`${input.data.keyColumn}\``;
+
+  const out = [
+    `${input.data.counts?.before ?? 0} → ${input.data.counts?.after ?? 0} rows, ${paired}`,
+    '',
+    `| Row | Status | ${columns.map((column) => column.name).join(' | ')} |`,
+    `|---|---|${columns.map(() => '---').join('|')}|`,
+  ];
+
+  for (const row of rows) {
+    const cells = (row.cells ?? [])
+      .filter((_, index) => allColumns[index]?.ignored !== true)
+      .map((cell) => (cell.was === undefined ? cell.value : `~~${cell.was}~~ ${cell.value}`))
+      .join(' | ');
+    out.push(`| ${row.before ?? '—'} → ${row.after ?? '—'} | ${row.status ?? ''} | ${cells} |`);
+  }
+
   return out;
 }
 
