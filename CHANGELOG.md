@@ -8,6 +8,22 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.9 — 2026-08-13
+
+### Fixed
+
+- **PDFs are compared as documents again.** Comparing two real PDFs showed the binary
+  verdict — a size and a checksum — instead of a page-by-page diff. Every PDF a real
+  program writes has compressed streams and embedded fonts, and those made TwinScope
+  classify the file as an opaque blob before the PDF engine ever saw it. Hand-made test
+  documents did not, which is why it went unnoticed.
+- **Comparing two PDFs from the command line no longer crashes.** `twinscope a.pdf b.pdf`
+  failed with an internal error about a missing worker; the file it needed was not being
+  shipped alongside the binary.
+- **`twinscope --help` lists every engine.** It named ten of the sixteen: YAML, XML, CSV,
+  dependency and large-text comparisons all worked without being mentioned. The list is
+  now generated, so it cannot drift again.
+
 ## 0.3.8 — 2026-08-13
 
 First release since 0.1.0. It carries everything in the entries below — sixteen
@@ -36,6 +52,12 @@ new thing.
   machines that already have a settings file.
 - The Privacy section of Settings now states the one exception rather than claiming there
   are no network calls at all.
+
+### Fixed
+
+- **Fit returns to the same fit.** In the image viewer, zooming to 100% and then pressing
+  Fit landed about 2% short of the view you started with, on any platform whose
+  scrollbars take up space.
 
 ## 0.3.3 — 2026-08-13
 

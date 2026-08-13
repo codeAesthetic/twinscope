@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
 import { seedComparison } from '../helpers/seed';
@@ -50,6 +53,17 @@ test('compare screen: hero, drop zones, quick cards and recent list', async () =
     // --- quick cards ---
     await expect(harness.page.getByTestId('quick-cards').locator('.dd-qcard')).toHaveCount(4);
     await expect(harness.page.getByTestId('quick-folders')).toContainText('Recursive tree diff');
+    // Every card names the action it runs, and that name comes from the shortcut
+    // registry — so a card and its keyboard shortcut cannot drift apart. What each one
+    // actually does is asserted in the behavioural test below.
+    await expect(harness.page.getByTestId('quick-folders')).toHaveAttribute(
+      'data-action',
+      'open-folders',
+    );
+    await expect(harness.page.getByTestId('quick-clipboard')).toHaveAttribute(
+      'data-action',
+      'paste-compare',
+    );
     const quickColumns = await harness.page.evaluate(
       () =>
         getComputedStyle(
@@ -153,6 +167,81 @@ test('compare screen: the sample button runs a real diff, not a simulation', asy
     await harness.screenshot('compare-sample');
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {
+    await harness.close();
+  }
+});
+
+test('compare screen: every quick card runs the route it describes', async () => {
+  // Wired 2026-08-13. Until then only Git did anything, and the other three were
+  // buttons that looked clickable, did nothing, and blamed a shipped milestone in
+  // their tooltip. Each card runs the *same* action as its keyboard shortcut, so this
+  // spec is also what stops one of them growing a second implementation.
+  const harness = await launchApp();
+  let root: string | null = null;
+
+  try {
+    root = await mkdtemp(join(tmpdir(), 'twinscope-quick-'));
+    const folderA = join(root, 'before');
+    const folderB = join(root, 'after');
+    await mkdir(folderA, { recursive: true });
+    await mkdir(folderB, { recursive: true });
+    await writeFile(join(folderA, 'kept.txt'), 'same\n');
+    await writeFile(join(folderB, 'kept.txt'), 'same\n');
+    const fileA = join(root, 'one.txt');
+    const fileB = join(root, 'two.txt');
+    await writeFile(fileA, 'one\n');
+    await writeFile(fileB, 'two\n');
+
+    const stub = async (paths: string[]): Promise<void> => {
+      await harness.app.evaluate(({ dialog }, queued: string[]) => {
+        let call = 0;
+        dialog.showOpenDialog = () =>
+          Promise.resolve({
+            canceled: false,
+            filePaths: [queued[call++ % queued.length] as string],
+          });
+      }, paths);
+    };
+
+    const before = harness.page.getByTestId('drop-before');
+    const after = harness.page.getByTestId('drop-after');
+
+    // ---------- Folders: the picker, twice, into both sides ----------
+    await stub([folderA, folderB]);
+    await harness.page.getByTestId('quick-folders').click();
+    await expect(before).toContainText('before/');
+    await expect(after).toContainText('after/');
+    // The engine's own label, not a guess at it: `folderEngine.meta.label`.
+    await expect(harness.page.getByTestId('detected-bar')).toContainText('File tree diff');
+
+    // ---------- Screenshots: the file picker, same shape ----------
+    await stub([fileA, fileB]);
+    await harness.page.getByTestId('quick-screenshots').click();
+    await expect(before).toContainText('one.txt');
+    await expect(after).toContainText('two.txt');
+
+    // ---------- Clipboard: one click per side, as the card says ----------
+    await harness.page.getByTestId('clear-before').click();
+    await harness.page.getByTestId('clear-after').click();
+    await harness.app.evaluate(({ clipboard }) => clipboard.writeText('first paste'));
+    await harness.page.getByTestId('quick-clipboard').click();
+    await expect(before.locator('.dd-filecard')).toBeVisible();
+    await expect(after.locator('.dd-filecard')).toHaveCount(0);
+
+    await harness.app.evaluate(({ clipboard }) => clipboard.writeText('second paste'));
+    await harness.page.getByTestId('quick-clipboard').click();
+    await expect(after.locator('.dd-filecard')).toBeVisible();
+
+    // ---------- Git: still the panel, and another card closes it again ----------
+    await harness.page.getByTestId('quick-git').click();
+    await expect(harness.page.getByTestId('git-panel')).toBeVisible();
+    await stub([folderA, folderB]);
+    await harness.page.getByTestId('quick-folders').click();
+    await expect(harness.page.getByTestId('git-panel')).toHaveCount(0);
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    if (root !== null) await rm(root, { recursive: true, force: true });
     await harness.close();
   }
 });

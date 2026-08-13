@@ -5,33 +5,36 @@ import { QUICK_STARTS } from '../../lib/mockData';
  * Four shortcuts into a comparison, for the cases where dropping two files is
  * not the fastest route (MD §34/§35).
  *
- * `git` is live as of v0.2.1 and opens the ref panel. The other three are still
- * descriptive: their routes exist (folder picker, ⌘⇧V, file picker) but as
- * *cards* they were never wired, and doing so is not this feature's business.
+ * **All four do something.** `git` has since v0.2.1; the other three were still inert
+ * on 2026-08-13 — buttons with hover styling, no `onClick`, and a tooltip citing a
+ * milestone that had shipped months earlier. Their routes existed the whole time
+ * (folder picker, ⌘⇧V, file picker); only the cards were never connected.
+ *
+ * Each card names an **action id** rather than carrying a handler, so a card and its
+ * keyboard shortcut run the same code — the rule ⌘S follows. This component knows
+ * nothing about what any of them do, and `onSelect` is required: a deck of buttons
+ * that might do nothing is what this replaced.
  */
-export function QuickCards({ onSelect }: { onSelect?: (id: string) => void }) {
+export function QuickCards({ onSelect }: { onSelect: (action: string) => void }) {
   return (
     <div className="dd-quick" data-testid="quick-cards">
-      {QUICK_STARTS.map((quick) => {
-        const live = quick.id === 'git' && onSelect !== undefined;
-        return (
-          <button
-            key={quick.id}
-            type="button"
-            className="dd-qcard"
-            data-testid={`quick-${quick.id}`}
-            data-live={live ? 'true' : 'false'}
-            title={live ? 'Compare two git refs' : 'Wired up in MVP-2'}
-            {...(live ? { onClick: () => onSelect(quick.id) } : {})}
-          >
-            <span className="dd-qcard-title">
-              <FileTypeBadge kind={quick.kind} />
-              {quick.title}
-            </span>
-            <span className="dd-qcard-desc">{quick.description}</span>
-          </button>
-        );
-      })}
+      {QUICK_STARTS.map((quick) => (
+        <button
+          key={quick.id}
+          type="button"
+          className="dd-qcard"
+          data-testid={`quick-${quick.id}`}
+          data-action={quick.action}
+          title={quick.hint}
+          onClick={() => onSelect(quick.action)}
+        >
+          <span className="dd-qcard-title">
+            <FileTypeBadge kind={quick.kind} />
+            {quick.title}
+          </span>
+          <span className="dd-qcard-desc">{quick.description}</span>
+        </button>
+      ))}
     </div>
   );
 }

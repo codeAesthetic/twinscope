@@ -1,14 +1,11 @@
-// PLACEHOLDER content that the product cannot produce yet.
+// Content rather than logic — and no longer placeholder content.
 //
-// The history fixtures left with MVP-8 and the shortcut table with MVP-10,
-// which generates it from the real registry. What remains is the quick-start
-// deck: two of its four flows (URLs, Git refs) are v0.2.0 features, so the cards
-// stay descriptive until then. Kept in one module so each removal is a single
-// deletion.
-//
-// `SAMPLE_PAIR` is the exception and is *not* a placeholder: it is real input to
-// a real engine, and the only reason it lives here is that it is content rather
-// than logic.
+// The history fixtures left with MVP-8, the shortcut table with MVP-10 (which
+// generates it from the real registry), and the sidebar's pinned cards with
+// v0.2.9. What remains is the quick-start deck and `SAMPLE_PAIR`, and **both are
+// real**: every card now names the action it performs, and the sample is real
+// input to a real engine. They live here because they are copy, not because they
+// are fake.
 
 import type { FileKind } from '../components/primitives';
 
@@ -17,33 +14,55 @@ export interface QuickStart {
   kind: FileKind;
   title: string;
   description: string;
+  /**
+   * What clicking it does.
+   *
+   * An id from `lib/shortcuts.ts` wherever one exists, so a card and its keyboard
+   * shortcut run the same code — the rule ⌘S follows, and the reason these are not
+   * three `onClick` handlers in the component. `git-panel` is the exception: the
+   * panel is a mode of the Compare screen, so only that screen can open it.
+   */
+  action: string;
+  /** The tooltip. Says what will happen, since the card does not look like a button. */
+  hint: string;
 }
 
-/** The four fastest ways in (MD §34/§35). Wired up across MVP-2 and v0.2.0. */
+/** The four fastest ways in (MD §34/§35). Every one of them live since 2026-08-13. */
 export const QUICK_STARTS: readonly QuickStart[] = [
   {
     id: 'folders',
     kind: 'folder',
     title: 'Folders',
     description: 'Recursive tree diff with size & rename hints.',
+    action: 'open-folders',
+    hint: 'Choose the BEFORE folder, then the AFTER folder (⌘⇧O)',
   },
   {
     id: 'clipboard',
     kind: 'code',
     title: 'Clipboard',
     description: '⌘⇧V twice — text, JSON, URL or image.',
+    action: 'paste-compare',
+    hint: 'Paste into the first empty side. Click again for the other one (⌘⇧V)',
   },
   {
     id: 'screenshots',
     kind: 'image',
     title: 'Screenshots',
     description: 'Overlay, blink and pixel heatmap.',
+    // The file picker, not an image-only one: `pickFile` takes no filters, and the
+    // image engine is chosen by detection once both sides are in. A card that
+    // refused a PDF here would be a card lying about which engine runs.
+    action: 'open-files',
+    hint: 'Choose two images to compare (⌘O)',
   },
   {
     id: 'git',
     kind: 'web',
     title: 'Git refs',
     description: 'Branch, tag, commit or range.',
+    action: 'git-panel',
+    hint: 'Pick a repository and two refs',
   },
 ];
 
