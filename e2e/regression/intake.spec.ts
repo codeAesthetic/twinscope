@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { launchApp } from '../helpers/launch';
-import { openPalette } from '../helpers/seed';
+import { openPalette, waitForReady } from '../helpers/seed';
 
 /**
  * REGRESSION — MVP-2: input intake and detection.
@@ -17,6 +17,10 @@ test('intake: clipboard paste, detection, override and run', async () => {
     harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
 
   try {
+    // The first press of a run can be lost if it lands before the keymap's effect
+    // has attached — a flake that only appears when another spec ran first.
+    await waitForReady(harness);
+
     // ---------- ⌘⇧V fills the first empty side, then the second ----------
     await setClipboard('{"user": {"status": "pending"}}');
     await harness.page.keyboard.press('Meta+Shift+V');
@@ -91,6 +95,8 @@ test('intake: plain ⌘V fills a side, but never steals a field paste', async ()
     harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
 
   try {
+    await waitForReady(harness);
+
     // ---------- nothing focused: ⌘V is an intake gesture ----------
     await setClipboard('alpha line\nshared line');
     const before = harness.page.getByTestId('drop-before');

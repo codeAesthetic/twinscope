@@ -13,6 +13,7 @@ export type InputKind =
   | 'json'
   | 'yaml'
   | 'csv'
+  | 'xml'
   | 'md'
   | 'image'
   | 'folder'

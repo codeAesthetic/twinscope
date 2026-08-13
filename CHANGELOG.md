@@ -8,6 +8,26 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.4 — 2026-08-13
+
+### Added
+
+- **XML comparison.** `.xml`, `.xsd`, `.xsl`, `.svg`, `.rss`, `.atom` and `.plist`
+  now get a structural comparison instead of a line diff. Attributes and text are
+  separate rows, so changing an attribute reads as an attribute change rather than
+  "this element is different", and the summary counts attributes on their own.
+  Reindenting a document changes nothing; reordering children does, because in XML
+  document order is part of the meaning — you can turn that off per comparison.
+  Values are compared as text, so `007` and `7` are different, and adding a second
+  repeated child reads as an addition rather than a change of type. A malformed
+  document names the line and column and offers to compare as text.
+
+### Fixed
+
+- **A spec no longer depends on the first keypress landing.** The first shortcut
+  of a test run could arrive before the renderer had attached its listener, which
+  showed up as a test that passed alone and failed after another had run.
+
 ## 0.2.3 — 2026-08-13
 
 ### Added

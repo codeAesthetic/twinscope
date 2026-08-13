@@ -45,7 +45,16 @@ const EXTENSION_KIND: Record<string, InputKind> = {
   rb: 'code',
   sh: 'code',
   toml: 'code',
-  xml: 'code',
+  // XML gets a structural engine of its own (v0.2.4); as `code` these were
+  // line-diffed, which is the comparison a structural engine exists to avoid.
+  xml: 'xml',
+  xsd: 'xml',
+  xsl: 'xml',
+  xslt: 'xml',
+  svg: 'xml',
+  rss: 'xml',
+  atom: 'xml',
+  plist: 'xml',
 };
 
 /** Language id for syntax highlighting, when the input is code. */
@@ -69,6 +78,13 @@ const EXTENSION_LANG: Record<string, string> = {
   toml: 'toml',
   xml: 'xml',
   json: 'json',
+  xsd: 'xml',
+  xsl: 'xml',
+  xslt: 'xml',
+  svg: 'xml',
+  rss: 'xml',
+  atom: 'xml',
+  plist: 'xml',
   yml: 'yaml',
   yaml: 'yaml',
   md: 'markdown',

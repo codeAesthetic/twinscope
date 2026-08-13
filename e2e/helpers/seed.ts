@@ -2,6 +2,24 @@ import { expect } from '@playwright/test';
 import type { Harness } from './launch';
 
 /**
+ * Waits until the renderer is mounted and listening, before the first keypress.
+ *
+ * `bridge-status` only shows a version once `ping()` has round-tripped, which
+ * happens in an effect after mount — by which point the keymap's own effect has
+ * attached its listener. Without this, the *first* press of a run can land in the
+ * gap between paint and listener and be silently lost: a spec that passes alone
+ * and fails when another ran first, which is the worst way for a test to fail.
+ *
+ * `pasteInput` keeps its retry as well. This removes the usual cause; the retry
+ * covers the rest.
+ */
+export async function waitForReady(harness: Harness): Promise<void> {
+  await expect(harness.page.getByTestId('bridge-status')).toContainText('electron', {
+    timeout: 20_000,
+  });
+}
+
+/**
  * Clipboard intake, the way the harness can drive it honestly: write the real
  * system clipboard, then press the real shortcut.
  *
@@ -15,6 +33,7 @@ export async function pasteInput(
   text: string,
   side: 'before' | 'after',
 ): Promise<void> {
+  await waitForReady(harness);
   await harness.app.evaluate(({ clipboard }, value: string) => clipboard.writeText(value), text);
 
   const zone = harness.page.getByTestId(`drop-${side}`);
@@ -52,6 +71,7 @@ export async function seedComparison(
  * is then silently lost.
  */
 export async function openPalette(harness: Harness): Promise<void> {
+  await waitForReady(harness);
   const palette = harness.page.getByTestId('command-palette');
   await expect(async () => {
     await harness.page.keyboard.press('Meta+k');

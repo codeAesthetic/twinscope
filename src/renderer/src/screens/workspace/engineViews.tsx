@@ -22,10 +22,11 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   demo: lazy(() => import('./DemoResultView')),
   text: lazy(() => import('./TextDiffView')),
   json: lazy(() => import('./JsonTreeView')),
-  // YAML is the JSON core over a different parser (v0.2.3), so it is the same
-  // view — registered against the same module rather than through a wrapper file,
-  // which would cost a second lazy chunk for no difference in what it renders.
+  // YAML (v0.2.3) and XML (v0.2.4) are the JSON core over a different parser, so
+  // they are the same view — registered against the same module rather than through
+  // wrapper files, which would cost a lazy chunk each for no visible difference.
   yaml: lazy(() => import('./JsonTreeView')),
+  xml: lazy(() => import('./JsonTreeView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),
