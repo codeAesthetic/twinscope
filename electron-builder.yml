@@ -29,6 +29,18 @@ files:
 asar: true
 npmRebuild: false
 
+# `twinscope://` (v0.2.12). `app.setAsDefaultProtocolClient` in `main/protocol.ts` is
+# enough for a dev run, and only for a dev run: on macOS LaunchServices resolves a
+# scheme from `CFBundleURLTypes` in the bundle's Info.plist, and on Windows the
+# installer writes the registry association. Without this entry a *packaged* app
+# claims nothing, so every `twinscope://compare?...` link — including the ones the VS
+# Code extension emits and the one at the bottom of every exported HTML report — opens
+# nothing at all.
+protocols:
+  - name: TwinScope comparison
+    schemes:
+      - twinscope
+
 mac:
   category: public.app-category.developer-tools
   target:

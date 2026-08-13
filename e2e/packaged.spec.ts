@@ -1,6 +1,6 @@
 import { _electron as electron } from '@playwright/test';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { expect, test } from '@playwright/test';
@@ -118,6 +118,16 @@ test.describe('packaged app', () => {
       await page.getByTestId('back-button').click();
       await expect(page.getByTestId('recent-list')).toContainText('a.json ↔ b.json');
       expect(existsSync(join(profile, 'twinscope.db'))).toBe(true);
+
+      // ---------- the packaged bundle claims `twinscope://` ----------
+      // `app.setAsDefaultProtocolClient` is enough for a dev run and nothing else: on
+      // macOS LaunchServices reads CFBundleURLTypes out of the Info.plist, so without
+      // the `protocols:` entry in electron-builder.yml an installed app claimed no
+      // scheme and every deep link — the VS Code extension's, and the one in every
+      // exported report — opened nothing. Read the plist rather than trusting the config.
+      const plist = await readFile(resolve(APP, '..', '..', 'Info.plist'), 'utf8');
+      expect(plist).toContain('CFBundleURLSchemes');
+      expect(plist).toContain('twinscope');
 
       // ---------- what it actually costs, per process ----------
       const metrics = await app.evaluate(({ app: electronApp }) =>
