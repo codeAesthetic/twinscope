@@ -18,6 +18,7 @@ export type InputKind =
   | 'xml'
   | 'deps'
   | 'api'
+  | 'env'
   | 'md'
   | 'image'
   | 'folder'

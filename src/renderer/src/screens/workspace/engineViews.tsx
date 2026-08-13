@@ -35,6 +35,8 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   // v0.3.1: an API comparison is read verdict-first, which is neither a tree nor a
   // table — so it gets a view of its own.
   api: lazy(() => import('./ApiView')),
+  // v0.3.7: two columns of keys, with masking done in the engine — see EnvView.
+  env: lazy(() => import('./EnvView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

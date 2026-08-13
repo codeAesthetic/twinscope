@@ -1,5 +1,6 @@
 import { apiShapeOf } from './api';
 import { isDependencyFile } from './deps/manifest';
+import { configKindOf } from './env';
 import type { InputKind, InputRef } from './types';
 
 /**
@@ -139,6 +140,11 @@ export function detectKind(input: Pick<InputRef, 'name' | 'text' | 'kind'>): Inp
   // answers a question nobody asked (v0.3.1). Only these two shapes are claimed;
   // two plain response bodies stay JSON, and reach the API engine by choice.
   if (apiShapeOf(input.text) !== null) return 'api';
+
+  // Config is recognised the same way, and for the same reason (v0.3.7): a `.env`
+  // file has no extension at all, a Kubernetes manifest is `.yaml`, and a Terraform
+  // plan is `.json` — none of which says "this is an environment".
+  if (configKindOf(input) !== null) return 'env';
 
   const byExtension = EXTENSION_KIND[extensionOf(input.name)];
   if (byExtension) return byExtension;

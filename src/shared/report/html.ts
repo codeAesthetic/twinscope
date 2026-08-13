@@ -273,6 +273,8 @@ function bodyFor(input: ReportInput): string {
       return depsBody(input);
     case 'api':
       return apiBody(input);
+    case 'env':
+      return envBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -584,6 +586,36 @@ function apiBody(input: ReportInput): string {
     </tbody>
   </table>`
   }`;
+}
+
+/**
+ * The config report (v0.3.7).
+ *
+ * It renders `row.before` and `row.after` as the engine produced them — which is the
+ * whole reason masking lives in the engine. A report that unmasked would be the one
+ * artefact of this feature that leaks, and it is also the one people email.
+ */
+function envBody(input: ReportInput): string {
+  const rows = (input.data as { rows?: Array<Record<string, unknown>> }).rows ?? [];
+  const body = rows
+    .filter((row) => row['state'] !== 'same')
+    .map(
+      (row) =>
+        `<tr class="${escapeHtml(row['state'])}"><td>${escapeHtml(row['key'])}${
+          row['secret'] === true ? ' <em>(secret)</em>' : ''
+        }</td><td class="old">${escapeHtml(row['before'] ?? '—')}</td>` +
+        `<td class="new">${escapeHtml(row['after'] ?? '—')}</td><td>${escapeHtml(row['state'])}</td></tr>`,
+    )
+    .join('\n      ');
+
+  if (body === '') return '<p class="meta">No keys differ.</p>';
+
+  return `<table>
+    <thead><tr><th>Key</th><th>Before</th><th>After</th><th>State</th></tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`;
 }
 
 function imageBody(input: ReportInput): string {

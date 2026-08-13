@@ -175,3 +175,90 @@
 .dd-apinew {
   color: var(--add);
 }
+
+/*
+ * Config comparison (v0.3.7). The same table rules as the API view — one shape for
+ * "two columns of values", so the two read as one app — plus the secret badge, which
+ * is the only new idea on the screen.
+ */
+.dd-envscroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  text-align: left;
+  padding: 10px 12px 20px;
+}
+.dd-envwarn {
+  border: 1px solid var(--mod);
+  background: var(--mod-bg);
+  color: var(--tx);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 12px;
+  margin: 0 0 10px;
+}
+.dd-envtable {
+  width: 100%;
+  border-collapse: collapse;
+  font: 11.5px var(--mono);
+}
+.dd-envtable th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-2);
+  text-align: left;
+  font: 600 10px/1 var(--sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line-2);
+}
+.dd-envtable td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.dd-envtable tr[data-state='added'] td {
+  background: var(--add-bg);
+}
+.dd-envtable tr[data-state='removed'] td {
+  background: var(--del-bg);
+}
+.dd-envtable tr[data-state='changed'] td,
+.dd-envtable tr[data-state='emptied'] td,
+.dd-envtable tr[data-state='filled'] td {
+  background: var(--mod-bg);
+}
+.dd-envtable tr[data-state='same'] td {
+  color: var(--tx-3);
+}
+.dd-envkey {
+  color: var(--tx);
+  white-space: nowrap;
+}
+.dd-envold {
+  color: var(--del);
+}
+.dd-envnew {
+  color: var(--add);
+}
+.dd-envstate {
+  color: var(--tx-3);
+  font: 10.5px var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.dd-envsecret {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--mod);
+  color: var(--mod);
+  font: 9.5px/1.5 var(--sans);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}

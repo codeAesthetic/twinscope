@@ -2,6 +2,7 @@ import { apiEngine } from './api';
 import { binaryEngine } from './binary';
 import { csvEngine } from './csv';
 import { depsEngine } from './deps';
+import { createEnvEngine } from './env';
 import { folderEngine } from './folder';
 import { gitEngine } from './git';
 import { imageEngine } from './image';
@@ -9,7 +10,7 @@ import { jsonEngine } from './json';
 import { largeTextEngine } from './large';
 import { textEngine } from './text';
 import { xmlEngine } from './xml';
-import { yamlEngine } from './yaml';
+import { parseYaml, yamlEngine } from './yaml';
 import type { DiffEngine } from './types';
 
 /**
@@ -25,11 +26,24 @@ import type { DiffEngine } from './types';
  * added. Options are erased to `unknown` here: callers pick an engine first,
  * then read its own `defaultOptions()` for the concrete shape.
  */
+/**
+ * The config engine, given the YAML parser v0.2.3 already proved (v0.3.7).
+ *
+ * Injected rather than imported inside `engines/env/` so that module needs no parser
+ * of its own — and so the Kubernetes path reads YAML exactly the way the YAML engine
+ * does, merge keys, anchors, multi-document streams and all.
+ */
+export const envEngine = createEnvEngine((text) => {
+  const parsed = parseYaml(text, 'this file');
+  return parsed.documents > 1 ? (parsed.value as unknown[]) : [parsed.value];
+});
+
 export const ENGINES: readonly DiffEngine<unknown>[] = [
   apiEngine,
   binaryEngine,
   csvEngine,
   depsEngine,
+  envEngine,
   folderEngine,
   gitEngine,
   imageEngine,

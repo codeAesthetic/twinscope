@@ -8,6 +8,26 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.7 — 2026-08-13
+
+### Added
+
+- **Config comparison.** Two `.env` files, two Kubernetes manifests, or two Terraform
+  plans, as a table of keys: what changed, what arrived, what left.
+- **Secrets are masked, and the masking is not cosmetic.** A value TwinScope judges to
+  be a credential — because of its name, or because it is a password inside a database
+  URL, a JWT, a private key or a long generated-looking string — is replaced with a
+  fingerprint before anything sees it. That means an exported report, a copied row and
+  the command line carry the mask too, not just the screen. Two secrets that differ
+  are still reported as differing; you just are not shown either of them. "Show
+  secrets" exists, applies to one comparison, and is never remembered.
+- **Empty is not the same as missing.** `KEY=` next to no `KEY` at all is its own
+  state, because that difference is the one that causes outages.
+- **Kubernetes objects are matched by kind, namespace and name**, so two manifests
+  listing the same objects in a different order compare as identical. Secret values
+  are base64-decoded before comparison, so two Secrets that differ only in encoding
+  are correctly reported as the same secret.
+
 ## 0.3.1 — 2026-08-13
 
 ### Added
