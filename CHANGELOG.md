@@ -8,6 +8,36 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.10 — 2026-08-14
+
+Six fixes, each one something the app claimed to do and did not.
+
+### Fixed
+
+- **`twinscope://` links open the app.** Every deep link did nothing when clicked — the
+  ones the VS Code extension creates, and the one at the bottom of every exported report.
+  An installed TwinScope had never told the operating system it owned those links, so
+  there was nothing for the click to reach. Reports you exported before this release work
+  too; the link was always valid, only unclaimed.
+- **A rebuilt stylesheet or script counts as one change.** Comparing two saved pages,
+  `app.a1b2c3.js` became `app.d4e5f6.js` was reported as one file removed plus one added,
+  while `app.998877.js` correctly folded into a single row — two internal rules disagreed
+  about how long a build hash is. Both now use the same one, and a six-character hash is
+  recognised alongside the longer default.
+- **Retagging an element stays one change.** An `<h2>` that became an `<h3>` read as a
+  removal plus an addition as soon as anything had been added above it on the page, which
+  is most real edits. It is one row again, whatever moved above it.
+- **A CSV comparison is labelled CSV.** In History, in Saved comparisons and on the
+  sidebar, every CSV pair carried an "MD" badge — the Markdown one.
+- **The visual comparison states its real limit.** It said images larger than 2000px on
+  their longest side are scaled down before comparing. The real threshold is 4096px, so
+  the note was wrong about the app's own behaviour in the direction that matters: it
+  understated what TwinScope will compare at full size.
+- **Git comparisons show their notes in the app.** Comparing a branch against your working
+  tree includes untracked files, which `git diff` on its own does not report — TwinScope
+  said so in an exported report but not on screen, where the comparison was in front of
+  you.
+
 ## 0.3.9 — 2026-08-13
 
 ### Fixed
