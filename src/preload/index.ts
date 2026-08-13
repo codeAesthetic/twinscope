@@ -7,6 +7,7 @@ import {
   type TwinScopeApi,
   type InputPayload,
   type PingResult,
+  type UpdateState,
 } from '../shared/channels';
 
 /**
@@ -94,6 +95,18 @@ const api: TwinScopeApi = {
   settings: {
     read: () => ipcRenderer.invoke(IPC.settingsRead),
     write: (patch) => ipcRenderer.invoke(IPC.settingsWrite, patch),
+  },
+
+  update: {
+    check: () => ipcRenderer.invoke(IPC.updateCheck),
+    read: () => ipcRenderer.invoke(IPC.updateRead),
+    // No argument, deliberately: main owns the one URL this can open (v0.2.13).
+    open: (): Promise<void> => ipcRenderer.invoke(IPC.updateOpen),
+    onState: (listener) => {
+      const wrapped = (_event: unknown, payload: UpdateState): void => listener(payload);
+      ipcRenderer.on(IPC.updateState, wrapped);
+      return () => ipcRenderer.removeListener(IPC.updateState, wrapped);
+    },
   },
 
   compare: {

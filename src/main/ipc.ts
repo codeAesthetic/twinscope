@@ -15,6 +15,7 @@ import {
 } from './projects';
 import { exportReport, revealReport } from './export';
 import { probeRepo, readBlob } from './git';
+import { checkForUpdate, openReleasePage, updateState } from './update';
 import {
   handoffToMain,
   hideQuickWindow,
@@ -258,4 +259,13 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC.settingsWrite, (_event, payload: unknown) => {
     return savePreferences(PreferencesPatchSchema.parse(payload));
   });
+
+  // --- updates (v0.2.13). Neither handler takes a payload, so neither needs a
+  // schema — and `update:open` *cannot* be given a URL, which is the point: the
+  // release page is a constant in update.ts and nothing else is ever opened.
+  ipcMain.handle(IPC.updateCheck, () => checkForUpdate());
+
+  ipcMain.handle(IPC.updateRead, () => updateState());
+
+  ipcMain.handle(IPC.updateOpen, () => openReleasePage());
 }

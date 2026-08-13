@@ -1,10 +1,23 @@
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Plugin } from 'vite';
 
 const root = __dirname;
+
+/**
+ * The app's own version, at build time (v0.2.13).
+ *
+ * `app.getVersion()` is not a substitute: unpackaged there is no package.json
+ * beside `out/main/index.js`, so Electron answers with **its own** version —
+ * which made the update check compare a release against `43.4.0` and the notice
+ * offer to upgrade the user's Electron. Same define as the CLI's.
+ */
+const version = (
+  JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8')) as { version: string }
+).version;
 
 /**
  * Deliberately minimal — electron-vite's defaults already point at
@@ -48,6 +61,7 @@ export default defineConfig(({ mode }) => {
   return {
     main: {
       plugins: [externalizeDepsPlugin()],
+      define: { __TWINSCOPE_VERSION__: JSON.stringify(version) },
       build: {
         rollupOptions: {
           // Two entries: the main process, and the engine host worker that

@@ -7,6 +7,7 @@ import { createMainWindow, isHeadlessTest } from './window';
 import { handleCompareLink, registerProtocol, registerProtocolHandlers } from './protocol';
 import { registerQuickShortcut, unregisterQuickShortcut } from './quick';
 import { readPreferences } from './settings';
+import { cancelStartupCheck, scheduleStartupCheck } from './update';
 
 /**
  * Electron main process entry point.
@@ -80,6 +81,13 @@ if (!app.requestSingleInstanceLock()) {
       }
     }
 
+    // Check-and-notify updates (v0.2.13), also opt-in and default off. After the
+    // window exists so the result has somewhere to land, and delayed inside
+    // `scheduleStartupCheck` so a cold start never waits on a socket. With the
+    // preference off this makes no request at all — it only publishes the `off`
+    // state so the Settings row can say why nothing has been checked.
+    scheduleStartupCheck();
+
     // macOS: clicking the dock icon with no windows open reopens one.
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
@@ -96,5 +104,7 @@ if (!app.requestSingleInstanceLock()) {
     closeHistory();
     // A global shortcut outliving the app would keep firing into nothing.
     unregisterQuickShortcut();
+    // A pending update check firing into a closing app would too.
+    cancelStartupCheck();
   });
 }

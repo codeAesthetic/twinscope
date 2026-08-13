@@ -264,6 +264,13 @@
   margin-top: 3px;
   line-height: 1.45;
 }
+/* A settings row with two controls — the update status offers both a re-check
+   and, when there is one, the release notes (v0.2.13). */
+.dd-srow-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .dd-selectish {
   border: 1px solid var(--line-2);
   background: var(--panel);

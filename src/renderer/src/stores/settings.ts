@@ -21,7 +21,9 @@ interface SettingsState {
 const FALLBACK: Preferences = {
   theme: 'dark',
   engineDefaults: {},
-  checkUpdates: true,
+  // Off, matching main's default: a fallback that turned the network check on
+  // would make a failed settings read into a privacy decision (v0.2.13).
+  checkUpdates: false,
   globalShortcut: false,
   clipboardWatcher: false,
 };

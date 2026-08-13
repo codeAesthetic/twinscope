@@ -53,6 +53,9 @@ test('app boots, bridges to main, and stays locked down', async () => {
       'report',
       'saved',
       'settings',
+      // v0.2.13. One key for the update check — and the narrowest one it could
+      // be: `open` takes no argument, so this cannot be used to open a URL.
+      'update',
     ]);
 
     // New windows are denied.

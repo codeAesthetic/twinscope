@@ -82,6 +82,18 @@ export const IPC = {
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',
 
+  /**
+   * Check-and-notify updates (v0.2.13) — the app's only network call, off by
+   * default. `updateOpen` takes **no argument**: the release page is a constant
+   * in `main/update.ts`, so neither the renderer nor the feed can name a URL.
+   */
+  updateCheck: 'update:check',
+  /** The state as it stands, for a window that mounted after the push. */
+  updateRead: 'update:read',
+  updateOpen: 'update:open',
+  /** main → renderer: the check's state, pushed as it changes. */
+  updateState: 'update:state',
+
   /** Comparison job lifecycle. */
   compareStart: 'compare:start',
   compareCancel: 'compare:cancel',
@@ -288,6 +300,25 @@ export interface ClipboardSignature {
   hint: string;
 }
 
+/**
+ * What the update check knows (v0.2.13).
+ *
+ * `off` is a state of its own rather than an absent one: "no check has been made
+ * because you did not ask for one" and "checked, nothing new" are different
+ * answers, and a row that showed the second for the first would be lying.
+ */
+export interface UpdateState {
+  status: 'off' | 'checking' | 'current' | 'available' | 'error';
+  /** This build, from `app.getVersion()`. */
+  current: string;
+  /** The version the feed named. Present on `current` too — it is the proof. */
+  latest?: string;
+  /** Why a check failed, safe to display. Never anything the feed wrote. */
+  message?: string;
+  /** ISO timestamp of the last completed check. */
+  checkedAt?: string;
+}
+
 export type ThemePreference = 'system' | 'dark' | 'light';
 
 export interface Preferences {
@@ -301,6 +332,11 @@ export interface Preferences {
   clipboardWatcher?: boolean;
   /** Per-engine option defaults, seeded into every new comparison. */
   engineDefaults: Record<string, Record<string, unknown>>;
+  /**
+   * The one preference that permits a network call (v0.2.13). Default **off**,
+   * and off is absolute: while it is false nothing checks, not even an explicit
+   * `update.check()` from the renderer. See `main/update.ts`.
+   */
   checkUpdates: boolean;
   /**
    * The project whose presets seed new comparisons (v0.2.9). A preference rather
@@ -456,6 +492,26 @@ export interface TwinScopeApi {
   settings: {
     read(): Promise<Preferences>;
     write(patch: Partial<Preferences>): Promise<Preferences>;
+  };
+
+  /** Check-and-notify updates (v0.2.13). */
+  update: {
+    /**
+     * Checks now and resolves with the outcome. Resolves `{ status: 'off' }`
+     * *without making a request* while `checkUpdates` is false — the refusal is
+     * main's, so it holds however the call was made.
+     */
+    check(): Promise<UpdateState>;
+    /**
+     * The state without checking anything. Needed because main publishes the
+     * startup result on its own schedule, and a window that finished mounting
+     * afterwards would otherwise never learn it.
+     */
+    read(): Promise<UpdateState>;
+    /** Opens the release page. No argument: main owns the URL. */
+    open(): Promise<void>;
+    /** The state as it changes. Returns an unsubscribe function. */
+    onState(listener: (state: UpdateState) => void): () => void;
   };
 
   compare: {

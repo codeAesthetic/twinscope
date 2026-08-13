@@ -27,6 +27,11 @@ export interface Preferences {
    * engine id so `{ text: { ignoreWhitespace: false } }` only affects text.
    */
   engineDefaults: Record<string, Record<string, unknown>>;
+  /**
+   * Permits the app's one network call (v0.2.13). Default **off**, like the two
+   * below and for the same reason: the app must not do something on first launch
+   * that the user has not asked for. See `update.ts`.
+   */
   checkUpdates: boolean;
   /** Global Quick Compare (v0.2.14). Both default to off — see channels.ts. */
   globalShortcut: boolean;
@@ -42,7 +47,7 @@ interface Settings {
 const DEFAULT_PREFERENCES: Preferences = {
   theme: 'dark',
   engineDefaults: {},
-  checkUpdates: true,
+  checkUpdates: false,
   globalShortcut: false,
   clipboardWatcher: false,
 };
@@ -85,8 +90,11 @@ function parsePreferences(value: unknown): Preferences {
       typeof engineDefaults === 'object' && engineDefaults !== null
         ? (engineDefaults as Record<string, Record<string, unknown>>)
         : {},
-    checkUpdates: candidate['checkUpdates'] !== false,
-    // `=== true`, not `!== false`: an absent preference must stay OFF.
+    // `=== true`, not `!== false`: an absent preference must stay OFF. That
+    // matters most for `checkUpdates` — it used to read `!== false`, so an
+    // existing settings.json written before v0.2.13 would have turned the network
+    // check on for a user who had never been asked.
+    checkUpdates: candidate['checkUpdates'] === true,
     globalShortcut: candidate['globalShortcut'] === true,
     clipboardWatcher: candidate['clipboardWatcher'] === true,
   };

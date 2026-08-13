@@ -8,6 +8,35 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.8 — 2026-08-13
+
+First release since 0.1.0. It carries everything in the entries below — sixteen
+comparison engines, the command line, projects, reports and the Diff Radar — plus one
+new thing.
+
+### Added
+
+- **An update check, off by default.** Turn it on in Settings and TwinScope asks GitHub
+  for the latest release number once per launch, then tells you if there is one. It is
+  the only network call the app makes, and the Settings row says exactly that.
+- **It checks; it does not install.** Nothing is downloaded, nothing is replaced, and no
+  installer runs. When there is a newer version the release page opens in your browser
+  and you decide. The builds are unsigned, and an app that cannot verify what it is about
+  to install has no business installing it.
+- **Off means off.** With the switch off nothing is contacted — not on launch, and not by
+  anything inside the app. The refusal lives in the same process that would make the
+  request, so it does not depend on the rest of the app behaving.
+- **A failed check says it failed.** A server that is down, a reply that names no version,
+  or a check that times out are all reported as such, rather than shown as "up to date".
+
+### Changed
+
+- **"Check for updates" starts off, for everyone.** It used to default to on while doing
+  nothing at all; now that it does something, it needed asking for first — including on
+  machines that already have a settings file.
+- The Privacy section of Settings now states the one exception rather than claiming there
+  are no network calls at all.
+
 ## 0.3.3 — 2026-08-13
 
 ### Added

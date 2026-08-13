@@ -54,6 +54,13 @@ export interface LaunchOptions {
    * GIF, and it is finalised on `close()`, so read `page.video()` after that.
    */
   recordVideo?: { dir: string; size?: { width: number; height: number } };
+  /**
+   * Extra environment for the launched app. `update.spec.ts` uses it to point
+   * `TWINSCOPE_UPDATE_FEED` at a server on 127.0.0.1, so the one network call the
+   * app can make is exercised for real without leaving the machine — main only
+   * honours that variable under `NODE_ENV=test`, which is set below.
+   */
+  env?: Record<string, string>;
 }
 
 /**
@@ -81,7 +88,7 @@ export async function launchApp(options: LaunchOptions = {}): Promise<Harness> {
   const app = await electron.launch({
     args: [entry, `--user-data-dir=${userDataDir}`],
     // Keeps Electron quiet about being unsigned/dev in CI-ish contexts.
-    env: { ...process.env, NODE_ENV: 'test', ELECTRON_ENABLE_LOGGING: '1' },
+    env: { ...process.env, NODE_ENV: 'test', ELECTRON_ENABLE_LOGGING: '1', ...options.env },
     ...(options.recordVideo !== undefined ? { recordVideo: options.recordVideo } : {}),
   });
 

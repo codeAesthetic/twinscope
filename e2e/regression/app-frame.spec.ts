@@ -94,14 +94,21 @@ test('app frame: chrome, navigation and themes', async () => {
     await expect(harness.page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
     // --- the update switch must not promise what the app does not do ---
-    // It defaulted to ON and read "signed releases, verified before install": nothing
-    // checked anything and the app is unsigned by decision (plan v0.2.13, blocked).
+    // It once defaulted to ON and read "signed releases, verified before install":
+    // nothing checked anything and the app is unsigned by decision. v0.2.13 made the
+    // check real, so what has to hold now is that it is a real control which starts
+    // OFF, and that the row says what turning it on does. The behaviour itself is
+    // `update.spec.ts`; this is the frame's own assertion that no switch lies.
     await harness.page.getByTestId('nav-settings').click();
     const updates = harness.page.getByRole('switch', { name: 'Check for updates' });
-    await expect(updates).toBeDisabled();
+    await expect(updates).toBeEnabled();
     await expect(updates).toHaveAttribute('aria-checked', 'false');
     await expect(harness.page.getByTestId('screen-settings')).toContainText(
-      'TwinScope makes no network calls',
+      'The only network call TwinScope makes',
+    );
+    // Nothing is downloaded or installed — the claim the unsigned build depends on.
+    await expect(harness.page.getByTestId('screen-settings')).toContainText(
+      'Nothing is downloaded or installed',
     );
 
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);

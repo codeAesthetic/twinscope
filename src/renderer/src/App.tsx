@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
 import { CommandPalette } from './components/CommandPalette';
+import { UpdateNotice } from './components/UpdateNotice';
 import { useActions } from './lib/actions';
 import { useCompareEvents, useQuickHandoff, useRunComparison } from './lib/compareClient';
 import { useAppShortcuts, useClipboardIntake } from './lib/intake';
@@ -57,6 +58,9 @@ function Shell() {
         <CurrentScreen />
       </AppFrame>
       <CommandPalette onAction={onAction} />
+      {/* v0.2.13. Renders nothing unless a check found something, and no check
+          happens unless the preference asks for one. */}
+      <UpdateNotice />
     </>
   );
 }

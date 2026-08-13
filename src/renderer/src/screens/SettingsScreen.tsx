@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
-import { Kbd, Seg, Switch } from '../components/primitives';
+import { useEffect, useState } from 'react';
+import { Button, Kbd, Seg, Switch } from '../components/primitives';
 import { combosFor, SHORTCUTS } from '../lib/shortcuts';
+import { describeUpdate } from '../lib/updateStatus';
 import { useSettingsStore } from '../stores/settings';
+import { useUpdateStore } from '../stores/update';
 import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
 
 /**
@@ -22,10 +24,26 @@ export function SettingsScreen() {
   const load = useSettingsStore((state) => state.load);
   const setEngineDefault = useSettingsStore((state) => state.setEngineDefault);
 
+  const updateState = useUpdateStore((store) => store.state);
+  const check = useUpdateStore((store) => store.check);
+  const openRelease = useUpdateStore((store) => store.open);
+  const loadUpdate = useUpdateStore((store) => store.load);
+
+  // "checked 5 minutes ago" has to keep being true while the screen is open, so
+  // the clock ticks rather than being read once during a render.
+  const [now, setNow] = useState(() => Date.now());
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadUpdate();
+  }, [load, loadUpdate]);
 
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const checkUpdates = preferences.checkUpdates === true;
   const textDefaults = preferences.engineDefaults['text'] ?? {};
   const jsonDefaults = preferences.engineDefaults['json'] ?? {};
   const ignoreWhitespace = textDefaults['ignoreWhitespace'] !== false;
@@ -90,7 +108,10 @@ export function SettingsScreen() {
 
       <h2>Privacy</h2>
       <div className="dd-card">
-        <Row title="Telemetry" desc="There is none. TwinScope makes no network calls at all.">
+        <Row
+          title="Telemetry"
+          desc="There is none, and there is no analytics, crash reporting or account. The update check below is the only network call the app can make, and it is off unless you turn it on."
+        >
           <Switch checked={false} onChange={() => undefined} label="Telemetry" disabled />
         </Row>
         <Row
@@ -104,12 +125,6 @@ export function SettingsScreen() {
             disabled
           />
         </Row>
-        {/* The preference exists and defaulted to ON, describing "signed releases,
-            verified before install" — two claims that were both false: nothing
-            checked anything, and the app is unsigned by decision. Shown off and
-            disabled until the owner decides whether TwinScope may make a network
-            call at all (plan v0.2.13). Saying nothing here would be worse: the
-            switch was already on screen promising something. */}
         <Row
           title="Global Quick Compare"
           desc="⌘⇧D opens a small always-on-top panel from anywhere. Off by default — a global shortcut takes the combination from every other app."
@@ -130,8 +145,49 @@ export function SettingsScreen() {
             label="Clipboard watcher"
           />
         </Row>
-        <Row title="Check for updates" desc="Not implemented — TwinScope makes no network calls.">
-          <Switch checked={false} onChange={() => undefined} label="Check for updates" disabled />
+        {/* v0.2.13, and the only place the app admits to a network call. The
+            description is the disclosure §7 bar 1 requires, so it says exactly
+            what is contacted, when, and what is *not* done: no download, no
+            install — the release page opens in the browser. Off by default. */}
+        <Row
+          title="Check for updates"
+          // Describes the behaviour, not the current state: the switch beside it
+          // and the status row below already say whether it is on.
+          desc="The only network call TwinScope makes: it asks GitHub for the latest release number, once per launch. Off by default. Nothing is downloaded or installed — the release page opens in your browser."
+        >
+          <Switch
+            checked={checkUpdates}
+            onChange={(next) => void update({ checkUpdates: next })}
+            label="Check for updates"
+          />
+        </Row>
+        <Row title="Update status" desc={describeUpdate(updateState, now)}>
+          <div className="dd-srow-actions">
+            {/* Release notes appear *beside* Check now rather than replacing it:
+                a found update is the moment you most want to re-check, once you
+                have read what it contains. */}
+            {updateState.status === 'available' ? (
+              <Button
+                variant="primary"
+                size="sm"
+                data-testid="update-release"
+                onClick={() => void openRelease()}
+              >
+                Release notes
+              </Button>
+            ) : null}
+            <Button
+              size="sm"
+              data-testid="update-check"
+              // Disabled with the preference off, and that is not cosmetic: main
+              // refuses a check either way, so an enabled button would be a
+              // control that does nothing.
+              disabled={!checkUpdates || updateState.status === 'checking'}
+              onClick={() => void check()}
+            >
+              Check now
+            </Button>
+          </div>
         </Row>
       </div>
 
