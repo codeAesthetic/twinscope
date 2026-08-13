@@ -18,6 +18,7 @@ const FIXTURE = {
     'src/edit.ts': 'export const value = 1;\n',
     'src/gone.ts': 'export const gone = true;\n',
     'ui/OldModal.tsx': 'export function Modal() {}\n',
+    'deep/nested/moved.ts': 'export const moved = "this file travels";\n',
     'README.md': '# before\n',
   },
   after: {
@@ -25,6 +26,7 @@ const FIXTURE = {
     'src/edit.ts': 'export const value = 2;\nexport const extra = 3;\n',
     'src/added.ts': 'export const added = true;\n',
     'ui/Modal.tsx': 'export function Modal() {}\n',
+    'moved.ts': 'export const moved = "this file travels";\n',
     'README.md': '# before\n',
   },
 };
@@ -72,8 +74,8 @@ test('folder diff: statuses, filters, rename detection and drill-in', async () =
     const strip = harness.page.getByTestId('summary-strip');
     // The rename pair still counts as one addition and one removal — the note
     // explains the pairing rather than hiding either half.
-    await expect(strip).toContainText('＋2 added');
-    await expect(strip).toContainText('－2 removed');
+    await expect(strip).toContainText('＋3 added');
+    await expect(strip).toContainText('－3 removed');
     await expect(strip).toContainText('～1 modified');
     await expect(strip).toContainText('2 identical');
 
@@ -89,9 +91,16 @@ test('folder diff: statuses, filters, rename detection and drill-in', async () =
     const added = tree.locator('[data-path="src/added.ts"] .dd-fcell').first();
     await expect(added).toHaveAttribute('data-status', 'nil');
 
-    // ---------- rename detection pairs the two names ----------
-    await expect(tree.locator('[data-path="ui/Modal.tsx"]')).toContainText('renamed from');
-    await expect(strip).toContainText('1 renamed');
+    // ---------- rename detection pairs the two names, with a score (v0.2.11) ----------
+    await expect(tree.locator('[data-path="ui/Modal.tsx"]')).toContainText(
+      'renamed from ui/OldModal.tsx (100%)',
+    );
+    // A file that moved *up two directories* is one rename. v1 required the same
+    // parent folder and reported this as a deletion plus an addition.
+    await expect(tree.locator('[data-path="moved.ts"]')).toContainText(
+      'renamed from deep/nested/moved.ts (100%)',
+    );
+    await expect(strip).toContainText('2 renamed');
 
     await harness.screenshot('folder-tree-dark');
 
@@ -107,7 +116,7 @@ test('folder diff: statuses, filters, rename detection and drill-in', async () =
     await harness.page.getByTestId('workspace-search').fill('');
 
     // ---------- change navigation walks changed files only ----------
-    await expect(harness.page.getByTestId('change-position')).toHaveText('– / 5');
+    await expect(harness.page.getByTestId('change-position')).toHaveText('– / 7');
 
     // ---------- drill in: the file pair opens as its own text diff ----------
     await tree.locator('[data-path="src/edit.ts"]').dblclick();

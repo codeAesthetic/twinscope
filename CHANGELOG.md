@@ -8,6 +8,22 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.11 — 2026-08-13
+
+### Added
+
+- **Renames and moves are found properly now.** A file that moved to another folder
+  is one rename instead of a deletion plus an addition — the commonest rename there
+  is, and the old rule could not see it at all, because it required the same folder
+  _and_ the same byte count. A file that was renamed _and_ edited is found too, by
+  comparing sampled chunks of its content.
+- **The note carries a score**: `renamed from src/deep/config.ts (100%)`, so a
+  confident match and a marginal one look different. 100% means byte-identical.
+- Two files too small for their content to mean anything are judged on their names
+  alone — at 27 bytes, two unrelated one-line modules genuinely look 60% alike.
+- On a very large pair of trees, scoring every candidate would be quadratic, so it
+  falls back to the old cheap rule and says that it did.
+
 ## 0.2.7 — 2026-08-13
 
 ### Added

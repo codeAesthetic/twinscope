@@ -132,8 +132,10 @@ describe('diffFolders', () => {
 
     const { stats, data } = await diffFolders(nodeHostFs, before, after, options());
     expect(stats.renames).toBe(1);
+    // v0.2.11: the note carries the *full* path and the score, because a rename can
+    // now cross directories and a weak match has to read as weak.
     expect(data.rows.find((row) => row.path === 'ui/Modal.tsx')?.note).toBe(
-      'renamed from OldModal.tsx',
+      'renamed from ui/OldModal.tsx (100%)',
     );
   });
 

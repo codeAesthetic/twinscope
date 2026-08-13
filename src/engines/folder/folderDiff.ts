@@ -1,3 +1,4 @@
+import { detectRenamesV2, renameNote, type RenameEntry } from './renames';
 import type { HostFs } from '../types';
 
 /**
@@ -39,12 +40,27 @@ export interface FolderDiffOptions {
   /** Hash files whose size matches but whose mtime does not. */
   compareContentHash: boolean;
   ignore: string[];
+  /**
+   * Minimum similarity score (0–100) before a removal and an addition are called
+   * one rename (v0.2.11). Below it they stay two separate events.
+   */
+  renameThreshold?: number;
 }
+
+/**
+ * The similarity floor for calling two files one rename (v0.2.11).
+ *
+ * 50 is deliberately permissive: a false pairing shows its score in the note and
+ * costs a reader one glance, while a missed one costs them a deletion and an
+ * addition that they have to spot are the same file.
+ */
+export const DEFAULT_RENAME_THRESHOLD = 50;
 
 export const DEFAULT_FOLDER_OPTIONS: FolderDiffOptions = {
   detectRenames: true,
   compareContentHash: true,
   ignore: ['.git', 'node_modules', '.DS_Store'],
+  renameThreshold: DEFAULT_RENAME_THRESHOLD,
 };
 
 export interface FolderDiffData {
@@ -182,11 +198,6 @@ export async function walkTree(
 
   await visit(root, '', 0);
   return { entries, files, symlinks, truncated, depthCapped };
-}
-
-function parentOf(path: string): string {
-  const cut = path.lastIndexOf('/');
-  return cut === -1 ? '' : path.slice(0, cut);
 }
 
 function baseName(path: string): string {
@@ -341,8 +352,34 @@ export async function diffFolders(
     }
   }
 
+  const renameNotes: string[] = [];
   if (options.detectRenames) {
-    detectRenames(before.entries, after.entries, statuses, notesByPath, stats);
+    // v0.2.11: scoring lives in `renames.ts`, and it needs the filesystem to read
+    // content — so this is `await`ed where v1's name-and-size rule was synchronous.
+    const removals: RenameEntry[] = [];
+    const additions: RenameEntry[] = [];
+    for (const [path, status] of statuses) {
+      if (status === 'del' && before.entries.get(path)?.isDir === false) {
+        removals.push({ path, size: before.entries.get(path)?.size ?? 0 });
+      } else if (status === 'add' && after.entries.get(path)?.isDir === false) {
+        additions.push({ path, size: after.entries.get(path)?.size ?? 0 });
+      }
+    }
+
+    const detected = await detectRenamesV2(
+      fs,
+      { before: rootA, after: rootB },
+      removals,
+      additions,
+      { threshold: options.renameThreshold ?? DEFAULT_RENAME_THRESHOLD },
+    );
+
+    for (const pair of detected.pairs) {
+      stats.renames += 1;
+      notesByPath.set(pair.added, renameNote('from', pair.removed, pair.score));
+      notesByPath.set(pair.removed, renameNote('to', pair.added, pair.score));
+    }
+    renameNotes.push(...detected.notes);
   }
 
   // Directories inherit their subtree: a folder is "modified" when anything
@@ -397,10 +434,12 @@ export async function diffFolders(
   } else if (!options.compareContentHash) {
     notes.push('Compared by size and timestamp only — content was not hashed.');
   }
-  if (stats.renames > 0)
+  if (stats.renames > 0) {
     notes.push(
-      `Paired ${stats.renames} rename${stats.renames === 1 ? '' : 's'} by size within the same folder.`,
+      `Paired ${stats.renames} rename${stats.renames === 1 ? '' : 's'} by content and name, including moves between folders.`,
     );
+  }
+  notes.push(...renameNotes);
   if (before.depthCapped || after.depthCapped)
     notes.push(`Stopped descending below ${MAX_DEPTH} levels.`);
   const partial = before.truncated || after.truncated;
@@ -422,44 +461,4 @@ export async function diffFolders(
     stats,
     notes,
   };
-}
-
-/**
- * Basic rename pairing (mockup parity): an unmatched removal and an unmatched
- * addition of the same size in the same folder is almost always one file that
- * moved. Similarity scoring — the version that survives an edit — is v0.2.11.
- */
-function detectRenames(
-  before: Map<string, WalkEntry>,
-  after: Map<string, WalkEntry>,
-  statuses: Map<string, FolderStatus>,
-  notes: Map<string, string>,
-  stats: FolderDiffStats,
-): void {
-  const removals = [...statuses.entries()]
-    .filter(([path, status]) => status === 'del' && before.get(path)?.isDir === false)
-    .map(([path]) => path);
-  const additions = [...statuses.entries()]
-    .filter(([path, status]) => status === 'add' && after.get(path)?.isDir === false)
-    .map(([path]) => path);
-
-  const taken = new Set<string>();
-
-  for (const removed of removals) {
-    const source = before.get(removed);
-    if (source === undefined) continue;
-
-    const match = additions.find(
-      (added) =>
-        !taken.has(added) &&
-        parentOf(added) === parentOf(removed) &&
-        after.get(added)?.size === source.size,
-    );
-    if (match === undefined) continue;
-
-    taken.add(match);
-    stats.renames += 1;
-    notes.set(match, `renamed from ${baseName(removed)}`);
-    notes.set(removed, `renamed to ${baseName(match)}`);
-  }
 }
