@@ -10,6 +10,9 @@
  * quietly dropped them".
  */
 
+import { createNormalizer, DEFAULT_NORMALIZE_OPTIONS } from '../normalize';
+import type { NormalizeOptions } from '../normalize';
+
 export type JsonRowState = 'same' | 'add' | 'del' | 'chg' | 'type' | 'ign';
 
 export interface JsonRowBadge {
@@ -50,6 +53,11 @@ export interface JsonDiffOptions {
   ignoreArrayOrder: boolean;
   /** Glob paths whose differences are suppressed: `meta.id`, `*.updatedAt`, `orders[*].etag`. */
   ignorePaths: string[];
+  /**
+   * The shared normalisation rules (v0.2.6). Optional: absent means the defaults,
+   * which are all off, so every pre-v0.2.6 option set behaves exactly as before.
+   */
+  normalize?: NormalizeOptions;
 }
 
 export const DEFAULT_JSON_OPTIONS: JsonDiffOptions = {
@@ -178,6 +186,9 @@ export function diffJson(
     suppressed: 0,
   };
   const ignorer = new Ignorer(options.ignorePaths);
+  // One normaliser per comparison, because it accumulates the counts that make the
+  // result explainable (Rule 3).
+  const normalizer = createNormalizer(options.normalize ?? DEFAULT_NORMALIZE_OPTIONS);
 
   let truncated = false;
   let depthCapped = false;
@@ -329,13 +340,26 @@ export function diffJson(
       return;
     }
 
+    // v0.2.6: two scalars that differ only by a normalisation rule are the same
+    // value as far as this comparison is concerned — and the rule says so.
+    if (
+      !normalizer.inert &&
+      typeX === typeY &&
+      (typeX === 'string' || typeX === 'number') &&
+      normalizer.equivalent(String(x), String(y))
+    ) {
+      stats.suppressed += 1;
+      push({ depth, key, path, state: 'ign', value: formatValue(y), note: 'normalised' });
+      return;
+    }
+
     stats.changed += 1;
     push({ depth, key, path, state: 'chg', a: formatValue(x), b: formatValue(y) });
   };
 
   walk(before, after, '$', 0, '$');
 
-  const notes: string[] = [];
+  const notes: string[] = [...normalizer.notes()];
   if (options.ignoreKeyOrder) notes.push('Compared objects as sets of keys (order ignored).');
   if (options.ignoreNulls) notes.push('Treated null and missing keys as equal.');
   if (options.ignoreArrayOrder) notes.push('Matched array items by identity, not index.');

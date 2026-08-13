@@ -8,6 +8,30 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.6 — 2026-08-13
+
+### Added
+
+- **Ignore the noise: one set of rules, in every engine.** A panel beside the diff
+  turns off the differences that are never the point — regenerated UUIDs, build
+  timestamps, content hashes — plus tolerances (two timestamps within a minute, two
+  numbers within 0.01) and up to eight custom regexes of your own. Two runs of the
+  same generator can now compare as identical.
+  The rules work _inside_ a value, not only on a whole one, so an id embedded in a
+  log line or an error message is masked while the rest of the line still compares.
+  The same rules apply to text, JSON, YAML, XML and CSV, because they are literally
+  the same rules.
+- Every rule that fires is named and counted. Turning a rule on re-runs the
+  comparison, so the counts always come from the engine rather than from a filtered
+  view, and turning it off brings the difference straight back.
+
+### Fixed
+
+- **A context row now shows both sides when they are not identical.** A line that
+  paired only because normalisation hid the difference — with "ignore case", or with
+  any of the new rules — used to display the AFTER text on both sides. Normalisation
+  changes what is _compared_, never what is _displayed_.
+
 ## 0.2.5 — 2026-08-13
 
 ### Added

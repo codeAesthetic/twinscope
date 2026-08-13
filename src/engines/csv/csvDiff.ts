@@ -1,5 +1,7 @@
 import { diffArrays } from 'diff';
 import { delimiterName, MAX_ROWS, parseCsv } from './parseCsv';
+import { createNormalizer, DEFAULT_NORMALIZE_OPTIONS } from '../normalize';
+import type { NormalizeOptions, Normalizer } from '../normalize';
 
 /**
  * Tabular comparison (v0.2.5, A3).
@@ -57,6 +59,11 @@ export interface CsvDiffOptions {
   ignoreCase: boolean;
   /** Empty means sniff it. */
   delimiter: string;
+  /**
+   * The shared normalisation rules (v0.2.6). Optional: absent means the defaults,
+   * which are all off.
+   */
+  normalize?: NormalizeOptions;
 }
 
 export const DEFAULT_CSV_OPTIONS: CsvDiffOptions = {
@@ -171,11 +178,18 @@ function signatureOf(
   header: readonly string[],
   columns: readonly CsvColumn[],
   options: CsvDiffOptions,
+  normalizer?: Normalizer,
 ): string {
   const record = asRecord(row, header);
   return columns
     .filter((column) => !column.ignored)
-    .map((column) => normalise(record.get(column.name) ?? '', options))
+    .map((column) => {
+      const value = normalise(record.get(column.name) ?? '', options);
+      // Masked for alignment as well as for comparison: otherwise two rows that
+      // differ only in a regenerated id fail to align, and the whole file below
+      // them reads as changed.
+      return normalizer === undefined || normalizer.inert ? value : normalizer.mask(value);
+    })
     .join(UNIT);
 }
 
@@ -266,9 +280,14 @@ function pairByPosition(
   headerAfter: readonly string[],
   columns: readonly CsvColumn[],
   options: CsvDiffOptions,
+  normalizer: Normalizer,
 ): Pairing[] {
-  const beforeSignatures = before.map((row) => signatureOf(row, headerBefore, columns, options));
-  const afterSignatures = after.map((row) => signatureOf(row, headerAfter, columns, options));
+  const beforeSignatures = before.map((row) =>
+    signatureOf(row, headerBefore, columns, options, normalizer),
+  );
+  const afterSignatures = after.map((row) =>
+    signatureOf(row, headerAfter, columns, options, normalizer),
+  );
 
   const parts = diffArrays(beforeSignatures, afterSignatures);
   const pairs: Pairing[] = [];
@@ -345,6 +364,7 @@ export function diffCsv(
   options: CsvDiffOptions,
   shouldAbort?: () => boolean,
 ): { data: CsvDiffData; stats: CsvDiffStats; notes: string[] } {
+  const normalizer = createNormalizer(options.normalize ?? DEFAULT_NORMALIZE_OPTIONS);
   const beforeTable = parseCsv(beforeText, options.delimiter);
   const afterTable = parseCsv(afterText, options.delimiter || beforeTable.delimiter);
 
@@ -364,7 +384,7 @@ export function diffCsv(
       : pairByKey(beforeRows, afterRows, headerBefore, headerAfter, keyColumn, options);
   const pairs =
     keyed?.pairs ??
-    pairByPosition(beforeRows, afterRows, headerBefore, headerAfter, columns, options);
+    pairByPosition(beforeRows, afterRows, headerBefore, headerAfter, columns, options, normalizer);
 
   const stats: CsvDiffStats = {
     added: 0,
@@ -420,6 +440,16 @@ export function diffCsv(
         cells.push({ value: now, state: 'same' });
         continue;
       }
+      // v0.2.6: a cell that differs only by a normalisation rule is not a change,
+      // and the rule that hid it is named in the notes.
+      if (
+        !normalizer.inert &&
+        normalizer.equivalent(normalise(was, options), normalise(now, options))
+      ) {
+        stats.suppressed += 1;
+        cells.push({ value: now, state: 'ign' });
+        continue;
+      }
       cells.push({ value: now, was, state: 'chg' });
       changedCells += 1;
     }
@@ -447,7 +477,7 @@ export function diffCsv(
     });
   }
 
-  const notes: string[] = [];
+  const notes: string[] = [...normalizer.notes()];
   notes.push(
     `Read as ${delimiterName(beforeTable.delimiter)}-delimited${
       options.hasHeader ? ' with a header row' : ', with no header row'

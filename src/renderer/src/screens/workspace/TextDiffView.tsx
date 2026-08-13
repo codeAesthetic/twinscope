@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { NormalizeControls } from '../../components/compare/NormalizeControls';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Button, Chip, Seg, Toggle } from '../../components/primitives';
 import { useChangeNavStore } from '../../stores/changeNav';
@@ -297,66 +298,73 @@ export default function TextDiffView({ result }: EngineViewProps) {
         </Button>
       </ToolbarSlot>
 
-      <div className="dd-diff" ref={scrollRef} data-testid="text-diff" data-mode={mode}>
-        {mode === 'side' && (
-          <div className="dd-diff-header">
-            <div>
-              <b>{a?.name}</b>
-              {/* Per-side totals, mockup parity: what this side lost, what the
+      <div className="dd-diffsplit">
+        <div className="dd-diff" ref={scrollRef} data-testid="text-diff" data-mode={mode}>
+          {mode === 'side' && (
+            <div className="dd-diff-header">
+              <div>
+                <b>{a?.name}</b>
+                {/* Per-side totals, mockup parity: what this side lost, what the
                   other gained. Modified lines appear in the strip's ~ count. */}
-              {result.summary.removed > 0 && <Chip variant="del">－{result.summary.removed}</Chip>}
-            </div>
-            <div>
-              <b>{b?.name}</b>
-              {result.summary.added > 0 && <Chip variant="add">＋{result.summary.added}</Chip>}
-            </div>
-          </div>
-        )}
-
-        <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-          {virtualizer.getVirtualItems().map((item) => {
-            const { row, dataIndex } = rows[item.index]!;
-            return (
-              <div
-                key={item.key}
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  transform: `translateY(${item.start}px)`,
-                }}
-              >
-                {row.kind === 'fold' ? (
-                  <button
-                    type="button"
-                    className="dd-fold"
-                    data-testid="fold-row"
-                    onClick={() =>
-                      setExpanded((previous) => {
-                        const next = new Set(previous);
-                        next.add(dataIndex);
-                        return next;
-                      })
-                    }
-                  >
-                    ⋯ {row.count} unchanged lines — click to expand
-                  </button>
-                ) : (
-                  <Row
-                    row={row}
-                    mode={mode}
-                    isCurrent={item.index === currentRowIndex}
-                    query={query.trim()}
-                    activeHit={activeMatch?.row === item.index ? activeMatch.hit : -1}
-                    lang={highlightReady ? lang : undefined}
-                    theme={theme}
-                  />
+                {result.summary.removed > 0 && (
+                  <Chip variant="del">－{result.summary.removed}</Chip>
                 )}
               </div>
-            );
-          })}
+              <div>
+                <b>{b?.name}</b>
+                {result.summary.added > 0 && <Chip variant="add">＋{result.summary.added}</Chip>}
+              </div>
+            </div>
+          )}
+
+          <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+            {virtualizer.getVirtualItems().map((item) => {
+              const { row, dataIndex } = rows[item.index]!;
+              return (
+                <div
+                  key={item.key}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    transform: `translateY(${item.start}px)`,
+                  }}
+                >
+                  {row.kind === 'fold' ? (
+                    <button
+                      type="button"
+                      className="dd-fold"
+                      data-testid="fold-row"
+                      onClick={() =>
+                        setExpanded((previous) => {
+                          const next = new Set(previous);
+                          next.add(dataIndex);
+                          return next;
+                        })
+                      }
+                    >
+                      ⋯ {row.count} unchanged lines — click to expand
+                    </button>
+                  ) : (
+                    <Row
+                      row={row}
+                      mode={mode}
+                      isCurrent={item.index === currentRowIndex}
+                      query={query.trim()}
+                      activeHit={activeMatch?.row === item.index ? activeMatch.hit : -1}
+                      lang={highlightReady ? lang : undefined}
+                      theme={theme}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
+        {/* v0.2.6: the shared normalisation rules, beside the diff. The text
+            engine had no rail of its own before this. */}
+        <NormalizeControls suppressed={result.summary.suppressed ?? 0} />
       </div>
     </div>
   );
@@ -393,7 +401,10 @@ function Row({
             kind: row.kind === 'mod' ? ('del' as const) : row.kind,
             no: row.left,
             mark: markFor(row.kind, 'left'),
-            text: row.text,
+            // `textBefore` is set only on a context row whose sides differ — paired
+            // by normalisation. Showing `text` on both sides would display the
+            // AFTER line as if it were in the BEFORE file.
+            text: row.textBefore ?? row.text,
           };
     const right =
       row.kind === 'del'

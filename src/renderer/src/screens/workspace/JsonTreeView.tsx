@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { NormalizeControls } from '../../components/compare/NormalizeControls';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Button, Chip, Seg, Switch, Toggle } from '../../components/primitives';
 import { Toast } from '../../components/Toast';
@@ -342,6 +343,10 @@ export default function JsonTreeView({ result }: EngineViewProps) {
             </ul>
           </div>
         </aside>
+
+        {/* v0.2.6: the shared rules, beside this engine's own. Same markup, so the
+            two read as one panel. */}
+        {mode !== 'raw' && <NormalizeControls suppressed={suppressed} />}
       </div>
 
       {menu !== null && (

@@ -581,3 +581,115 @@ html[data-theme='light'] .dd-optpanel {
   box-shadow: var(--shadow);
   z-index: 42;
 }
+
+/*
+ * The normalisation rules panel (v0.2.6) — shared by the text, structural and
+ * table views, so it lives beside the option rows whose markup it reuses rather
+ * than in any one engine's stylesheet.
+ */
+.dd-normpanel {
+  width: 250px;
+  flex: 0 0 auto;
+  border-left: 1px solid var(--line);
+  background: var(--bg-2);
+  overflow: auto;
+  text-align: left;
+}
+html[data-theme='light'] .dd-normpanel {
+  background: var(--panel-2);
+}
+
+.dd-normtol {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--tx-2);
+}
+.dd-normtol > span:first-child {
+  flex: 1;
+}
+.dd-normtol input {
+  width: 72px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  color: var(--tx);
+  font: 11.5px var(--mono);
+  padding: 3px 6px;
+}
+.dd-normunit {
+  color: var(--tx-3);
+  width: 20px;
+}
+
+.dd-normcustom {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dd-normrule {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dd-normrule code {
+  flex: 1;
+  min-width: 0;
+  font: 11px var(--mono);
+  color: var(--acc);
+  background: var(--acc-bg);
+  border-radius: 4px;
+  padding: 2px 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dd-normrule button {
+  background: none;
+  border: 0;
+  color: var(--tx-3);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 2px;
+}
+.dd-normrule button:hover {
+  color: var(--del);
+}
+.dd-normcustom input {
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  color: var(--tx);
+  font: 11px var(--mono);
+  padding: 4px 6px;
+}
+
+.dd-normsuppressed {
+  padding: 9px 12px;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--tx-2);
+}
+
+/*
+ * A diff body with the rules panel beside it (v0.2.6).
+ *
+ * The text and table views had no rail before, so they gain this wrapper; the
+ * structural view already had one and simply puts a second panel next to it.
+ */
+.dd-diffsplit {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  width: 100%;
+}
+.dd-diffsplit > .dd-diff,
+.dd-diffsplit > .dd-csvscroll {
+  flex: 1;
+  min-width: 0;
+}

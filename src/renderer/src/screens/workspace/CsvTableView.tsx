@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { NormalizeControls } from '../../components/compare/NormalizeControls';
 import { ToolbarSlot } from '../../components/compare/ToolbarSlot';
 import { Chip, Seg, Toggle } from '../../components/primitives';
 import { useChangeNavStore } from '../../stores/changeNav';
@@ -157,53 +158,57 @@ export default function CsvTableView({ result }: EngineViewProps) {
           {data.partial && <Chip variant="mod">partial</Chip>}
         </div>
 
-        <div className="dd-csvscroll" ref={scrollRef}>
-          <div className="dd-csvgrid" style={{ width }}>
-            <div className="dd-csvhead" role="row">
-              <div className="dd-csvgutter">row</div>
-              {data.columns.map((column) => (
-                <div
-                  key={column.name}
-                  className="dd-csvhcell"
-                  style={{ width: COLUMN_WIDTH }}
-                  data-status={column.status}
-                  data-ignored={column.ignored ? 'true' : 'false'}
-                  data-key={column.isKey ? 'true' : 'false'}
-                  data-column={column.name}
-                  title={column.name}
-                >
-                  {column.name}
-                </div>
-              ))}
-            </div>
-
-            <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
-              {virtualizer.getVirtualItems().map((item) => {
-                const row = rows[item.index];
-                if (row === undefined) return null;
-                return (
+        <div className="dd-diffsplit">
+          <div className="dd-csvscroll" ref={scrollRef}>
+            <div className="dd-csvgrid" style={{ width }}>
+              <div className="dd-csvhead" role="row">
+                <div className="dd-csvgutter">row</div>
+                {data.columns.map((column) => (
                   <div
-                    key={item.key}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${item.start}px)`,
-                    }}
+                    key={column.name}
+                    className="dd-csvhcell"
+                    style={{ width: COLUMN_WIDTH }}
+                    data-status={column.status}
+                    data-ignored={column.ignored ? 'true' : 'false'}
+                    data-key={column.isKey ? 'true' : 'false'}
+                    data-column={column.name}
+                    title={column.name}
                   >
-                    <Row row={row} isCurrent={item.index === currentIndex} />
+                    {column.name}
                   </div>
-                );
-              })}
-            </div>
+                ))}
+              </div>
 
-            {rows.length === 0 && (
-              <p className="dd-csv-empty" data-testid="csv-empty">
-                No rows match this filter.
-              </p>
-            )}
+              <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+                {virtualizer.getVirtualItems().map((item) => {
+                  const row = rows[item.index];
+                  if (row === undefined) return null;
+                  return (
+                    <div
+                      key={item.key}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${item.start}px)`,
+                      }}
+                    >
+                      <Row row={row} isCurrent={item.index === currentIndex} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {rows.length === 0 && (
+                <p className="dd-csv-empty" data-testid="csv-empty">
+                  No rows match this filter.
+                </p>
+              )}
+            </div>
           </div>
+          {/* v0.2.6: the shared normalisation rules. */}
+          <NormalizeControls suppressed={result.summary.suppressed ?? 0} />
         </div>
       </div>
     </div>
