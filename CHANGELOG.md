@@ -8,6 +8,26 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.12 — 2026-08-13
+
+### Added
+
+- **Reports collapse by section.** Long reports open with everything visible and let
+  you fold away what you have read. Still one self-contained file with no scripts in
+  it, and printing still shows everything — a folded section is not a folded page.
+- **A before/after slider in image reports.** Drag the handle to wipe between the two
+  images. No JavaScript: the handle is the browser's own, which is what keeps the file
+  something you can send to somebody.
+- **"Open in TwinScope" in a report**, when both sides were files on disk. Clicking it
+  opens the app on that comparison.
+- **A `twinscope://` link opens a comparison.** TwinScope shows you both paths and
+  asks before it opens anything — a link can come from any web page, and being asked
+  is the point. Nothing is read until you say yes, and nothing ever leaves your
+  machine.
+- **A VS Code extension** (`integrations/vscode/`): right-click two files or folders
+  and compare them, or mark one and compare against it later. It is not on the
+  Marketplace yet; the folder has a README with how to build and install it locally.
+
 ## 0.2.9 — 2026-08-13
 
 ### Added

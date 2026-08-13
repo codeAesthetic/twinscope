@@ -1,0 +1,51 @@
+{
+  "name": "twinscope-vscode",
+  "displayName": "Compare in TwinScope",
+  "description": "Right-click two files or folders in the explorer and compare them in TwinScope.",
+  "version": "0.2.12",
+  "publisher": "codeAesthetic",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "twinscope.compareSelected",
+        "title": "Compare in TwinScope"
+      },
+      {
+        "command": "twinscope.selectForCompare",
+        "title": "Select for TwinScope Compare"
+      },
+      {
+        "command": "twinscope.compareWithSelected",
+        "title": "Compare with Selected (TwinScope)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "twinscope.compareSelected",
+          "group": "3_compare@10",
+          "when": "listMultiSelection"
+        },
+        {
+          "command": "twinscope.selectForCompare",
+          "group": "3_compare@11",
+          "when": "!listMultiSelection"
+        },
+        {
+          "command": "twinscope.compareWithSelected",
+          "group": "3_compare@12",
+          "when": "!listMultiSelection && twinscope.hasSelection"
+        }
+      ]
+    }
+  }
+}

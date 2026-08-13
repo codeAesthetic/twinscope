@@ -44,6 +44,18 @@ test('export: HTML and Markdown reports, and a patch on the clipboard', async ()
     // The internal word-mark encoding must never reach a reader.
     expect(html).not.toContain('⟦');
 
+    // ---------- report v2 (v0.2.12) ----------
+    // Sections collapse, and they do it without a script — the `not.toMatch(/<script/i)`
+    // above is the assertion that pins that, and `<details open>` is how.
+    expect(html).toContain('<details class="section" open>');
+    expect(html).toContain('<summary>Changes');
+    // Print has to override the UA rule that hides a closed section's content, or a
+    // printed report could be a summary of a summary.
+    expect(html).toContain('details.section > div { display: block !important; }');
+    // A pasted pair has no paths, so there is nothing for a deep link to point at
+    // and the button must be absent rather than dead.
+    expect(html).not.toContain('twinscope://compare');
+
     // ---------- Markdown: a fenced diff for a pull request ----------
     const mdPath = join(output, 'report.md');
     await stubSave(mdPath);

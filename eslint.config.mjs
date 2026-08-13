@@ -98,9 +98,11 @@ export default tseslint.config(
   },
 
   // The harness fixture is intentionally CommonJS so it can launch without a
-  // build step (see e2e/fixtures/harness-app/main.cjs).
+  // build step (see e2e/fixtures/harness-app/main.cjs). So is the VS Code
+  // extension (v0.2.12): VS Code loads a CommonJS entry point, and giving a
+  // three-command extension a bundler would be a build step for nobody.
   {
-    files: ['**/*.cjs'],
+    files: ['**/*.cjs', 'integrations/**/*.js'],
     languageOptions: { globals: { ...globals.node } },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },

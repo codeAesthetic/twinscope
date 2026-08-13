@@ -256,6 +256,51 @@ describe('html report', () => {
     expect(image).toContain('8.00%');
   });
 
+  it('collapses each section with a native <details>, still open by default', () => {
+    const output = renderHtml(BASE);
+    expect(output).toContain('<details class="section" open>');
+    expect(output).toContain('<summary>Changes');
+    // The whole reason it is <details> and not a script: the file has to stay
+    // script-free, and it has to print. Print forces the content back on.
+    expect(output).not.toMatch(/<script/i);
+    expect(output).toContain('details.section > div { display: block !important; }');
+  });
+
+  it('offers a deep link only when both sides are on disk', () => {
+    const onDisk = renderHtml({
+      ...BASE,
+      a: { ...BASE.a, path: '/work/a.ts' },
+      b: { ...BASE.b, path: '/work/b.ts' },
+    });
+    expect(onDisk).toContain('Open in TwinScope');
+    // Escaped as HTML, so the `&` between parameters is an entity in the attribute.
+    expect(onDisk).toContain(
+      'twinscope://compare?a=%2Fwork%2Fa.ts&amp;b=%2Fwork%2Fb.ts&amp;engine=text',
+    );
+
+    // Nothing for a link to point at without paths — a pasted pair, say — and a
+    // dead link in a report someone else opens is worse than none.
+    const pasted = renderHtml({
+      ...BASE,
+      a: { name: 'clipboard', kind: 'text' },
+      b: { name: 'clipboard', kind: 'text' },
+    });
+    expect(pasted).not.toContain('twinscope://compare');
+    expect(pasted).not.toContain('Open in TwinScope');
+  });
+
+  it('wipes between two images with a resize handle, not with a script', () => {
+    const both = renderHtml({
+      ...IMAGE_REPORT,
+      images: { before: 'data:image/png;base64,AAA', after: 'data:image/png;base64,CCC' },
+    });
+    expect(both).toContain('class="slider"');
+    expect(both).toContain('resize: horizontal');
+
+    // With only one side there is nothing behind the handle, so there is no slider.
+    expect(renderHtml(IMAGE_REPORT)).not.toContain('class="slider"');
+  });
+
   it('renders json, folder and git bodies as tables', () => {
     expect(renderHtml(JSON_REPORT)).toContain('<td>$.name</td>');
     expect(renderHtml(FOLDER_REPORT)).toContain('<td>src/edit.ts</td>');

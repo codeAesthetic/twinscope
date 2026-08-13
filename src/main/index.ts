@@ -4,6 +4,7 @@ import { closeHistory } from './history';
 import { registerIpcHandlers } from './ipc';
 import { applySecurityPolicy } from './security';
 import { createMainWindow, isHeadlessTest } from './window';
+import { handleCompareLink, registerProtocol, registerProtocolHandlers } from './protocol';
 import { registerQuickShortcut, unregisterQuickShortcut } from './quick';
 import { readPreferences } from './settings';
 
@@ -14,6 +15,11 @@ import { readPreferences } from './settings';
  * the security policy is installed before the first window loads (plan §3.7).
  */
 app.enableSandbox();
+
+// The `twinscope://` scheme (v0.2.12). Registered before `whenReady` so a cold
+// start with a link on the command line is already claimed by the time the
+// handlers below look at argv.
+registerProtocol();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -40,11 +46,22 @@ if (!app.requestSingleInstanceLock()) {
       mainWindow = null;
     });
 
+    // After the window exists, deliberately: a startup link has to have somewhere
+    // to land, and `registerProtocolHandlers` acts on one immediately.
+    registerProtocolHandlers();
+
     // Test-only seam: lets the harness kill the engine worker mid-job and prove
     // the app survives it. Reached via Playwright's main-process evaluate, so it
     // is never exposed to the renderer.
     if (process.env['NODE_ENV'] === 'test') {
       (globalThis as Record<string, unknown>)['__twinscopeKillEngineHost'] = killWorkerForTesting;
+      // v0.2.12: a deep link with the confirmation injected. A native modal cannot
+      // be driven from Playwright, and the *point* of the feature is that both
+      // answers to it behave correctly — so both are reachable from a spec.
+      (globalThis as Record<string, unknown>)['__twinscopeOpenLink'] = (
+        url: string,
+        accept: boolean,
+      ) => handleCompareLink(url, { confirm: () => Promise.resolve(accept) });
     }
 
     // The window is already hidden under test; on macOS the *app* still has to

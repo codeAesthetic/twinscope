@@ -1,5 +1,6 @@
 import type { ReportInput, ReportRow } from './types';
 import { formatDate, MARK_CLOSE, MARK_OPEN, total } from './types';
+import { buildCompareLink } from '../deepLink';
 
 /**
  * Self-contained HTML report (MD §38).
@@ -126,8 +127,41 @@ figcaption { color: var(--tx-3); font-size: 11px; text-transform: uppercase;
 footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid var(--line);
   color: var(--tx-3); font-size: 11.5px; }
 
+/* v0.2.12 — collapsible sections. A native <details> rather than a script: the
+   report is one file people are asked to trust and email, and it still has to
+   print. Open by default, so nothing is hidden from a reader who never clicks. */
+details.section { margin-top: 22px; border-top: 1px solid var(--line); }
+details.section > summary { cursor: pointer; list-style: none; padding: 10px 0 4px;
+  font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--tx-3); }
+details.section > summary::-webkit-details-marker { display: none; }
+details.section > summary::before { content: '▾ '; color: var(--tx-3); }
+details.section:not([open]) > summary::before { content: '▸ '; }
+details.section > summary:hover { color: var(--tx-2); }
+details.section > summary .count { text-transform: none; letter-spacing: 0;
+  color: var(--tx-3); font-size: 11.5px; margin-left: 8px; }
+
+/* v0.2.12 — the before/after slider, also script-free: the top image sits in a
+   resize:horizontal box, so the browser's own resize handle *is* the slider.
+   Dragging it uncovers the image underneath. (No backticks in here — this whole
+   stylesheet is a template literal and one would end it.) */
+.slider { position: relative; max-width: 560px; }
+.slider .under { display: block; width: 100%; border: 1px solid var(--line-2);
+  border-radius: 8px; }
+.slider .over { position: absolute; inset: 0 auto 0 0; width: 50%; min-width: 12px;
+  max-width: 100%; overflow: hidden; resize: horizontal; border-right: 2px solid var(--acc);
+  border-radius: 8px 0 0 8px; }
+.slider .over img { display: block; height: 100%; object-fit: cover; object-position: left top;
+  border-radius: 8px 0 0 8px; }
+.slider .hint { color: var(--tx-3); font-size: 11px; margin-top: 8px; }
+.open-in { display: inline-block; margin: 0 0 18px; padding: 5px 11px; border-radius: 7px;
+  border: 1px solid var(--acc); color: var(--acc); text-decoration: none; font-size: 12px; }
+
 @media print {
   body { background: #fff; color: #111; }
+  /* A collapsed section must still print: paper has no disclosure triangle. */
+  details.section > div { display: block !important; }
+  .slider .over { display: none; }
+  .open-in { display: none; }
   .diff, table { break-inside: avoid; }
   .row.add, tr.add td { background: #eaffea; }
   .row.del, tr.del td { background: #ffecec; }
@@ -156,8 +190,19 @@ export function renderHtml(input: ReportInput): string {
   const notes =
     input.normalizationNotes.length === 0
       ? ''
-      : `<h2>Normalisation applied</h2>
-    <ul class="notes">${input.normalizationNotes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>`;
+      : section(
+          'Normalisation applied',
+          `<ul class="notes">${input.normalizationNotes.map((note) => `<li>${escapeHtml(note)}</li>`).join('')}</ul>`,
+          `${input.normalizationNotes.length} note${input.normalizationNotes.length === 1 ? '' : 's'}`,
+        );
+
+  // v0.2.12: "Open in TwinScope", but only when there is something to open. A
+  // comparison of two pasted strings has no paths, and a dead link in a report
+  // somebody else opens is worse than no link at all.
+  const link =
+    a.path !== undefined && b.path !== undefined
+      ? `<a class="open-in" href="${escapeHtml(buildCompareLink({ a: a.path, b: b.path, engine: engineId }))}">Open in TwinScope ↗</a>`
+      : '';
 
   return `<!doctype html>
 <html lang="en" data-theme="dark">
@@ -180,16 +225,32 @@ ${styles()}
   <div class="chips">
       ${chips}
   </div>
+  ${link}
   ${notes}
 
-  <h2>Changes</h2>
-  ${bodyFor(input)}
+  ${section('Changes', bodyFor(input), `${total(summary)} in total`)}
 
   <footer>Generated locally by TwinScope. This file is self-contained — it makes no network requests.</footer>
 </main>
 </body>
 </html>
 `;
+}
+
+/**
+ * One collapsible section (v0.2.12).
+ *
+ * `open` by default and always: a reader who never clicks must see everything, and
+ * the print stylesheet forces the content visible so paper is never a summary of a
+ * summary.
+ */
+function section(title: string, body: string, count?: string): string {
+  return `<details class="section" open>
+    <summary>${escapeHtml(title)}${count === undefined ? '' : `<span class="count">${escapeHtml(count)}</span>`}</summary>
+    <div>
+  ${body}
+    </div>
+  </details>`;
 }
 
 function bodyFor(input: ReportInput): string {
@@ -468,21 +529,36 @@ function imageBody(input: ReportInput): string {
     )
     .join('\n      ');
 
+  // v0.2.12: the slider needs both halves; with one it would be a picture with a
+  // draggable edge and nothing behind it.
+  const slider =
+    images.before !== undefined && images.after !== undefined
+      ? `<div class="slider">
+      <img class="under" alt="After" src="${escapeHtml(images.after)}">
+      <div class="over"><img alt="Before" src="${escapeHtml(images.before)}"></div>
+    </div>
+    <p class="hint">Drag the handle at the bottom-right of the left-hand image to wipe between before and after.</p>`
+      : '';
+
   return `<p class="meta"><strong>${(data.pct ?? 0).toFixed(2)}%</strong> of pixels differ —
     ${(data.diffPixels ?? 0).toLocaleString()} of ${(data.totalPixels ?? 0).toLocaleString()}.
     ${data.sameSize === false ? '<strong>Dimensions differ.</strong>' : ''}</p>
+  ${slider}
   <div class="shots">
     ${shots}
   </div>
   ${
     regions === ''
       ? ''
-      : `<h2>Changed regions</h2>
-  <table>
+      : section(
+          'Changed regions',
+          `<table>
     <thead><tr><th>#</th><th>Position</th><th>Size</th><th>Area</th></tr></thead>
     <tbody>
       ${regions}
     </tbody>
-  </table>`
+  </table>`,
+          `${(data.regions ?? []).length} region${(data.regions ?? []).length === 1 ? '' : 's'}`,
+        )
   }`;
 }
