@@ -49,6 +49,20 @@ Developer account (99 USD/year) and:
 Until that is done, `hardenedRuntime: true` is set but nothing is signed, and
 electron-builder will say so in its output.
 
+## One release object per tag
+
+`.github/workflows/release.yml` attaches installers with `gh release upload "$TAG"`, so
+the release has to **exist** before the workflow reaches that step — but create it only
+**once**. A tag can own several release rows, and `gh` resolves a tag name to whichever
+the API returns first: 0.3.9 was published holding 3 of its 7 installers while a
+duplicate draft held all 7, because uploads and the publish hit different rows.
+
+- Check first: `gh api "repos/codeAesthetic/twinscope/releases?per_page=10" --jq '.[] | "\(.id) \(.tag_name) draft=\(.draft) assets=\(.assets|length)"'`
+- If two rows share a tag, work by **id**: read `repos/:owner/:repo/releases/:id`, and
+  attach with `https://uploads.github.com/repos/:owner/:repo/releases/:id/assets?name=…`.
+- Asset listings are eventually consistent. A read straight after an upload can omit
+  assets that are already there — re-read by id before concluding anything is missing.
+
 ## Before tagging — OWNER ACTIONS
 
 - **Name availability.** `twinscope` needs checking on npm (the CLI in v0.2.2 will
