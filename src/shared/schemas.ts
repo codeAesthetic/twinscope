@@ -105,6 +105,18 @@ export const HistoryListSchema = z
 
 export const HistoryIdSchema = z.number().int().positive();
 
+export const SavedComparisonSchema = z.object({
+  projectId: HistoryIdSchema.optional(),
+  name: z.string().min(1).max(200),
+  engineId: z.string().regex(/^[a-z][a-z0-9-]{0,31}$/),
+  a: InputPayloadSchema,
+  b: InputPayloadSchema,
+  options: z.record(z.string(), z.unknown()),
+});
+
+/** Optional project filter for the saved list. */
+export const SavedListSchema = HistoryIdSchema.optional();
+
 const ReportSideSchema = z.object({
   name: z.string().min(1).max(1024),
   path: z.string().max(4096).optional(),
@@ -160,6 +172,20 @@ export const PathSchema = z
 
 export const RevealPathSchema = PathSchema;
 
+/**
+ * A project (v0.2.9). Bounded everywhere a renderer could push volume: presets are
+ * one object per engine, and an ignore list is a list rather than a place to keep a
+ * megabyte. `root` goes through `PathSchema`, like every other path from a renderer —
+ * declared here, below it, for that reason.
+ */
+export const ProjectPatchSchema = z.object({
+  id: HistoryIdSchema.optional(),
+  name: z.string().min(1).max(120),
+  root: PathSchema.optional(),
+  presets: z.record(z.string().max(32), z.record(z.string().max(64), z.unknown())).optional(),
+  ignores: z.array(z.string().min(1).max(256)).max(64).optional(),
+});
+
 /** Two inputs handed from the quick panel to the main window (v0.2.14). */
 export const QuickHandoffSchema = z.object({
   a: InputPayloadSchema,
@@ -168,6 +194,8 @@ export const QuickHandoffSchema = z.object({
 
 export const PreferencesPatchSchema = z.object({
   theme: z.enum(['system', 'dark', 'light']).optional(),
+  // `null` clears it, which is how "no project" is expressed (v0.2.9).
+  activeProjectId: z.number().int().positive().nullable().optional(),
   globalShortcut: z.boolean().optional(),
   clipboardWatcher: z.boolean().optional(),
   engineDefaults: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),

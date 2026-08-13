@@ -8,7 +8,7 @@ import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
 import { HistoryScreen } from './screens/HistoryScreen';
-import { Placeholder } from './screens/Placeholder';
+import { ProjectsScreen } from './screens/ProjectsScreen';
 import { QuickScreen } from './screens/QuickScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { WorkspaceScreen } from './screens/WorkspaceScreen';
@@ -25,7 +25,7 @@ function CurrentScreen() {
     case 'history':
       return <HistoryScreen />;
     case 'projects':
-      return <Placeholder name="Projects" note="Scoped at v0.2.9." />;
+      return <ProjectsScreen />;
     case 'settings':
       return <SettingsScreen />;
   }

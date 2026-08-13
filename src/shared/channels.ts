@@ -44,6 +44,15 @@ export const IPC = {
   historyRemove: 'history:remove',
   historyClear: 'history:clear',
 
+  /** Projects and saved comparisons (v0.2.9, MD §37). */
+  projectsList: 'projects:list',
+  projectsSave: 'projects:save',
+  projectsRemove: 'projects:remove',
+  savedList: 'saved:list',
+  savedSave: 'saved:save',
+  savedRemove: 'saved:remove',
+  savedTouch: 'saved:touch',
+
   /** Report export (MD §38/§39). */
   exportReport: 'export:report',
   revealReport: 'export:reveal',
@@ -189,6 +198,44 @@ export interface HistoryRow {
   openedAt: string;
 }
 
+/**
+ * A project: optional folder scope, per-engine presets, ignore globs (v0.2.9).
+ *
+ * Nothing requires one to exist. Choosing one **seeds** new comparisons — see
+ * `stores/settings.ts`'s `defaultsFor`, which layers presets over the global
+ * engine defaults. That is v0.2.6's deferred per-project normalisation.
+ */
+export interface Project {
+  id: number;
+  name: string;
+  /** A folder the project is about, if it is about one. */
+  root?: string;
+  /** engineId → option defaults, captured from a real comparison. */
+  presets: Record<string, Record<string, unknown>>;
+  /** Glob patterns this project always ignores (folder scans, JSON paths). */
+  ignores: string[];
+  createdAt: string;
+}
+
+/**
+ * A saved comparison — a *definition*, never a stored result (MD §37).
+ *
+ * Contents are stripped exactly as history strips them, so opening one re-reads
+ * both inputs and re-runs: a saved answer to "what changed" would be a wrong
+ * answer as soon as either file moved on.
+ */
+export interface SavedComparison {
+  id: number;
+  projectId?: number;
+  name: string;
+  engineId: string;
+  a: StoredInput;
+  b: StoredInput;
+  options: Record<string, unknown>;
+  createdAt: string;
+  lastRunAt?: string;
+}
+
 /** What the renderer hands main to turn into a report file. */
 export interface ReportPayload {
   a: { name: string; path?: string; kind: string };
@@ -255,6 +302,12 @@ export interface Preferences {
   /** Per-engine option defaults, seeded into every new comparison. */
   engineDefaults: Record<string, Record<string, unknown>>;
   checkUpdates: boolean;
+  /**
+   * The project whose presets seed new comparisons (v0.2.9). A preference rather
+   * than a row in the database: which project you are working in is a property of
+   * this machine, not of the projects themselves. `null`/absent = no project.
+   */
+  activeProjectId?: number | null;
 }
 
 /** Cheap re-export so callers need not reach into the engines directory. */
@@ -343,6 +396,37 @@ export interface TwinScopeApi {
     /** Opens a save dialog; resolves with null when the user cancels. */
     save(format: 'html' | 'md' | 'patch', input: ReportPayload): Promise<{ path: string | null }>;
     reveal(path: string): Promise<void>;
+  };
+
+  /** Projects and saved comparisons (v0.2.9). */
+  projects: {
+    list(): Promise<Project[]>;
+    /** Creates when `id` is absent, updates when it is present. */
+    save(patch: {
+      id?: number;
+      name: string;
+      root?: string;
+      presets?: Record<string, Record<string, unknown>>;
+      ignores?: string[];
+    }): Promise<Project>;
+    /** Deletes the project; its saved comparisons survive, unattached. */
+    remove(id: number): Promise<void>;
+  };
+
+  saved: {
+    /** Every saved comparison, or only one project's. */
+    list(projectId?: number): Promise<SavedComparison[]>;
+    save(entry: {
+      projectId?: number;
+      name: string;
+      engineId: string;
+      a: InputPayload;
+      b: InputPayload;
+      options: Record<string, unknown>;
+    }): Promise<SavedComparison>;
+    remove(id: number): Promise<void>;
+    /** Records that it was run, for ordering by relevance. */
+    touch(id: number): Promise<SavedComparison | null>;
   };
 
   git: {

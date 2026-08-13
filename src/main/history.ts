@@ -16,7 +16,8 @@ import type { InputPayload, Summary } from '../shared/channels';
  * step that can fail on a user's machine.
  */
 
-const SCHEMA_VERSION = 1;
+/** 2 since v0.2.9, which added `projects` and `saved_comparisons` (plan §3.6). */
+const SCHEMA_VERSION = 2;
 
 /** Older unstarred rows are pruned past this, so history never grows forever. */
 const MAX_ROWS = 500;
@@ -74,6 +75,31 @@ function migrate(database: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_comp_opened ON comparisons(opened_at DESC);
     CREATE INDEX IF NOT EXISTS idx_comp_starred ON comparisons(starred, opened_at DESC);
+
+    -- v0.2.9. Both are additive and IF NOT EXISTS, so an existing history file
+    -- gains them without a row being touched; main/projects.ts owns their code.
+    -- (No backticks in here: this is a template literal, and one would end it.)
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT NOT NULL,
+      root        TEXT,                          -- folder scope; null = no scope
+      presets     TEXT NOT NULL DEFAULT '{}',    -- { [engineId]: options }
+      ignores     TEXT NOT NULL DEFAULT '[]',    -- glob strings
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS saved_comparisons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id  INTEGER,                       -- null = saved without a project
+      name        TEXT NOT NULL,
+      engine_id   TEXT NOT NULL,
+      input_a     TEXT NOT NULL,                 -- StoredInput, contents stripped
+      input_b     TEXT NOT NULL,
+      options     TEXT NOT NULL DEFAULT '{}',
+      created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+      last_run_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_saved_project ON saved_comparisons(project_id, created_at DESC);
   `);
 
   database
@@ -87,6 +113,17 @@ function open(): DatabaseSync {
   db = new DatabaseSync(join(app.getPath('userData'), 'twinscope.db'));
   migrate(db);
   return db;
+}
+
+/**
+ * The one open database, for the other feature that lives in it (v0.2.9).
+ *
+ * `main/projects.ts` uses this rather than opening its own handle: two
+ * connections to one SQLite file is how a write ends up locked out by a read, and
+ * the migration that creates its tables is the one above.
+ */
+export function database(): DatabaseSync {
+  return open();
 }
 
 /** Test seam: point the database somewhere disposable. */

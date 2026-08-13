@@ -43,9 +43,11 @@ test('app frame: chrome, navigation and themes', async () => {
     await harness.page.keyboard.press('Enter');
     await expect(harness.page.getByTestId('screen-compare')).toBeVisible();
 
-    // Projects is visible but deliberately unreachable until v0.2.9.
-    await expect(harness.page.getByTestId('nav-projects')).toBeDisabled();
-    await expect(harness.page.getByTestId('nav-projects')).toContainText('soon');
+    // Projects became a real destination at v0.2.9, and stopped saying `soon`.
+    await harness.page.getByTestId('nav-projects').click();
+    await expect(harness.page.getByTestId('screen-projects')).toBeVisible();
+    await expect(harness.page.getByTestId('nav-projects')).not.toContainText('soon');
+    await harness.page.getByTestId('nav-compare').click();
 
     // --- history: buckets stick, star states differ ---
     // Rows are live since MVP-8, so the spec makes its own.
@@ -75,7 +77,8 @@ test('app frame: chrome, navigation and themes', async () => {
     await expect(harness.page.locator('[data-testid="screen-settings"] h2')).toHaveCount(4);
     // Generated from lib/shortcuts.ts since MVP-10, so this counts the registry
     // rather than a hand-written list.
-    await expect(harness.page.getByTestId('shortcuts-grid').locator('.dd-scrow')).toHaveCount(15);
+    // 17 since v0.2.9: ⌘3 for Projects and ⌘S to save a comparison.
+    await expect(harness.page.getByTestId('shortcuts-grid').locator('.dd-scrow')).toHaveCount(17);
 
     await expect(harness.page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await harness.page.getByRole('tab', { name: 'Light' }).click();

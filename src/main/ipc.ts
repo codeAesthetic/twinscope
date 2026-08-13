@@ -4,6 +4,15 @@ import { clipboardSignature, readClipboard, writeClipboard } from './clipboard';
 import { readBytes, readInput, readRangeText } from './input';
 import { clear, get, list, record, remove, setStarred, touch } from './history';
 import { readPreferences, savePreferences } from './settings';
+import {
+  listProjects,
+  listSaved,
+  removeProject,
+  removeSaved,
+  saveComparison,
+  saveProject,
+  touchSaved,
+} from './projects';
 import { exportReport, revealReport } from './export';
 import { probeRepo, readBlob } from './git';
 import {
@@ -25,7 +34,10 @@ import {
   HistoryRecordSchema,
   JobIdSchema,
   PreferencesPatchSchema,
+  ProjectPatchSchema,
   QuickHandoffSchema,
+  SavedComparisonSchema,
+  SavedListSchema,
   ReportFormatSchema,
   ReportPayloadSchema,
   RevealPathSchema,
@@ -159,6 +171,37 @@ export function registerIpcHandlers(): void {
   });
 
   ipcMain.handle(IPC.historyClear, (): void => clear());
+
+  // --- projects and saved comparisons (v0.2.9). `saveComparison` strips contents
+  // inside projects.ts, exactly as history does — a definition, never a result.
+  ipcMain.handle(IPC.projectsList, () => listProjects());
+
+  ipcMain.handle(IPC.projectsSave, (_event, payload: unknown) => {
+    return saveProject(ProjectPatchSchema.parse(payload) as Parameters<typeof saveProject>[0]);
+  });
+
+  ipcMain.handle(IPC.projectsRemove, (_event, rawId: unknown): void => {
+    removeProject(HistoryIdSchema.parse(rawId));
+  });
+
+  ipcMain.handle(IPC.savedList, (_event, rawId: unknown) => {
+    const projectId = SavedListSchema.parse(rawId);
+    return projectId === undefined ? listSaved() : listSaved(projectId);
+  });
+
+  ipcMain.handle(IPC.savedSave, (_event, payload: unknown) => {
+    return saveComparison(
+      SavedComparisonSchema.parse(payload) as Parameters<typeof saveComparison>[0],
+    );
+  });
+
+  ipcMain.handle(IPC.savedRemove, (_event, rawId: unknown): void => {
+    removeSaved(HistoryIdSchema.parse(rawId));
+  });
+
+  ipcMain.handle(IPC.savedTouch, (_event, rawId: unknown) => {
+    return touchSaved(HistoryIdSchema.parse(rawId));
+  });
 
   // --- export (MD §38/§39)
   ipcMain.handle(IPC.exportReport, async (event, rawFormat: unknown, payload: unknown) => {

@@ -70,7 +70,8 @@ test('palette and shortcuts: one registry drives keys, settings and commands', a
 
     // ---------- the Settings grid is generated from the same table ----------
     const grid = harness.page.getByTestId('shortcuts-grid');
-    await expect(grid.locator('.dd-scrow')).toHaveCount(15);
+    // 17 since v0.2.9 added ⌘3 (Projects) and ⌘S (save this comparison).
+    await expect(grid.locator('.dd-scrow')).toHaveCount(17);
     await expect(grid).toContainText('Command palette');
     await expect(grid).toContainText('⌘⇧E');
 
@@ -79,6 +80,8 @@ test('palette and shortcuts: one registry drives keys, settings and commands', a
     await expect(harness.page.getByTestId('screen-compare')).toBeVisible();
     await harness.page.keyboard.press('Meta+2');
     await expect(harness.page.getByTestId('screen-history')).toBeVisible();
+    await harness.page.keyboard.press('Meta+3');
+    await expect(harness.page.getByTestId('screen-projects')).toBeVisible();
 
     await expect(harness.page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await harness.page.keyboard.press('Meta+Shift+L');

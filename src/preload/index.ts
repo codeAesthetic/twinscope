@@ -56,6 +56,21 @@ const api: TwinScopeApi = {
     reveal: (path: string) => ipcRenderer.invoke(IPC.revealReport, path),
   },
 
+  projects: {
+    list: () => ipcRenderer.invoke(IPC.projectsList),
+    save: (patch) => ipcRenderer.invoke(IPC.projectsSave, patch),
+    remove: (id: number) => ipcRenderer.invoke(IPC.projectsRemove, id),
+  },
+
+  saved: {
+    // `undefined` and "no filter" are the same thing here, so the argument is
+    // passed through as-is rather than normalised to null.
+    list: (projectId) => ipcRenderer.invoke(IPC.savedList, projectId),
+    save: (entry) => ipcRenderer.invoke(IPC.savedSave, entry),
+    remove: (id: number) => ipcRenderer.invoke(IPC.savedRemove, id),
+    touch: (id: number) => ipcRenderer.invoke(IPC.savedTouch, id),
+  },
+
   git: {
     probe: (path: string) => ipcRenderer.invoke(IPC.gitProbe, path),
     blob: (request) => ipcRenderer.invoke(IPC.gitBlob, request),

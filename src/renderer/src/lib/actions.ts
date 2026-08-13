@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useIntake } from './intake';
+import { saveCurrentComparison } from './savedComparisons';
 import { useRunComparison } from './compareClient';
 import { useAppStore } from '../stores/app';
 import { useCompareStore } from '../stores/compare';
@@ -18,6 +19,7 @@ export function useActions(): (id: string) => void {
   const setInput = useCompareStore((state) => state.setInput);
   const swap = useCompareStore((state) => state.swap);
   const setView = useAppStore((state) => state.setView);
+  const setNotice = useAppStore((state) => state.setNotice);
   const { toggle } = useTheme();
 
   return useCallback(
@@ -47,6 +49,15 @@ export function useActions(): (id: string) => void {
         case 'view-history':
           setView('history');
           return;
+        case 'view-projects':
+          setView('projects');
+          return;
+        case 'save-comparison':
+          // Same function the toolbar button calls: one behaviour, two ways in.
+          void saveCurrentComparison().then((entry) => {
+            if (entry === null) setNotice('There is no comparison on screen to save.');
+          });
+          return;
         case 'run':
           void runComparison();
           return;
@@ -56,7 +67,7 @@ export function useActions(): (id: string) => void {
           window.dispatchEvent(new CustomEvent('twinscope:action', { detail: id }));
       }
     },
-    [fromClipboard, runComparison, setInput, swap, setView, toggle],
+    [fromClipboard, runComparison, setInput, swap, setView, setNotice, toggle],
   );
 }
 

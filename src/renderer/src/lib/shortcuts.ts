@@ -101,6 +101,18 @@ export const SHORTCUTS: readonly Shortcut[] = [
   { id: 'previous-change', combo: '⌥↑', label: 'Previous change', scope: 'workspace' },
   { id: 'view-compare', combo: '⌘1', label: 'Go to Compare', scope: 'global' },
   { id: 'view-history', combo: '⌘2', label: 'Go to History', scope: 'global' },
+  { id: 'view-projects', combo: '⌘3', label: 'Go to Projects', scope: 'global' },
+  {
+    id: 'save-comparison',
+    combo: '⌘S',
+    label: 'Save this comparison',
+    detail: 'Into the active project',
+    // Workspace scope: there is nothing to save anywhere else, and a binding that
+    // silently does nothing is worse than one that is not offered.
+    scope: 'workspace',
+    inPalette: true,
+    icon: '☆',
+  },
   {
     id: 'theme',
     combo: '⌘⇧L',

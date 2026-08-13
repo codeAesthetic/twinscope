@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ENGINES } from '../../../../engines/catalog';
 import { useStatusStore } from '../../stores/status';
 
 /**
@@ -17,7 +18,13 @@ export function StatusBar({ right }: { right?: ReactNode }) {
       <span className="dd-statusbar-dot" aria-hidden="true" />
       Local only
       <span>·</span>
-      <span data-testid="status-detail">{detail ?? 'Engines: text, json, folder, image'}</span>
+      {/* The engine list comes from the registry, not from a sentence: it named
+          four engines while eleven shipped, and every new engine would have had to
+          remember to come back here. */}
+      <span data-testid="status-detail">
+        {detail ??
+          `${ENGINES.length} engines: ${ENGINES.map((engine) => engine.meta.id).join(', ')}`}
+      </span>
       <span className="dd-statusbar-right" data-testid="status-right">
         {statusRight ?? right}
       </span>

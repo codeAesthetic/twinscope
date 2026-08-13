@@ -12,6 +12,9 @@ const BADGE_KIND: Record<string, FileKind> = {
   json: 'json',
   code: 'code',
   yaml: 'json',
+  xml: 'json',
+  deps: 'json',
+  git: 'web',
   csv: 'md',
   md: 'md',
   image: 'image',
@@ -22,7 +25,18 @@ const BADGE_KIND: Record<string, FileKind> = {
 };
 
 export function badgeKind(row: HistoryRow): FileKind {
-  return BADGE_KIND[row.a.kind] ?? 'text';
+  return badgeForKind(row.a.kind);
+}
+
+/**
+ * The badge for a stored input's kind (v0.2.9).
+ *
+ * Exported because saved comparisons and the sidebar's Saved rail show the same
+ * thing: the first version of `SavedList` hard-coded a TXT badge, so a saved YAML
+ * comparison carried a badge that disagreed with its own engine chip.
+ */
+export function badgeForKind(kind: string): FileKind {
+  return BADGE_KIND[kind] ?? 'text';
 }
 
 /** `~/dir/before.json ↔ after.json` — enough to tell two similar rows apart. */

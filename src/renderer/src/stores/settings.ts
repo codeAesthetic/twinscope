@@ -61,8 +61,3 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     });
   },
 }));
-
-/** The options a fresh comparison starts from, for the engine about to run. */
-export function defaultsFor(engineId: string): Record<string, unknown> {
-  return useSettingsStore.getState().preferences.engineDefaults[engineId] ?? {};
-}

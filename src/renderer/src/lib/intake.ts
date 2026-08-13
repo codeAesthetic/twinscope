@@ -182,4 +182,9 @@ const DISPATCHED = new Set([
   'settings',
   'view-compare',
   'view-history',
+  'view-projects',
+  // v0.2.9. Unlike ⌘F/⌘⇧E/⌘\, saving needs no surface of its own: the compare
+  // store already holds everything a saved comparison is made of, so the action
+  // can be performed from here and the workspace button calls the same function.
+  'save-comparison',
 ]);

@@ -45,8 +45,13 @@ test('app boots, bridges to main, and stays locked down', async () => {
       'input',
       'ping',
       'platform',
+      // v0.2.9. Two keys, because projects and saved comparisons are two things: a
+      // project is optional scope, a saved comparison is a definition that can exist
+      // without one.
+      'projects',
       'quick',
       'report',
+      'saved',
       'settings',
     ]);
 

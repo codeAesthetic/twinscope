@@ -8,6 +8,35 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.9 — 2026-08-13
+
+### Added
+
+- **Saved comparisons.** Press ⌘S on any comparison to keep it. What is stored is the
+  definition — the two inputs, the engine and the options — never the contents, so
+  opening a saved comparison compares the files as they are _now_ rather than showing
+  you an old answer. They live in the new Saved tab in History, and in the sidebar.
+- **Projects.** A project remembers a folder, the options you like for it, and what to
+  always ignore. Making one active means new comparisons start with those options
+  already applied — including the normalisation rules, which is what "per-project
+  defaults" meant when it was deferred in 0.2.6. Nothing requires a project: everything
+  works exactly as before without one.
+- **Presets are captured, not typed in.** Set a comparison up the way you want it, then
+  "Capture from current comparison" in the project. No second set of option controls to
+  keep in step with the real ones.
+- Deleting a project keeps every comparison saved in it — they move to "Not in a
+  project". A project is a way of looking at work, not the owner of it.
+
+### Fixed
+
+- The options shown in the toolbar are now the options that ran. A saved default (or a
+  project preset) was applied to the comparison but left the toggles reading the
+  engine's own defaults, so the counts and the controls could describe different
+  comparisons.
+- The status bar listed four engines; there are eleven, and it now asks the registry.
+- The sidebar's three "pinned" comparisons were decoration and could not be clicked.
+  They are real saved comparisons now, or the section is not there.
+
 ## 0.2.8 — 2026-08-13
 
 ### Added

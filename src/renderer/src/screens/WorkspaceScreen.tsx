@@ -3,10 +3,13 @@ import { DiffRadar } from '../components/compare/DiffRadar';
 import { ExportMenu } from '../components/compare/ExportMenu';
 import { SummaryStrip } from '../components/compare/SummaryStrip';
 import { ToolbarSlotProvider } from '../components/compare/ToolbarSlot';
-import { Button, Chip, SearchInput } from '../components/primitives';
+import { Button, Chip, Kbd, SearchInput } from '../components/primitives';
+import { Toast } from '../components/Toast';
+import { saveCurrentComparison } from '../lib/savedComparisons';
 import { useAppStore } from '../stores/app';
 import { useChangeNavStore } from '../stores/changeNav';
 import { useCompareStore, type CompareResult } from '../stores/compare';
+import { useProjectsStore } from '../stores/projects';
 import { useSearchStore } from '../stores/search';
 import { useStatusStore } from '../stores/status';
 import { engineViewFor } from './workspace/engineViews';
@@ -40,6 +43,9 @@ export function WorkspaceScreen() {
 
   const [toolbarSlot, setToolbarSlot] = useState<HTMLElement | null>(null);
   const [copied, setCopied] = useState(false);
+  /** Set by `saveCurrentComparison`, so ⌘S and the button confirm identically. */
+  const lastSaved = useProjectsStore((state) => state.lastSaved);
+  const clearLastSaved = useProjectsStore((state) => state.clearLastSaved);
 
   // The status bar belongs to the frame, so the screen publishes into it.
   useEffect(() => {
@@ -118,6 +124,16 @@ export function WorkspaceScreen() {
           {result !== null && (
             <>
               <WorkspaceSearch />
+              {/* v0.2.9: the same function ⌘S calls. A saved comparison is a
+                  definition — inputs, engine, options — so everything it needs is
+                  already in the store and no dialog is required. */}
+              <Button
+                variant="ghost"
+                data-testid="save-comparison"
+                onClick={() => void saveCurrentComparison()}
+              >
+                Save <Kbd>⌘S</Kbd>
+              </Button>
               <ExportMenu />
             </>
           )}
@@ -270,6 +286,27 @@ export function WorkspaceScreen() {
           )}
         </div>
       </div>
+
+      {lastSaved !== null && (
+        <Toast
+          message={`Saved “${lastSaved.name}”`}
+          testId="saved-toast"
+          action={
+            <Button
+              size="sm"
+              variant="ghost"
+              data-testid="saved-toast-open"
+              onClick={() => {
+                clearLastSaved();
+                setView('projects');
+              }}
+            >
+              Show in Projects
+            </Button>
+          }
+          onDismiss={clearLastSaved}
+        />
+      )}
     </ToolbarSlotProvider>
   );
 }

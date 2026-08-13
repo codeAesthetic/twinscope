@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { cancelImageJob, isRendererEngine, startImageJob } from '../lib/imageCompare';
 import { useAppStore } from './app';
 import { useHistoryStore } from './history';
-import { defaultsFor } from './settings';
+import { defaultsFor } from '../lib/optionDefaults';
 import { selectEngine } from '../../../engines/registry';
 import { refFromPayload } from '../../../shared/inputRef';
 import type {
@@ -277,9 +277,16 @@ export const useCompareStore = create<CompareState>((set, get) => ({
     set({ ...IDLE, options, status: 'running' });
 
     const engineId = engineOverride ?? undefined;
-    // The user's saved defaults seed the run; anything the engine view has
-    // already changed for this pair still wins.
+    // The user's saved defaults — and since v0.2.9 the active project's presets —
+    // seed the run; anything the engine view has already changed for this pair
+    // still wins.
     const merged = { ...defaultsFor(engineId ?? engineFor({ a, b })), ...options };
+    // The store has to hold what was actually *requested*, not just the explicit
+    // overrides. It held the overrides until v0.2.9, so a seeded option ran but the
+    // toolbar toggle beside it still read the engine's own default — the counts in
+    // the strip described one comparison and the controls described another. It also
+    // means history and saved comparisons record the options that really ran.
+    set({ options: merged });
 
     const request: CompareRequest = {
       a,
