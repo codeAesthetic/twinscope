@@ -227,6 +227,15 @@ test('image diff: a large pair opens fitted, and zoom walks a ladder from there'
       [before, after],
     );
 
+    // Scrollbars that TAKE SPACE, as they do on Windows, on Linux, on every CI
+    // runner, and on any Mac set to "always show". macOS overlay scrollbars take
+    // none, so without this the fit assertions below cannot fail here however
+    // wrong the measurement is — which is exactly how a green local suite sat next
+    // to a red CI for three runs.
+    await harness.page.addStyleTag({
+      content: '.dd-imgstage::-webkit-scrollbar { width: 15px; height: 15px; }',
+    });
+
     await harness.page.getByTestId('pick-file-before').click();
     await harness.page.getByTestId('pick-file-after').click();
     await harness.page.getByTestId('compare-button').click();
@@ -296,6 +305,17 @@ test('image diff: a large pair opens fitted, and zoom walks a ladder from there'
     expect(await scrolled()).toBeCloseTo(beforeDrag + 200, -1);
 
     // ---------- Fit goes back to fitting, rather than to 100% ----------
+    // And to the SAME fit. At 100% the stage overflows, so a space-taking
+    // scrollbar is on screen; measuring the stage with `clientWidth` then made
+    // this fit ~2% smaller than the one the view opened with, because a fitted
+    // pane does not overflow and gets the gutter back. The scrollbars forced
+    // above are what makes this assertion able to fail.
+    const scrollbar = await stage.evaluate((element) => ({
+      x: element.getBoundingClientRect().width - element.clientWidth,
+      y: element.getBoundingClientRect().height - element.clientHeight,
+    }));
+    expect(scrollbar.x, 'the forced scrollbar must take real space').toBeGreaterThan(1);
+
     const fitted = beforeBox.w;
     await harness.page.getByRole('button', { name: 'Fit' }).click();
     expect((await box('pane-before')).w).toBeCloseTo(fitted, 0);

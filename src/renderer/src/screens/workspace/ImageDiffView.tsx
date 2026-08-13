@@ -32,6 +32,34 @@ const PAN_THRESHOLD = 3;
 type Zoom = { kind: 'fit' } | { kind: 'manual'; value: number };
 
 /**
+ * The stage as a fit has to see it: the padding box **including** the space a
+ * scrollbar occupies.
+ *
+ * Not `clientWidth`, which is the bug this replaces. `clientWidth` excludes a
+ * *visible* scrollbar, and above fit there is always one — so pressing Fit from a
+ * zoomed-in view measured a stage 15px narrower than the one the panes would
+ * actually get, and landed ~2% short of fitting (or jumped, once the bar it no
+ * longer needed went away). Invisible on macOS, where scrollbars are overlays and
+ * take no space; every CI runner and every Windows or Linux machine sees it, which
+ * is how a green local suite sat next to a red `Verify the app boots`.
+ *
+ * A fitted pane cannot overflow, so the gutter is space the fit is entitled to
+ * count — and measuring it this way makes the number the same at every zoom, which
+ * is what stops the scrollbar-feedback loop `imageZoom.ts`'s header warns about
+ * from running in reverse.
+ */
+function measureStage(element: HTMLElement): StageBox {
+  const rect = element.getBoundingClientRect();
+  const style = getComputedStyle(element);
+  const px = (value: string): number => Number.parseFloat(value) || 0;
+
+  return {
+    width: rect.width - px(style.borderLeftWidth) - px(style.borderRightWidth),
+    height: rect.height - px(style.borderTopWidth) - px(style.borderBottomWidth),
+  };
+}
+
+/**
  * The visual comparison (MD §14): four ways of looking at the same two images.
  *
  * Zoom is applied to the *stage*, not to each pane separately, so the region
@@ -138,9 +166,7 @@ export default function ImageDiffView({ result }: EngineViewProps) {
     const element = stageRef.current;
     if (element === null) return;
 
-    const observer = new ResizeObserver(() =>
-      setStage({ width: element.clientWidth, height: element.clientHeight }),
-    );
+    const observer = new ResizeObserver(() => setStage(measureStage(element)));
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
