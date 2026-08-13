@@ -106,6 +106,67 @@ test('pdf diff: pages pair by content, and an inserted page shifts nothing after
   }
 });
 
+test('pdf diff: a REAL compressed PDF is a document, not an opaque binary', async () => {
+  // The bug this exists for: `main/input.ts` demoted anything with a NUL in its first
+  // 8 KB to `kind: 'binary'`, exempting only images. Every PDF a real generator writes
+  // qualifies — Flate streams and embedded fonts — so the shipped app compared two
+  // payslips by size and SHA-256 and the PDF engine was unreachable. Every fixture in
+  // this file was hand-written ASCII, so nothing here could fail.
+  const harness = await launchApp();
+  let root: string | null = null;
+
+  try {
+    const before = makePdf(
+      [{ lines: ['Payslip March', 'Gross: 4,200.00', 'Net: 3,110.42'] }],
+      { Title: 'Payslip' },
+      { realistic: true },
+    );
+    const after = makePdf(
+      [{ lines: ['Payslip April', 'Gross: 4,400.00', 'Net: 3,246.90'] }],
+      { Title: 'Payslip' },
+      { realistic: true },
+    );
+
+    // The fixture has to be representative or the assertions below prove nothing.
+    for (const [label, pdf] of [
+      ['before', before],
+      ['after', after],
+    ] as const) {
+      expect(
+        pdf.subarray(0, 8192).includes(0),
+        `the ${label} fixture must contain a NUL in its first 8 KB, as every real PDF does`,
+      ).toBe(true);
+    }
+
+    root = await stage(harness, [
+      ['payslip-march.pdf', before],
+      ['payslip-april.pdf', after],
+    ]);
+
+    await harness.page.getByTestId('pick-file-before').click();
+    await harness.page.getByTestId('pick-file-after').click();
+
+    // Detection happens on intake, so the bar names the engine before anything runs.
+    await expect(harness.page.getByTestId('detected-bar')).toContainText('PDF');
+
+    await harness.page.getByTestId('compare-button').click();
+
+    // The PDF view, not the binary verdict panel.
+    await expect(harness.page.getByTestId('pdf-view')).toBeVisible({ timeout: 30_000 });
+    await expect(harness.page.getByTestId('binary-view')).toHaveCount(0);
+    // And the text really was extracted through the compression.
+    await expect(harness.page.getByTestId('pdf-view')).toContainText('4,400.00');
+    // A PDF has no encoding or line ending worth reporting, so the status bar must
+    // not claim one — it used to inline the file and describe it as lossy Latin-1.
+    await expect(harness.page.getByTestId('status-detail')).not.toContainText('Latin-1');
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    if (root !== null) await rm(root, { recursive: true, force: true });
+    await harness.close();
+  }
+});
+
 test('pdf diff: two identical documents say so, and a page with no text says that', async () => {
   const harness = await launchApp();
   let root: string | null = null;

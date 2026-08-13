@@ -2,7 +2,7 @@ import { open, readFile, stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 import { detectKind, languageOf } from '../engines/detect';
 import { decodeText, describeEncoding, looksBinaryText } from '../engines/encoding';
-import type { InputPayload } from '../shared/channels';
+import type { InputKind, InputPayload } from '../shared/channels';
 
 /**
  * Turns a path into an `InputPayload`: stat it, work out what it is, and inline
@@ -17,6 +17,21 @@ const INLINE_LIMIT_BYTES = 10 * 1024 * 1024;
 
 /** Enough to sniff binary content and JSON structure without reading the file. */
 const SNIFF_BYTES = 8192;
+
+/**
+ * Kinds that are *legitimately* full of binary bytes and that the app can still
+ * read. The NUL sniff must never override one of these into `binary`.
+ *
+ * `pdf` cost a released feature. Every image contains NULs, which is why `image`
+ * was exempted from the start — but so does **every real PDF**: the streams are
+ * Flate-compressed and the fonts are embedded, and both of the payslips this was
+ * found on carry a NUL at byte 112. So a `.pdf` pair was detected as `pdf`, then
+ * immediately demoted to `binary`, and the whole PDF engine was unreachable for
+ * any document a real generator produced. It went unnoticed because every fixture
+ * in the suite is hand-written, uncompressed and pure ASCII — see the compressed
+ * fixture in `e2e/helpers/pdf.ts`, which exists to make this failable.
+ */
+const READABLE_BINARY: ReadonlySet<InputKind> = new Set(['image', 'pdf']);
 
 /** The largest image the renderer will be handed in one piece. */
 const MAX_BYTES = 64 * 1024 * 1024;
@@ -93,21 +108,27 @@ export async function readInput(side: 'A' | 'B', path: string): Promise<InputPay
   const decoded = decodeText(head);
   const detected = detectKind({ name, text: decoded.text, kind: 'unknown' });
 
-  // Every image is "binary" by the NUL sniff, but a PNG is a format we can read,
-  // not an opaque blob. Detection by extension wins for the kinds we support.
-  const kind =
-    detected === 'image' ? detected : looksBinaryText(decoded.text) ? 'binary' : detected;
+  // A format we can read is never "binary", however many NUL bytes it contains.
+  const kind = READABLE_BINARY.has(detected)
+    ? detected
+    : looksBinaryText(decoded.text)
+      ? 'binary'
+      : detected;
   const lang = languageOf(name);
+
+  // An encoding and a line ending describe *text*. A PDF has neither in any sense
+  // the status bar means, and reporting "Latin-1 · lossy" for one is noise.
+  const opaque = READABLE_BINARY.has(kind) || kind === 'binary';
 
   const meta = {
     ...(lang !== undefined ? { lang } : {}),
-    ...(kind === 'image' || kind === 'binary'
-      ? {}
-      : { encoding: describeEncoding(decoded.encoding), eol: decoded.eol }),
+    ...(opaque ? {} : { encoding: describeEncoding(decoded.encoding), eol: decoded.eol }),
   };
 
-  const inlineable =
-    info.size <= INLINE_LIMIT_BYTES && kind !== 'image' && kind !== 'binary' && kind !== 'folder';
+  // Nothing opaque is inlined: its bytes are not text, so decoding them would carry
+  // megabytes of mojibake across IPC for a preview no view would ever show. The
+  // engines that read these formats take a path and read it themselves.
+  const inlineable = info.size <= INLINE_LIMIT_BYTES && !opaque && kind !== 'folder';
 
   if (!inlineable) {
     return {
