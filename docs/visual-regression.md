@@ -122,6 +122,9 @@ in.
 - **The desktop app cannot run this engine.** It needs to list directories _and_ decode
   images; the window can do the second and the engine worker the first. In the app, compare
   the two folders and drill into a pair — the same pixels, one at a time.
-- **Images over 2000px on the longest side are scaled down** before comparison, as
-  everywhere else in TwinScope. A 4K screenshot pair is compared at 2000px.
+- **Images over 4096px on the longest side are scaled down** before comparison, as
+  everywhere else in TwinScope (`MAX_DIMENSION` in `engines/image/pixelDiff.ts`). A 4K
+  screenshot is 3840px wide, so a 4K pair is compared at full size and nothing is scaled.
+  This said 2000px until 2026-08-13, in the docs _and_ in the note printed with every
+  result — the engine was stating a limit that was not its limit.
 - **A run is capped at 2000 screenshots**, and says how many it left out.

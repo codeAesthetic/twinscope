@@ -217,7 +217,11 @@ export const visualEngine: DiffEngine<VisualDiffOptions, VisualDiffData> = {
     const notes: string[] = [
       `Compared ${considered.length} screenshot${considered.length === 1 ? '' : 's'} by relative path.`,
       `A pixel counts as different past ${Math.round(options.threshold * 100)}% of a channel, and an image counts as a regression past ${options.perImagePercent}% of its pixels — anti-aliasing moves a handful on every run, so zero is the wrong budget for a real suite.`,
-      'Images larger than 2000px on their longest side are scaled down before comparison, as in the image viewer.',
+      // Interpolated, not typed out: this said 2000px while `MAX_DIMENSION` was 4096,
+      // and it is printed with every result — so the engine was stating a limit that
+      // was not its limit. A number in prose beside a constant will drift; the only
+      // fix that holds is for the prose to read the constant.
+      `Images larger than ${MAX_DIMENSION}px on their longest side are scaled down before comparison, as in the image viewer.`,
     ];
     if (failed > 0) {
       notes.push(
