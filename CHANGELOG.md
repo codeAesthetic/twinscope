@@ -12,6 +12,10 @@ project uses [semantic versioning][semver].
 
 ### Fixed
 
+- **The quick-start cards all work.** Folders, Clipboard and Screenshots looked like
+  buttons, and were: they just did nothing when clicked — only Git refs had ever been
+  connected. Each one now opens the route it describes, the same one its keyboard
+  shortcut uses, and each says what it will do when you hover it.
 - **PDFs are compared as documents again.** Comparing two real PDFs showed the binary
   verdict — a size and a checksum — instead of a page-by-page diff. Every PDF a real
   program writes has compressed streams and embedded fonts, and those made TwinScope
