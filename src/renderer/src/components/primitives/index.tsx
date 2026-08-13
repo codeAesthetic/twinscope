@@ -120,7 +120,7 @@ export function Kbd({ children }: { children: ReactNode }) {
   return <span className="dd-kbd">{children}</span>;
 }
 
-export type FileKind = 'json' | 'code' | 'image' | 'folder' | 'md' | 'text' | 'web';
+export type FileKind = 'json' | 'code' | 'image' | 'folder' | 'md' | 'csv' | 'text' | 'web';
 
 const FILE_LABEL: Record<FileKind, string> = {
   json: '{ }',
@@ -128,6 +128,9 @@ const FILE_LABEL: Record<FileKind, string> = {
   image: 'IMG',
   folder: 'DIR',
   md: 'MD',
+  // v0.2.5 shipped the CSV engine and no badge for it, so every CSV comparison in
+  // History and the Saved rail was labelled MD.
+  csv: 'CSV',
   text: 'TXT',
   web: 'GIT',
 };

@@ -236,6 +236,14 @@ html[data-theme='light'] .dd-seg button[aria-selected='true'] {
   background: rgba(159, 230, 160, 0.08);
 }
 
+/* Amber, the one hue the deck was missing — distinct from md's green beside it in a
+   history list of mixed comparisons. */
+.dd-ftype[data-kind='csv'] {
+  color: #f0c674;
+  border-color: rgba(240, 198, 116, 0.32);
+  background: rgba(240, 198, 116, 0.09);
+}
+
 .dd-ftype[data-kind='web'] {
   color: #c4b5ff;
   border-color: rgba(196, 181, 255, 0.35);
@@ -302,6 +310,11 @@ html[data-theme='light'] .dd-ftype[data-kind='web'] {
   color: #6d28d9;
   border-color: rgba(109, 40, 217, 0.35);
   background: rgba(109, 40, 217, 0.08);
+}
+html[data-theme='light'] .dd-ftype[data-kind='csv'] {
+  color: #a16207;
+  border-color: rgba(161, 98, 7, 0.35);
+  background: rgba(161, 98, 7, 0.08);
 }
 html[data-theme='light'] .dd-ftype[data-kind='md'] {
   color: #15803d;

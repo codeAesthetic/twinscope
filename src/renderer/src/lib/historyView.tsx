@@ -15,7 +15,7 @@ const BADGE_KIND: Record<string, FileKind> = {
   xml: 'json',
   deps: 'json',
   git: 'web',
-  csv: 'md',
+  csv: 'csv',
   md: 'md',
   image: 'image',
   folder: 'folder',

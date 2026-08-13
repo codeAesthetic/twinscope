@@ -133,6 +133,59 @@ test('history: records, reopens, stars, deletes — and never stores contents', 
   }
 });
 
+test('history: a CSV comparison is badged CSV, not MD', async () => {
+  // v0.2.5 added the CSV engine and no badge for it, so `historyView.tsx` mapped
+  // csv → 'md' and every recorded CSV comparison read "MD" in the recent list, the
+  // History screen and the sidebar's Saved rail. A wrong label on a saved row is worse
+  // than none: it is the only thing telling you what a stored comparison *was*.
+  const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history-csv-'));
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-history-csv-files-'));
+  const harness = await launchApp({ userDataDir });
+
+  try {
+    const before = join(files, 'orders.csv');
+    const after = join(files, 'orders.next.csv');
+    await writeFile(before, 'id,customer,total\n1,Priya,64.50\n2,Sam,19.99\n');
+    await writeFile(after, 'id,customer,total\n1,Priya,71.00\n2,Sam,19.99\n');
+
+    await harness.app.evaluate(
+      ({ dialog }, paths: string[]) => {
+        let call = 0;
+        dialog.showOpenDialog = () =>
+          Promise.resolve({ canceled: false, filePaths: [paths[call++] ?? paths[0]!] });
+      },
+      [before, after],
+    );
+
+    await harness.page.getByTestId('pick-file-before').click();
+    await harness.page.getByTestId('pick-file-after').click();
+    await harness.page.getByTestId('compare-button').click();
+    await expect(harness.page.getByTestId('csv-table')).toBeVisible({ timeout: 20_000 });
+
+    await harness.page.getByTestId('back-button').click();
+    const badge = harness.page.getByTestId('recent-list').locator('.dd-ftype').first();
+    await expect(badge).toHaveAttribute('data-kind', 'csv');
+    await expect(badge).toHaveText('CSV');
+
+    // A hue of its own in both themes — every badge kind carries a light pair, and a
+    // kind added without one inherits the default and reads as a different type.
+    const colours: string[] = [];
+    for (const theme of ['dark', 'light'] as const) {
+      await harness.page.evaluate((next) => {
+        document.documentElement.setAttribute('data-theme', next);
+      }, theme);
+      colours.push(await badge.evaluate((element) => getComputedStyle(element).color));
+    }
+    expect(colours[0]).not.toBe(colours[1]);
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    await harness.close();
+    await rm(files, { recursive: true, force: true });
+    await rm(userDataDir, { recursive: true, force: true });
+  }
+});
+
 test('history: survives a restart, and a missing input is explained', async () => {
   const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history2-'));
   const files = await mkdtemp(join(tmpdir(), 'twinscope-history2-files-'));

@@ -97,7 +97,9 @@ export function Gallery() {
         <FileTypeBadge kind="image" />
         <FileTypeBadge kind="folder" />
         <FileTypeBadge kind="md" />
+        <FileTypeBadge kind="csv" />
         <FileTypeBadge kind="text" />
+        <FileTypeBadge kind="web" />
       </Section>
 
       <Section title="Drop zones — empty and filled">
