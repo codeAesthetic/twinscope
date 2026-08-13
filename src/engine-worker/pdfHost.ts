@@ -111,8 +111,46 @@ function infoOf(raw: unknown): Record<string, string> {
   return out;
 }
 
-export const nodePdfHost: PdfHost = {
-  async read(bytes: Uint8Array, maxPages: number): Promise<PdfDocument> {
+/**
+ * The one pdfjs message `verbosity: 0` does not cover.
+ *
+ * pdfjs probes for `@napi-rs/canvas` when it prepares a document and warns if it is
+ * absent — and it is absent **on purpose**: nothing here renders a page, and a native
+ * canvas is the dependency this project has declined from the start. The probe writes
+ * through the console rather than through pdfjs's own logger, so the verbosity option
+ * never reaches it.
+ *
+ * Exactly that line is dropped; everything else pdfjs says still gets through. It only
+ * appears on a **clean install** — this repo carries the package transitively, so the
+ * warning was invisible here and took an npm tarball to find, printed on every PDF
+ * comparison a user of the published CLI would run.
+ */
+async function withoutCanvasWarning<T>(run: () => Promise<T>): Promise<T> {
+  // `warn` and `error` only: the message goes to stderr, and `--json` on stdout is
+  // provably unaffected — which matters, because filtering stdout in a host would risk
+  // the CLI's machine-readable contract to tidy a cosmetic line.
+  const warn = console.warn;
+  const error = console.error;
+  const isCanvasProbe = (args: unknown[]): boolean =>
+    typeof args[0] === 'string' && args[0].includes('@napi-rs/canvas');
+
+  console.warn = (...args: unknown[]): void => {
+    if (!isCanvasProbe(args)) warn(...args);
+  };
+  console.error = (...args: unknown[]): void => {
+    if (!isCanvasProbe(args)) error(...args);
+  };
+
+  try {
+    return await run();
+  } finally {
+    console.warn = warn;
+    console.error = error;
+  }
+}
+
+async function readDocument(bytes: Uint8Array, maxPages: number): Promise<PdfDocument> {
+  {
     const { getDocument } = await library();
 
     const document = await getDocument({
@@ -166,5 +204,10 @@ export const nodePdfHost: PdfHost = {
       info: infoOf(metadata?.info),
       truncated: document.numPages > count,
     };
-  },
+  }
+}
+
+export const nodePdfHost: PdfHost = {
+  read: (bytes: Uint8Array, maxPages: number): Promise<PdfDocument> =>
+    withoutCanvasWarning(() => readDocument(bytes, maxPages)),
 };
