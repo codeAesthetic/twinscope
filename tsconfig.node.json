@@ -10,6 +10,8 @@
     "src/shared/**/*",
     "electron.vite.config.ts",
     "src/engines/**/*",
-    "src/engine-worker/**/*"
+    "src/engine-worker/**/*",
+    "src/cli/**/*",
+    "vite.cli.config.ts"
   ]
 }

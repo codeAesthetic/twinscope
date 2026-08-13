@@ -34,7 +34,18 @@ const rendererFs: HostFs = {
 
 const browserImages: ImageHost = {
   async decode(bytes, maxDimension) {
-    const bitmap = await createImageBitmap(new Blob([bytes as BlobPart]));
+    // The host names the formats, not the engine: this window decodes whatever
+    // Chromium does, while the CLI's host (v0.2.2) decodes PNG only. Chromium's
+    // own failure is a bare "source image could not be decoded", so it is
+    // replaced here rather than passed through.
+    let bitmap;
+    try {
+      bitmap = await createImageBitmap(new Blob([bytes as BlobPart]));
+    } catch {
+      throw new Error(
+        'One of these images could not be decoded. Supported: PNG, JPEG, WebP, GIF and AVIF.',
+      );
+    }
     const natural: [number, number] = [bitmap.width, bitmap.height];
 
     const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));

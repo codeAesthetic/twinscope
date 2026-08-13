@@ -86,9 +86,14 @@ export const imageEngine: DiffEngine<ImageDiffOptions, ImageDiffData> = {
         ctx.image.decode(bytesA, MAX_DIMENSION),
         ctx.image.decode(bytesB, MAX_DIMENSION),
       ]);
-    } catch {
+    } catch (cause) {
+      // The *host* owns the format list, not the engine: the window decodes
+      // whatever Chromium can, and v0.2.2's CLI decodes PNG only. Hard-coding
+      // "PNG, JPEG, WebP, GIF and AVIF" here made the CLI advertise four formats
+      // it cannot read, so a host that explains itself is passed through.
+      const detail = cause instanceof Error && cause.message !== '' ? cause.message : '';
       throw new EngineInputError(
-        `One of these images could not be decoded. Supported: PNG, JPEG, WebP, GIF and AVIF.`,
+        detail === '' ? 'One of these images could not be decoded.' : detail,
       );
     }
 
@@ -147,7 +152,13 @@ export const imageEngine: DiffEngine<ImageDiffOptions, ImageDiffData> = {
         // a modification, and the strip's extras carry the numbers that matter.
         added: 0,
         removed: 0,
-        modified: regions.length,
+        // Never zero while pixels differ. `clusterRegions` works on a coarse grid,
+        // so an image smaller than one cell — or a difference spread too thinly to
+        // cluster — yields no regions, and reporting "0 modified" alongside
+        // "100.00% difference" is a contradiction. It also mattered beyond the
+        // strip: v0.2.2's CLI derives its exit code from these three counts, and
+        // would have called two visibly different images identical.
+        modified: diffPixels > 0 ? Math.max(1, regions.length) : 0,
         extra: {
           difference: `${pct.toFixed(2)}%`,
           regions: regions.length,

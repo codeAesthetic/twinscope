@@ -373,6 +373,83 @@ describe('the git engine', () => {
     ).rejects.toThrow(/No git access/);
   });
 
+  it('includes untracked files, which `git diff` alone never reports', async () => {
+    // The bug this guards is silent and severe: a working-tree comparison that
+    // misses the file you just created reads as "no changes".
+    const run = vi.fn<GitHost['run']>().mockImplementation((_repo, args) => {
+      if (args[0] === 'ls-files') return Promise.resolve(z('brand-new.ts', 'docs/also-new.md'));
+      if (args.includes('--name-status')) return Promise.resolve(z('M', 'edit.ts'));
+      return Promise.resolve(z('1\t1\tedit.ts'));
+    });
+
+    const result = await gitEngine.compare(
+      refFor('A', 'main'),
+      refFor('B', WORKTREE),
+      DEFAULT_GIT_OPTIONS,
+      {
+        ...ctxFor({ run }),
+        fs: { readText: () => Promise.resolve('a\nb\nc\n') } as unknown as EngineCtx['fs'],
+      },
+    );
+
+    expect(result.data.rows.map((row) => row.path)).toEqual([
+      'brand-new.ts',
+      'docs/also-new.md',
+      'edit.ts',
+    ]);
+    expect(result.summary).toMatchObject({ added: 2, modified: 1 });
+    // Three lines each, counted through HostFs — git has no record of them.
+    expect(result.data.rows[0]).toMatchObject({ status: 'add', added: 3, removed: 0 });
+    expect(result.normalizationNotes).toContain(
+      'Included 2 untracked files — `git diff` alone does not report them.',
+    );
+  });
+
+  it('reads untracked files as removals when the working tree is the BEFORE side', async () => {
+    const run = vi
+      .fn<GitHost['run']>()
+      .mockImplementation((_repo, args) =>
+        Promise.resolve(args[0] === 'ls-files' ? z('only-on-disk.ts') : ''),
+      );
+
+    const result = await gitEngine.compare(
+      refFor('A', WORKTREE),
+      refFor('B', 'main'),
+      DEFAULT_GIT_OPTIONS,
+      ctxFor({ run }),
+    );
+
+    expect(result.data.rows[0]).toMatchObject({ path: 'only-on-disk.ts', status: 'del' });
+    expect(result.summary.removed).toBe(1);
+  });
+
+  it('does not ask for untracked files when neither side is the working tree', async () => {
+    const run = vi.fn<GitHost['run']>().mockResolvedValue('');
+    await gitEngine.compare(
+      refFor('A', 'main'),
+      refFor('B', 'dev'),
+      DEFAULT_GIT_OPTIONS,
+      ctxFor({ run }),
+    );
+    expect(run.mock.calls.every(([, args]) => args[0] !== 'ls-files')).toBe(true);
+  });
+
+  it('still lists an untracked file when no filesystem is available', async () => {
+    const run = vi
+      .fn<GitHost['run']>()
+      .mockImplementation((_repo, args) =>
+        Promise.resolve(args[0] === 'ls-files' ? z('new.ts') : ''),
+      );
+    const result = await gitEngine.compare(
+      refFor('A', 'main'),
+      refFor('B', WORKTREE),
+      DEFAULT_GIT_OPTIONS,
+      ctxFor({ run }),
+    );
+    // Knowing the file is new matters more than knowing how long it is.
+    expect(result.data.rows[0]).toMatchObject({ path: 'new.ts', status: 'add', added: 0 });
+  });
+
   it('honours cancellation between the two commands', async () => {
     const controller = new AbortController();
     const run = vi.fn<GitHost['run']>().mockImplementation(() => {

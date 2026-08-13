@@ -42,9 +42,24 @@ export const gitEngine: DiffEngine<GitDiffOptions, GitDiffData> = {
     assertSafeRef(a.ref);
     assertSafeRef(b.ref);
 
-    const { data, stats, notes } = await diffRefs(ctx.git, a.path, a.ref, b.ref, options, {
+    const repo = a.path;
+    const fs = ctx.fs;
+
+    const { data, stats, notes } = await diffRefs(ctx.git, repo, a.ref, b.ref, options, {
       onProgress: (percent, message) => ctx.progress(percent, message),
       shouldAbort: () => ctx.signal.aborted,
+      // Untracked files are read through `HostFs`, not through git — git has no
+      // record of them. Absent `fs` the rows still appear, with no line counts,
+      // because knowing a file is new matters more than knowing how long it is.
+      ...(fs !== undefined
+        ? {
+            countLines: async (path: string) => {
+              const text = await fs.readText(`${repo}/${path}`);
+              if (text === '') return 0;
+              return text.endsWith('\n') ? text.split('\n').length - 1 : text.split('\n').length;
+            },
+          }
+        : {}),
     });
 
     const extra: Record<string, number | string> = {

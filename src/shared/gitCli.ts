@@ -25,7 +25,18 @@ import { execFile } from 'node:child_process';
  */
 
 /** Every subcommand the app is allowed to run. Read-only, all of them. */
-const ALLOWED = new Set(['diff', 'show', 'rev-parse', 'branch', 'tag', 'log', 'status']);
+const ALLOWED = new Set([
+  'diff',
+  'show',
+  'rev-parse',
+  'branch',
+  'tag',
+  'log',
+  'status',
+  // Untracked files: `git diff` cannot report them, so a working-tree comparison
+  // asks `ls-files --others --exclude-standard` as well (v0.2.1, fixed in v0.2.2).
+  'ls-files',
+]);
 
 const TIMEOUT_MS = 30_000;
 const MAX_BUFFER = 64 * 1024 * 1024;

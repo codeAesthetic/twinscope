@@ -8,6 +8,34 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.2 — 2026-08-13
+
+### Added
+
+- **A `twinscope` command line.** `twinscope before.json after.json` prints what
+  changed and exits 0 when the two are the same, 1 when they differ and 2 when
+  something went wrong — so it drops into a script or a CI step without parsing
+  output. `--json` for a machine-readable result, `--md`, `--html` and `--patch`
+  for the same reports the app exports (the same renderers, so the files are
+  identical), `--out` to write one, `-` to read a side from stdin, `--repo` to
+  compare two git refs, and `-q` to say nothing and rely on the exit code.
+  Every engine is the app's: detection picks one the same way, and normalisation
+  notes are printed rather than hidden, because "explain what you did" applies to
+  a terminal too. Images are PNG-only here — the app decodes whatever the OS can,
+  and the CLI says so plainly instead of guessing.
+
+### Fixed
+
+- **A working-tree comparison now includes untracked files.** `git diff` never
+  reports them, so a brand-new file was silently missing from "what have I
+  changed" — the one case where the answer being wrong looked exactly like the
+  answer being right. Ignored files stay ignored, and the notes say when
+  untracked files were folded in.
+- **An image comparison never reports "0 modified" while pixels differ.** Region
+  detection works on a coarse grid, so a very small image, or a difference spread
+  too thinly to cluster, could produce a summary that contradicted its own
+  percentage.
+
 ## 0.2.1 — 2026-08-13
 
 ### Added

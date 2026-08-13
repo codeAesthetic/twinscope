@@ -110,6 +110,32 @@ export function isInverted(before: string, after: string): boolean {
   return before === WORKTREE && after !== WORKTREE;
 }
 
+/** True when one side is the files on disk, which is what pulls in untracked ones. */
+export function involvesWorktree(before: string, after: string): boolean {
+  return before === WORKTREE || after === WORKTREE;
+}
+
+/**
+ * `git ls-files -z --others --exclude-standard` — the untracked files.
+ *
+ * A second command because **`git diff` never reports untracked files**, by
+ * design: they are not in the index, so there is nothing to diff them against.
+ * For a tool whose whole question is "what is different", omitting a brand-new
+ * file would be a plain wrong answer — a comparison against the working tree that
+ * misses the file you just created is worse than no comparison.
+ *
+ * `--exclude-standard` is what keeps `node_modules` and every other ignored path
+ * out of the result; without it a working-tree comparison in a JS repo returns
+ * tens of thousands of "additions".
+ */
+export function untrackedArgs(): string[] {
+  return ['ls-files', '-z', '--others', '--exclude-standard'];
+}
+
+export function parseUntracked(output: string): string[] {
+  return fields(output);
+}
+
 const STATUS_LETTER: Record<string, GitStatus> = {
   A: 'add',
   D: 'del',
@@ -309,7 +335,12 @@ export function summarise(rows: readonly GitFileRow[]): GitDiffStats {
   return stats;
 }
 
-export function notesFor(options: GitDiffOptions, stats: GitDiffStats, partial: boolean): string[] {
+export function notesFor(
+  options: GitDiffOptions,
+  stats: GitDiffStats,
+  partial: boolean,
+  untracked = 0,
+): string[] {
   const notes: string[] = [];
 
   notes.push(
@@ -317,6 +348,13 @@ export function notesFor(options: GitDiffOptions, stats: GitDiffStats, partial: 
       ? `Renames detected by git at ${options.renameThreshold}% similarity.`
       : 'Rename detection off — a moved file reads as one addition and one removal.',
   );
+  if (untracked > 0) {
+    // Rule 3: this is the one place the result is not literally `git diff`, so it
+    // says so rather than quietly differing from what the command line shows.
+    notes.push(
+      `Included ${untracked} untracked file${untracked === 1 ? '' : 's'} — \`git diff\` alone does not report them.`,
+    );
+  }
   if (options.ignoreWhitespace) {
     notes.push('Whitespace-only changes were ignored, so some files may be absent entirely.');
   }
@@ -335,8 +373,11 @@ export function notesFor(options: GitDiffOptions, stats: GitDiffStats, partial: 
 }
 
 /**
- * Runs both commands and assembles the result. Two calls rather than one because
- * no single `git diff` format carries statuses *and* line counts.
+ * Runs the commands and assembles the result.
+ *
+ * Two `git diff` calls, because no single format carries statuses *and* line
+ * counts — and a third `ls-files` call whenever the working tree is involved,
+ * because `git diff` never reports untracked files.
  */
 export async function diffRefs(
   git: GitHost,
@@ -347,6 +388,8 @@ export async function diffRefs(
   hooks: {
     onProgress?: (percent: number, message?: string) => void;
     shouldAbort?: () => boolean;
+    /** Lines in an untracked file, when the host can read one. */
+    countLines?: (path: string) => Promise<number>;
   } = {},
 ): Promise<{ data: GitDiffData; stats: GitDiffStats; notes: string[] }> {
   const inverted = isInverted(before, after);
@@ -356,12 +399,39 @@ export async function diffRefs(
 
   if (hooks.shouldAbort?.() === true) throw new DOMException('Comparison cancelled', 'AbortError');
 
-  hooks.onProgress?.(60, 'counting lines');
+  hooks.onProgress?.(55, 'counting lines');
   const numStat = await git.run(repo, diffArgs('--numstat', before, after, options));
 
   if (hooks.shouldAbort?.() === true) throw new DOMException('Comparison cancelled', 'AbortError');
 
-  const { rows, partial } = buildRows(nameStatus, numStat, inverted);
+  const built = buildRows(nameStatus, numStat, inverted);
+  const rows = built.rows;
+  const partial = built.partial;
+
+  let untracked = 0;
+  if (involvesWorktree(before, after) && !partial) {
+    hooks.onProgress?.(80, 'finding untracked files');
+    const listed = parseUntracked(await git.run(repo, untrackedArgs()));
+    // Present on disk, absent from the ref: an addition — or a removal when the
+    // working tree is the side being compared *from*.
+    const status: GitStatus = inverted ? 'del' : 'add';
+
+    for (const path of listed.slice(0, MAX_FILES - rows.length)) {
+      const lines =
+        hooks.countLines === undefined ? 0 : await hooks.countLines(path).catch(() => 0);
+      rows.push({
+        path,
+        status,
+        added: status === 'add' ? lines : 0,
+        removed: status === 'del' ? lines : 0,
+        binary: false,
+      });
+      untracked += 1;
+    }
+
+    rows.sort((one, two) => one.path.localeCompare(two.path));
+  }
+
   const stats = summarise(rows);
 
   hooks.onProgress?.(100, 'done');
@@ -379,6 +449,6 @@ export async function diffRefs(
       partial,
     },
     stats,
-    notes: notesFor(options, stats, partial),
+    notes: notesFor(options, stats, partial, untracked),
   };
 }

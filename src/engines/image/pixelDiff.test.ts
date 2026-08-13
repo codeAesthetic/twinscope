@@ -245,7 +245,9 @@ describe('imageEngine', () => {
     ).rejects.toThrow(/app window/);
   });
 
-  it('turns a decode failure into a message naming the supported formats', async () => {
+  it('passes the host’s decode failure through, because the host owns the format list', async () => {
+    // The engine used to name "PNG, JPEG, WebP, GIF and AVIF" itself, which made
+    // v0.2.2's CLI — a PNG-only host — advertise four formats it cannot read.
     const broken = host({});
     await expect(
       imageEngine.compare(
@@ -254,7 +256,22 @@ describe('imageEngine', () => {
         imageEngine.defaultOptions(),
         ctx(broken),
       ),
-    ).rejects.toThrow(/PNG, JPEG, WebP/);
+    ).rejects.toThrow(/no raster for/);
+  });
+
+  it('falls back to a generic message when the host explains nothing', async () => {
+    const silent: ImageHost = {
+      decode: () => Promise.reject(new Error('')),
+      encodePng: () => Promise.resolve('data:,'),
+    };
+    await expect(
+      imageEngine.compare(
+        ref('A', 'a.png'),
+        ref('B', 'b.png'),
+        imageEngine.defaultOptions(),
+        ctx({ ...host({}), image: silent }),
+      ),
+    ).rejects.toThrow(/could not be decoded/);
   });
 
   it('honours the abort signal', async () => {
