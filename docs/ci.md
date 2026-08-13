@@ -95,8 +95,9 @@ refs. `WORKTREE` is the files as they are on disk:
 
 ### A comment on the pull request
 
-Posting a comment is the runner's job, not the app's — TwinScope makes no network calls,
-in CI or anywhere else. `gh` is already on every GitHub runner:
+Posting a comment is the runner's job, not the app's — the `twinscope` CLI makes no
+network calls at all, so nothing here can reach out on its own. `gh` is already on every
+GitHub runner:
 
 ```yaml
 - name: Comment
@@ -117,9 +118,9 @@ accept/compare loop. See [visual-regression.md](visual-regression.md).
 
 ## What is deliberately not here
 
-- **No network calls, in either direction.** TwinScope does not fetch, phone home or
-  check for updates in CI any more than it does on a desktop. Anything that leaves the
-  runner is a step you wrote.
+- **No network calls, in either direction.** The CLI does not fetch and does not phone
+  home; anything that leaves the runner is a step you wrote. The desktop app's one
+  network call — the opt-in update check — is not in this binary and has no CI meaning.
 - **No live URL comparison.** Comparing two deployed URLs needs a runtime fetch and a
   headless browser; both are pending an owner decision (plan §6.3.0). Two _saved_ pages
   compare fine today — see the page engine.

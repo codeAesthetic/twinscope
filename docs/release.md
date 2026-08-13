@@ -55,9 +55,14 @@ electron-builder will say so in its output.
   want it), on GitHub, and as a domain. Record the outcome in the plan's
   decision log; if it is taken, the fallback list belongs there too.
 - **Smoke-test the packaged app on a clean account.** Install from the dmg on a
-  macOS account without Node or Xcode and run through all five engines, history
+  macOS account without Node or Xcode and run through the engines, history
   persistence (`~/Library/Application Support/TwinScope/twinscope.db`) and an export.
   `npm run gate` does not prove any of this: it tests the unpackaged build.
+- **Check the update check on the packaged build** (0.3.8 onward). It is the one feature
+  that behaves differently there: unpackaged, `app.getVersion()` returns Electron's
+  version, and while the build-time `__TWINSCOPE_VERSION__` define covers that, the
+  packaged path is the one users get. Turn the preference on, confirm the Settings row
+  reports the real version, and confirm nothing is contacted with it off.
 - **Re-measure RAM on the packaged build** (plan §3.8 follow-up). The unpackaged
   number, 543 MB across all processes, misses the budget; a packaged build drops
   devtools infrastructure and should be measured per process before anyone

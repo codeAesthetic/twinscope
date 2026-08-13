@@ -8,8 +8,10 @@ A local-first universal comparison tool for developers. Drop two files, folders,
 
 Your files never leave your machine: no telemetry, no uploads, no account.
 
-> **Status: 0.1.0 released.** All five engines work, comparisons persist, and
-> results export. The macOS builds are **unsigned** — macOS will refuse to open
+> **Status: 0.1.0 is the published release; 0.3.8 is tagged.** Sixteen engines, a
+> `twinscope` command line, projects, saved comparisons and shareable reports are all
+> in this tree — the 0.3.8 installers appear on the releases page once the tag is
+> pushed. The macOS builds are **unsigned** — macOS will refuse to open
 > the app until you right-click → Open → Open. See
 > [`docs/release.md`](docs/release.md) and the
 > [install guide](https://codeaesthetic.github.io/twinscope-website/docs/getting-started/install/).
