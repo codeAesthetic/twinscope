@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<catalog version="3" updated="2026-08-13">
+  <product sku="TS-100" currency="GBP" clearance="true">
+    <name>Desk lamp</name>
+    <price>29.00</price>
+    <stock warehouse="sheffield">6</stock>
+    <tag>lighting</tag>
+    <tag>office</tag>
+    <tag>sale</tag>
+  </product>
+  <product sku="TS-220" currency="GBP">
+    <name>Monitor arm, single</name>
+    <price>89.50</price>
+    <stock warehouse="leeds">4</stock>
+    <tag>ergonomics</tag>
+  </product>
+  <shipping>
+    <zone code="EU" days="4"/>
+    <zone code="UK" days="2"/>
+  </shipping>
+</catalog>

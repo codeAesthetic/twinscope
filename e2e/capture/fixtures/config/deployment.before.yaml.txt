@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-api
+  namespace: production
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: api
+          image: registry.example.com/orders-api:2.4.1
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          env:
+            - name: LOG_LEVEL
+              value: info
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orders-api
+  namespace: production
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orders-flags
+  namespace: production
+data:
+  NEW_CHECKOUT: "false"
+  RATE_LIMIT: "600"

@@ -1,0 +1,89 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 3 /Kids [4 0 R 6 0 R 8 0 R] >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 506 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+1 0 0 1 40 782 Tm (ACME Supply Agreement) Tj
+1 0 0 1 40 762 Tm () Tj
+1 0 0 1 40 742 Tm (1. Definitions) Tj
+1 0 0 1 40 722 Tm (The "Supplier" means ACME Components Ltd of Leeds.) Tj
+1 0 0 1 40 702 Tm (The "Customer" means the party named in Schedule 1.) Tj
+1 0 0 1 40 682 Tm () Tj
+1 0 0 1 40 662 Tm (2. Orders) Tj
+1 0 0 1 40 642 Tm (Each order is accepted when the Supplier issues an acknowledgement.) Tj
+1 0 0 1 40 622 Tm (Prices are those in force on the date of acknowledgement.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 431 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+1 0 0 1 40 782 Tm (3. Delivery) Tj
+1 0 0 1 40 762 Tm (The Supplier shall deliver within 30 days of acknowledgement.) Tj
+1 0 0 1 40 742 Tm (Risk passes on delivery to the Customer premises.) Tj
+1 0 0 1 40 722 Tm () Tj
+1 0 0 1 40 702 Tm (4. Payment) Tj
+1 0 0 1 40 682 Tm (Invoices are payable within 30 days of the invoice date.) Tj
+1 0 0 1 40 662 Tm (Interest on late payment accrues at 4% above base rate.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 365 >>
+stream
+BT
+/F1 12 Tf
+14 TL
+1 0 0 1 40 782 Tm (5. Liability) Tj
+1 0 0 1 40 762 Tm (The Supplier total liability is limited to the order value.) Tj
+1 0 0 1 40 742 Tm (Nothing limits liability for death or personal injury.) Tj
+1 0 0 1 40 722 Tm () Tj
+1 0 0 1 40 702 Tm (6. Governing law) Tj
+1 0 0 1 40 682 Tm (This agreement is governed by the law of England and Wales.) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Title (ACME Supply Agreement) /Author (ACME Legal) /Producer (TwinScope samples) >>
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000323 00000 n 
+0000000880 00000 n 
+0000001006 00000 n 
+0000001488 00000 n 
+0000001614 00000 n 
+0000002030 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R /Info 10 0 R >>
+startxref
+2134
+%%EOF

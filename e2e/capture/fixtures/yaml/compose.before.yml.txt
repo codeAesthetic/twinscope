@@ -1,0 +1,34 @@
+x-defaults: &defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+  environment:
+    TZ: UTC
+    LOG_LEVEL: info
+
+services:
+  api:
+    <<: *defaults
+    image: registry.example.com/orders-api:2.4.1
+    ports:
+      - "8080:8080"
+    deploy:
+      replicas: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 30s
+
+  worker:
+    <<: *defaults
+    image: registry.example.com/orders-worker:2.4.1
+    command: ["node", "worker.js", "--concurrency", "4"]
+
+  cache:
+    image: redis:7.2-alpine
+    volumes:
+      - cache-data:/data
+
+volumes:
+  cache-data: {}

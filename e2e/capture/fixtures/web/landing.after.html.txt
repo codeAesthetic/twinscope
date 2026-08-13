@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Your orders — Example</title>
+    <link rel="stylesheet" href="/assets/app.998877.css" />
+    <script src="/assets/app.998877.js" defer></script>
+    <script src="/assets/tracking.5f5f5f.js" defer></script>
+    <style>
+      .card { border: 1px solid #ccc; border-radius: 10px; padding: 16px; }
+      .card h3 { font-size: 17px; margin: 0 0 8px; }
+      .total { color: #087; font-weight: 700; }
+      .banner { display: block; background: #ffe; padding: 8px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Your orders</h1>
+      <nav><a href="/orders">Orders</a> <a href="/account">Account</a> <a href="/help">Help</a></nav>
+    </header>
+    <div class="banner">Free delivery over £50</div>
+    <main>
+      <section class="card">
+        <h3>Order 1001</h3>
+        <p>3 items · <span class="total">£64.50</span></p>
+        <img src="/assets/lamp.png" width="80" height="80" />
+        <button type="button">Track parcel</button>
+      </section>
+      <section class="card">
+        <h3>Order 1002</h3>
+        <p>2 items · <span class="total">£39.98</span></p>
+        <img src="/assets/arm.png" alt="Monitor arm" width="80" height="80" />
+        <input type="text" placeholder="Search orders" />
+      </section>
+    </main>
+    <footer><p>Example Ltd</p></footer>
+  </body>
+</html>
