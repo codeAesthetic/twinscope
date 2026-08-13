@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { expect, test } from '@playwright/test';
+import { makePdf } from '../helpers/pdf';
 
 /**
  * REGRESSION — v0.2.2: the `twinscope` command line.
@@ -307,6 +308,48 @@ test('cli: --repo compares two git refs, reusing the v0.2.1 engine', async () =>
     // The ref allowlist holds here too — this is the second enforcement point.
     const injected = await cli(['--repo', root, 'HEAD', '--upload-pack=/bin/sh']);
     expect(injected.code).toBe(2);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('cli: a real PDF pair compares, worker asset and all', async () => {
+  // The bug: `ssr.noExternal` bundles pdfjs into `out/cli/assets/pdf-<hash>.js`, and
+  // pdfjs loads its worker by relative import — so it looked for
+  // `assets/pdf.worker.mjs`, found nothing, and died with "Setting up fake worker
+  // failed" as an unhandled rejection. In the packaged app pdfjs stays external and
+  // its worker is a sibling in node_modules, so nothing there could catch it.
+  const root = await mkdtemp(join(tmpdir(), 'twinscope-cli-pdf-'));
+
+  try {
+    // The asset has to be *there*, and its absence is the whole bug — so assert the
+    // build produced it rather than only inferring it from the comparison working.
+    expect(
+      existsSync(resolve(dirname(CLI), 'assets', 'pdf.worker.mjs')),
+      'the CLI build must copy pdfjs’s worker beside the chunk that imports it',
+    ).toBe(true);
+
+    // `realistic` matters as much here as in the PDF spec: compressed streams are
+    // what a real document has, and what `main/input.ts` once called binary.
+    await writeFile(
+      join(root, 'a.pdf'),
+      makePdf([{ lines: ['Total 240.00'] }], {}, { realistic: true }),
+    );
+    await writeFile(
+      join(root, 'b.pdf'),
+      makePdf([{ lines: ['Total 260.00'] }], {}, { realistic: true }),
+    );
+
+    const run = await cli(['a.pdf', 'b.pdf', '--json'], { cwd: root });
+    expect(run.stderr, 'a PDF pair must not crash the CLI').not.toContain('fake worker');
+    expect(run.code).toBe(1);
+
+    const parsed = JSON.parse(run.stdout) as {
+      engine: { id: string };
+      summary: { modified: number };
+    };
+    expect(parsed.engine.id).toBe('pdf');
+    expect(parsed.summary.modified).toBe(1);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

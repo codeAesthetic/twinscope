@@ -1,3 +1,4 @@
+import { ENGINES } from '../engines/catalog';
 import { NO_THRESHOLDS, type Thresholds } from './thresholds';
 
 /**
@@ -52,6 +53,27 @@ const FORMAT_FLAGS: Record<string, OutputFormat> = {
   '--patch': 'patch',
 };
 
+/**
+ * Every engine id, from the catalog rather than from a hand-kept list.
+ *
+ * The curated version listed ten of the sixteen: `yaml`, `xml`, `csv`, `deps` and
+ * `text-large` all worked and went unmentioned, and `pdf` was missing because it
+ * crashed. Generating it is the same rule the Settings grid follows — help that
+ * cannot describe an engine the binary does not have, or omit one it does.
+ */
+const ENGINE_IDS = ((): string => {
+  const indent = ' '.repeat(25);
+  const lines: string[] = [];
+  for (const id of ENGINES.map((engine) => engine.meta.id).sort()) {
+    const last = lines[lines.length - 1];
+    // Wrapped at 78 columns including the indent: an unwrapped list of sixteen ids
+    // is 120 characters and folds in the middle of a name in any normal terminal.
+    if (last === undefined || `${last} ${id}`.length + indent.length > 78) lines.push(id);
+    else lines[lines.length - 1] = `${last} ${id}`;
+  }
+  return lines.join(`\n${indent}`);
+})();
+
 export const HELP = `twinscope — compare anything, from the command line
 
 USAGE
@@ -67,8 +89,9 @@ OPTIONS
   --patch                unified diff (text comparisons only)
   --github               GitHub Actions annotations + a job summary
   --out <file>           write the report to a file instead of stdout
-  --engine <id>          force an engine: text json folder git image binary api
-                         env web visual (see docs/visual-regression.md)
+  --engine <id>          force an engine, instead of letting detection choose:
+                         ${ENGINE_IDS}
+                         (visual is CLI-only — see docs/visual-regression.md)
   --repo <path>          treat the operands as git refs in this repository
                          (use WORKTREE for the files as they are on disk)
   --ignore-whitespace    ignore whitespace-only changes

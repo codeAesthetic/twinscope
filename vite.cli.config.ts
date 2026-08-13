@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
-import { readFileSync } from 'node:fs';
+import { defineConfig, type Plugin } from 'vite';
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
@@ -21,7 +21,41 @@ const version = (
   }
 ).version;
 
+/**
+ * pdfjs loads its worker by *relative import*, so the file has to sit beside the
+ * chunk that asks for it.
+ *
+ * In the packaged app `pdfjs-dist` stays external and is required from
+ * `node_modules`, where `pdf.mjs` and `pdf.worker.mjs` are siblings — so the
+ * import resolves and nobody notices. Here `ssr.noExternal` bundles pdfjs into
+ * `out/cli/assets/pdf-<hash>.js`, which then resolved `./pdf.worker.mjs` against
+ * that directory and found nothing: comparing two PDFs from the command line died
+ * with "Setting up fake worker failed", an unhandled rejection rather than a
+ * refusal. Copying the worker next to the chunk is the whole fix.
+ *
+ * `engine-worker/pdfHost.ts` runs the worker module in-process (a utilityProcess
+ * cannot construct a real Worker), so this is loaded, not spawned.
+ */
+function pdfWorkerAsset(): Plugin {
+  return {
+    name: 'twinscope:pdf-worker-asset',
+    // `writeBundle` rather than `closeBundle`: the output directory certainly
+    // exists by then, and this must not run for a `--watch` rebuild that wrote
+    // nothing.
+    writeBundle(options) {
+      const dir = options.dir ?? resolve(__dirname, 'out/cli');
+      const target = resolve(dir, 'assets');
+      mkdirSync(target, { recursive: true });
+      copyFileSync(
+        resolve(__dirname, 'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs'),
+        resolve(target, 'pdf.worker.mjs'),
+      );
+    },
+  };
+}
+
 export default defineConfig({
+  plugins: [pdfWorkerAsset()],
   define: {
     // Read at build time: a bundled file has no reliable way to find its own
     // package.json once it is installed globally or copied out of the tree.
