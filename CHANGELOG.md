@@ -8,6 +8,25 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.5 — 2026-08-13
+
+### Added
+
+- **Visual regression over two directories of screenshots**, from the command line:
+  `twinscope baseline/ current/ --engine visual --max-diff 0.1`. Shots pair on their
+  path relative to the folder you gave, the list is ordered worst-first, and the whole
+  set gates on its worst image.
+- **Sensible budgets rather than zero.** A pixel has to differ by more than 10% of a
+  channel to count, and an image by more than 0.1% of its pixels to be a regression —
+  because font rasterisation and anti-aliasing move a handful of pixels between two runs
+  on the same machine, and a suite that fails on that gets switched off.
+- **One unreadable screenshot does not fail the run.** It is listed with the reason; the
+  rest of the set still gives you an answer.
+- **No adapters to install.** Whatever Playwright, Cypress or Storycap already writes is
+  what gets compared. [docs/visual-regression.md](docs/visual-regression.md) shows each
+  one, the CI wiring, and how to accept a new baseline (it is `rsync` — TwinScope will
+  not overwrite one of its own inputs).
+
 ## 0.3.4 — 2026-08-13
 
 ### Added

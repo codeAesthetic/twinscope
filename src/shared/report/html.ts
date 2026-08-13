@@ -277,6 +277,8 @@ function bodyFor(input: ReportInput): string {
       return envBody(input);
     case 'web':
       return webBody(input);
+    case 'visual':
+      return visualBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -660,6 +662,39 @@ function webBody(input: ReportInput): string {
     .join('\n  ');
 
   return blocks === '' ? '<p class="meta">These two pages are the same.</p>' : blocks;
+}
+
+/**
+ * The visual-regression report (v0.3.5): worst shot first, which is the order the
+ * engine already sorted them into and the order anyone reads them in.
+ */
+function visualBody(input: ReportInput): string {
+  const data = input.data as {
+    rows?: Array<{ path: string; state: string; pct?: number; note?: string }>;
+    worst?: number;
+    overBudget?: number;
+  };
+  const rows = data.rows ?? [];
+  if (rows.length === 0) return '<p class="meta">No screenshots were compared.</p>';
+
+  const body = rows
+    .map(
+      (row) =>
+        `<tr class="${row.state === 'changed' ? 'mod' : row.state === 'added' ? 'add' : row.state === 'removed' ? 'del' : ''}">` +
+        `<td>${escapeHtml(row.path)}</td>` +
+        `<td>${row.pct === undefined ? '—' : `${row.pct.toFixed(2)}%`}</td>` +
+        `<td>${escapeHtml(row.state)}</td><td>${escapeHtml(row.note ?? '')}</td></tr>`,
+    )
+    .join('\n      ');
+
+  return `<p class="meta">Worst screenshot: <strong>${(data.worst ?? 0).toFixed(2)}%</strong> of pixels.
+    ${data.overBudget ?? 0} over budget.</p>
+  <table>
+    <thead><tr><th>Screenshot</th><th>Difference</th><th>State</th><th>Note</th></tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`;
 }
 
 function imageBody(input: ReportInput): string {

@@ -9,6 +9,7 @@ import { imageEngine } from './image';
 import { jsonEngine } from './json';
 import { largeTextEngine } from './large';
 import { textEngine } from './text';
+import { visualEngine } from './visual';
 import { webEngine } from './web';
 import { xmlEngine } from './xml';
 import { parseYaml, yamlEngine } from './yaml';
@@ -51,6 +52,7 @@ export const ENGINES: readonly DiffEngine<unknown>[] = [
   jsonEngine,
   largeTextEngine,
   textEngine,
+  visualEngine,
   webEngine,
   xmlEngine,
   yamlEngine,

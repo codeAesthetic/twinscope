@@ -67,7 +67,8 @@ OPTIONS
   --patch                unified diff (text comparisons only)
   --github               GitHub Actions annotations + a job summary
   --out <file>           write the report to a file instead of stdout
-  --engine <id>          force an engine: text json folder git image binary
+  --engine <id>          force an engine: text json folder git image binary api
+                         env web visual (see docs/visual-regression.md)
   --repo <path>          treat the operands as git refs in this repository
                          (use WORKTREE for the files as they are on disk)
   --ignore-whitespace    ignore whitespace-only changes
@@ -98,6 +99,7 @@ EXAMPLES
   cat new.json | twinscope old.json -
   twinscope api.v1.json api.v2.json --fail-on-breaking --github
   twinscope before.png after.png --max-diff 0.5
+  twinscope baseline/ current/ --engine visual --max-diff 0.1
 `;
 
 export function parseArgs(argv: readonly string[], environment: ParseEnvironment): ParseResult {

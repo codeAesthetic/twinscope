@@ -84,6 +84,8 @@ function body(input: ReportInput): string[] {
       return gitBody(input);
     case 'image':
       return imageBody(input);
+    case 'visual':
+      return visualBody(input);
     default:
       return ['_This engine has no Markdown renderer._'];
   }
@@ -303,3 +305,30 @@ export function renderUnifiedPatch(input: ReportInput): string {
 
 /** Re-exported so callers do not have to know where the row helpers live. */
 export { changeRows };
+
+/**
+ * The visual-regression body (v0.3.5) — worst shot first, as the engine sorted them.
+ *
+ * A Markdown report of a screenshot set cannot show the pixels, so it shows the
+ * numbers and the paths, which is what a pull-request comment needs anyway.
+ */
+function visualBody(input: ReportInput): string[] {
+  const data = input.data as {
+    rows?: Array<{ path: string; state: string; pct?: number; note?: string }>;
+    worst?: number;
+    overBudget?: number;
+  };
+  const rows = data.rows ?? [];
+  if (rows.length === 0) return ['No screenshots were compared.'];
+
+  return [
+    `Worst screenshot: **${(data.worst ?? 0).toFixed(2)}%** of pixels. ${data.overBudget ?? 0} over budget.`,
+    '',
+    '| Screenshot | Difference | State | Note |',
+    '| --- | --- | --- | --- |',
+    ...rows.map(
+      (row) =>
+        `| ${cell(row.path)} | ${row.pct === undefined ? '—' : `${row.pct.toFixed(2)}%`} | ${row.state} | ${cell(row.note ?? '')} |`,
+    ),
+  ];
+}
