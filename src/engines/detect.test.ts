@@ -101,8 +101,16 @@ describe('selectEngine', () => {
   });
 
   it('falls back to text when the two sides disagree', () => {
-    expect(pick('json', 'yaml')).toBe('text');
     expect(pick('csv', 'md')).toBe('text');
+    expect(pick('code', 'json')).toBe('text');
+  });
+
+  it('compares a JSON against a YAML structurally rather than as text', () => {
+    // v0.2.3: YAML is a superset of JSON, so this pair is one the YAML engine can
+    // genuinely answer — falling through to a line diff was the wrong answer, not
+    // a conservative one.
+    expect(pick('json', 'yaml')).toBe('yaml');
+    expect(pick('yaml', 'json')).toBe('yaml');
   });
 
   it('has no engine for a folder against a file', () => {

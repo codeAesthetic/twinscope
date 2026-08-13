@@ -21,6 +21,15 @@ function formatSize(bytes: number): string {
 /** Over this, a text comparison is worth warning about before it starts. */
 const HEAVY_BYTES = 10 * 1024 * 1024;
 
+/**
+ * An engine label as it reads mid-sentence: "Text diff" → "text", "Structural
+ * YAML diff" → "structural yaml". The chip says what will run, and every engine
+ * label ends in the same noun the sentence already supplies.
+ */
+function engineNoun(label: string): string {
+  return label.replace(/\s*diff$/i, '').toLowerCase();
+}
+
 export function DetectedBar() {
   const [confirmingHeavy, setConfirmingHeavy] = useState(false);
   const a = useCompareStore((state) => state.a);
@@ -74,8 +83,11 @@ export function DetectedBar() {
 
       {mismatched && (
         <Chip variant="info">
-          {/* Rule 3: an unexpected engine choice has to explain itself. */}
-          Different kinds — comparing as text
+          {/* Rule 3: an unexpected engine choice has to explain itself — and it
+              has to say what will actually run. Two different kinds do not always
+              fall through to text: since v0.2.3 a YAML against a JSON compares
+              structurally, because YAML is a superset of JSON. */}
+          Different kinds — comparing as {engineNoun(chosenLabel)}
         </Chip>
       )}
 

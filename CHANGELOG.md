@@ -8,6 +8,26 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.3 — 2026-08-13
+
+### Added
+
+- **YAML comparison.** Drop two `.yaml` or `.yml` files and TwinScope compares the
+  data, not the lines — reordering keys or reindenting changes nothing, exactly as
+  it already does for JSON. Anchors, aliases and merge keys (`<<`) are resolved
+  before comparing, so a file using `&defaults` and a file with the block written
+  out twice come back identical, and the result says that is why. A `---`-separated
+  stream is compared document by document. A YAML that will not parse names the line
+  and offers to compare as text instead.
+- **A YAML can be compared against a JSON.** YAML is a superset of JSON, so a config
+  and its JSON equivalent now compare structurally rather than falling through to a
+  line diff of two files that say the same thing.
+
+### Fixed
+
+- **The "different kinds" note says which engine will actually run**, instead of
+  always claiming text.
+
 ## 0.2.2 — 2026-08-13
 
 ### Added

@@ -198,6 +198,9 @@ function bodyFor(input: ReportInput): string {
       return textBody(input.data.rows ?? []);
     case 'json':
       return jsonBody(input.data.rows ?? []);
+    // YAML shares the JSON core, so it shares the JSON report (v0.2.3).
+    case 'yaml':
+      return jsonBody(input.data.rows ?? []);
     case 'folder':
       return folderBody(input.data.rows ?? []);
     case 'git':

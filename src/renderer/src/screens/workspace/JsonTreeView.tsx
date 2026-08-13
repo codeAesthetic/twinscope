@@ -174,7 +174,9 @@ export default function JsonTreeView({ result }: EngineViewProps) {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, width: '100%', minHeight: 0 }}>
       <ToolbarSlot>
         <Seg
-          label="JSON view mode"
+          // Engine-derived, not hard-coded: v0.2.3's YAML engine renders through
+          // this same view, and an accessible name that says JSON would be wrong.
+          label={`${result.engineId.toUpperCase()} view mode`}
           value={mode}
           onChange={setMode}
           options={[

@@ -68,6 +68,9 @@ function body(input: ReportInput): string[] {
       return textBody(input);
     case 'json':
       return jsonBody(input);
+    // YAML shares the JSON core, so it shares the JSON report (v0.2.3).
+    case 'yaml':
+      return jsonBody(input);
     case 'folder':
       return folderBody(input);
     case 'git':
