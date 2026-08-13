@@ -8,6 +8,25 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.1 — 2026-08-13
+
+### Added
+
+- **API comparison.** Two HAR captures, two OpenAPI documents, or two saved response
+  bodies. TwinScope recognises them by their shape, so you drop two `.json` files and
+  get an API report rather than a tree of keys.
+- **Breaking-change detection for OpenAPI.** A removed operation, a removed response
+  field, a narrowed type, a newly required request field, a response enum that lost a
+  value — each one labelled breaking or compatible, with the rule that decided it on
+  screen next to it. Compatible changes are listed too: "compatible" is not
+  "uninteresting".
+- **Captures pair by request, not by position.** Two recordings of the same session
+  never agree on order or on cache-busting query values, so entries pair on method and
+  path and the noise is set aside: volatile headers (dates, request ids, cookies) are
+  ignored by default, counted, and listed.
+- Nothing is fetched. Both sides are files you chose; comparing two live URLs is a
+  separate decision that has not been made.
+
 ## 0.2.12 — 2026-08-13
 
 ### Added

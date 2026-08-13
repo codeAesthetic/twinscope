@@ -17,6 +17,7 @@ export type InputKind =
   | 'csv'
   | 'xml'
   | 'deps'
+  | 'api'
   | 'md'
   | 'image'
   | 'folder'

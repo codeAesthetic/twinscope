@@ -271,6 +271,8 @@ function bodyFor(input: ReportInput): string {
       return csvBody(input);
     case 'deps':
       return depsBody(input);
+    case 'api':
+      return apiBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -500,6 +502,88 @@ function depsBody(input: ReportInput): string {
       ${body}
     </tbody>
   </table>`;
+}
+
+/**
+ * The API report (v0.3.1): the verdict first, then the findings, then the entries.
+ *
+ * A contract comparison's whole value is its verdict, so a report that opened with a
+ * table of paths would bury the one line the reader needs.
+ */
+function apiBody(input: ReportInput): string {
+  const data = input.data as {
+    mode?: string;
+    findings?: Array<{ verdict: string; rule: string; where: string; detail: string }>;
+    entries?: Array<{
+      key: string;
+      verdict: string;
+      status?: { before?: number; after?: number };
+      headers?: { added: unknown[]; removed: unknown[]; changed: unknown[] };
+      body?: { added: number; removed: number; changed: number } | null;
+    }>;
+  };
+
+  const findings = data.findings ?? [];
+  const breaking = findings.filter((finding) => finding.verdict === 'breaking').length;
+
+  const verdict =
+    data.mode !== 'contract'
+      ? ''
+      : `<p class="meta"><strong>${
+          breaking > 0
+            ? `${breaking} breaking change${breaking === 1 ? '' : 's'}`
+            : 'No breaking changes'
+        }</strong> across ${findings.length} finding${findings.length === 1 ? '' : 's'}.</p>`;
+
+  const findingRows = findings
+    .map(
+      (finding) =>
+        `<tr class="${finding.verdict === 'breaking' ? 'del' : 'add'}"><td>${escapeHtml(finding.verdict)}</td>` +
+        `<td>${escapeHtml(finding.where)}</td><td>${escapeHtml(finding.detail)}</td>` +
+        `<td>${escapeHtml(finding.rule)}</td></tr>`,
+    )
+    .join('\n      ');
+
+  const entryRows = (data.entries ?? [])
+    .filter((entry) => entry.verdict !== 'unchanged')
+    .map((entry) => {
+      const headers =
+        (entry.headers?.added.length ?? 0) +
+        (entry.headers?.removed.length ?? 0) +
+        (entry.headers?.changed.length ?? 0);
+      const body =
+        entry.body === null || entry.body === undefined
+          ? 0
+          : entry.body.added + entry.body.removed + entry.body.changed;
+      return (
+        `<tr class="${entry.verdict === 'breaking' ? 'del' : 'mod'}"><td>${escapeHtml(entry.key)}</td>` +
+        `<td>${escapeHtml(entry.status?.before ?? '–')} → ${escapeHtml(entry.status?.after ?? '–')}</td>` +
+        `<td>${headers}</td><td>${body}</td></tr>`
+      );
+    })
+    .join('\n      ');
+
+  return `${verdict}
+  ${
+    findingRows === ''
+      ? ''
+      : `<table>
+    <thead><tr><th>Verdict</th><th>Where</th><th>What</th><th>Rule</th></tr></thead>
+    <tbody>
+      ${findingRows}
+    </tbody>
+  </table>`
+  }
+  ${
+    entryRows === ''
+      ? ''
+      : `<table>
+    <thead><tr><th>Entry</th><th>Status</th><th>Headers</th><th>Body</th></tr></thead>
+    <tbody>
+      ${entryRows}
+    </tbody>
+  </table>`
+  }`;
 }
 
 function imageBody(input: ReportInput): string {

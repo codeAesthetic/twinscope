@@ -1,0 +1,177 @@
+/*
+ * API comparison (v0.3.1).
+ *
+ * Verdict-first: the banner is the loudest thing on the screen, and a breaking
+ * finding is tinted with the same `--del` the rest of the app uses for "gone".
+ * Everything else borrows shapes that already exist — the CSV grid's table rules
+ * and the JSON tree's twisty — so this view reads as part of the same app.
+ */
+
+.dd-apiscroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  text-align: left;
+  padding: 12px 14px 20px;
+}
+
+.dd-apiverdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--add);
+  background: var(--add-bg);
+  color: var(--tx);
+  border-radius: 9px;
+  font-size: 12.5px;
+  margin-bottom: 14px;
+}
+.dd-apiverdict[data-breaking='true'] {
+  border-color: var(--del);
+  background: var(--del-bg);
+}
+
+.dd-apifindings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dd-apifindings li {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  flex-wrap: wrap;
+}
+.dd-apifindings li[data-verdict='breaking'] {
+  background: var(--del-bg);
+}
+.dd-apiwhere {
+  font: 12px var(--mono);
+  color: var(--tx);
+}
+.dd-apidetail {
+  color: var(--tx-2);
+  flex: 1;
+  min-width: 200px;
+}
+.dd-apirule {
+  font: 10.5px var(--mono);
+  color: var(--tx-3);
+}
+
+.dd-apientry {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  margin-bottom: 8px;
+  background: var(--panel);
+  overflow: hidden;
+}
+.dd-apientry[data-verdict='breaking'] {
+  border-color: var(--del);
+}
+.dd-apientry[data-verdict='unchanged'] {
+  opacity: 0.72;
+}
+
+.dd-apihead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 11px;
+  background: none;
+  border: 0;
+  color: var(--tx);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.dd-apihead:hover {
+  background: var(--panel-2);
+}
+.dd-apitwisty {
+  color: var(--tx-3);
+  width: 10px;
+}
+.dd-apimethod {
+  font: 600 10.5px/1 var(--mono);
+  letter-spacing: 0.06em;
+  padding: 4px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--line-2);
+  color: var(--tx-2);
+}
+.dd-apimethod[data-method='POST'],
+.dd-apimethod[data-method='PUT'],
+.dd-apimethod[data-method='PATCH'] {
+  color: var(--mod);
+  border-color: var(--mod);
+}
+.dd-apimethod[data-method='DELETE'] {
+  color: var(--del);
+  border-color: var(--del);
+}
+.dd-apipath {
+  font: 12px var(--mono);
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dd-apichips {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.dd-apibody {
+  border-top: 1px solid var(--line);
+  padding: 8px 11px 11px;
+}
+.dd-apinote {
+  color: var(--tx-3);
+  font-size: 11.5px;
+  margin: 0 0 8px;
+}
+
+.dd-apitable {
+  width: 100%;
+  border-collapse: collapse;
+  font: 11.5px var(--mono);
+  margin-bottom: 8px;
+}
+.dd-apitable th {
+  text-align: left;
+  font: 600 10px/1 var(--sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+  padding: 5px 7px;
+  border-bottom: 1px solid var(--line-2);
+}
+.dd-apitable td {
+  padding: 4px 7px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.dd-apitable tr[data-state='add'] td {
+  background: var(--add-bg);
+}
+.dd-apitable tr[data-state='del'] td {
+  background: var(--del-bg);
+}
+.dd-apitable tr[data-state='chg'] td,
+.dd-apitable tr[data-state='type'] td {
+  background: var(--mod-bg);
+}
+.dd-apiold {
+  color: var(--del);
+}
+.dd-apinew {
+  color: var(--add);
+}

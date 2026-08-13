@@ -32,6 +32,9 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   xml: lazy(() => import('./JsonTreeView')),
   csv: lazy(() => import('./CsvTableView')),
   deps: lazy(() => import('./DepsView')),
+  // v0.3.1: an API comparison is read verdict-first, which is neither a tree nor a
+  // table — so it gets a view of its own.
+  api: lazy(() => import('./ApiView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

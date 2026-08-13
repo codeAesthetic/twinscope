@@ -1,3 +1,4 @@
+import { apiShapeOf } from './api';
 import { isDependencyFile } from './deps/manifest';
 import type { InputKind, InputRef } from './types';
 
@@ -131,6 +132,13 @@ export function detectKind(input: Pick<InputRef, 'name' | 'text' | 'kind'>): Inp
   // `.yaml` by extension, and a structural diff of two package.json files answers
   // the wrong question (v0.2.10). The engine dropdown still offers JSON.
   if (isDependencyFile(input.name)) return 'deps';
+
+  // An API document is recognised by its *shape*, before the extension map, for the
+  // same reason a manifest is recognised by its name (v0.2.10): a HAR and an OpenAPI
+  // document are both `.json` — or `.yaml` — and a structural tree of two captures
+  // answers a question nobody asked (v0.3.1). Only these two shapes are claimed;
+  // two plain response bodies stay JSON, and reach the API engine by choice.
+  if (apiShapeOf(input.text) !== null) return 'api';
 
   const byExtension = EXTENSION_KIND[extensionOf(input.name)];
   if (byExtension) return byExtension;
