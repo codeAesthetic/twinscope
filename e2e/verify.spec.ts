@@ -45,6 +45,7 @@ test('app boots, bridges to main, and stays locked down', async () => {
       'input',
       'ping',
       'platform',
+      'quick',
       'report',
       'settings',
     ]);

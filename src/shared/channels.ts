@@ -40,6 +40,23 @@ export const IPC = {
   exportReport: 'export:report',
   revealReport: 'export:reveal',
 
+  /** Global Quick Compare (v0.2.14, MD §35). */
+  quickOpen: 'quick:open',
+  quickHandoff: 'quick:handoff',
+  quickClose: 'quick:close',
+  quickState: 'quick:state',
+  /** main → renderer: two inputs arriving from the quick panel. */
+  quickInputs: 'quick:inputs',
+  /**
+   * A cheap fingerprint of the clipboard, for the opt-in watcher.
+   *
+   * Deliberately *not* `clipboard:read`: that spills every copied image to a temp
+   * file, and a poll loop reading content the user has not offered is not something
+   * a privacy-first app should do. The signature says "something changed"; the read
+   * happens only when the user accepts.
+   */
+  clipboardSignature: 'clipboard:signature',
+
   /** Git repositories (v0.2.1, MD §19). Both read-only. */
   gitProbe: 'git:probe',
   gitBlob: 'git:blob',
@@ -197,10 +214,36 @@ export interface GitRepoInfo {
   dirty: boolean;
 }
 
+/** What the quick panel can tell the renderer about itself (v0.2.14). */
+export interface QuickState {
+  /** True when this window IS the quick panel. */
+  isQuick: boolean;
+  /** False when another application already owns the global shortcut. */
+  shortcutRegistered: boolean;
+  shortcut: string;
+}
+
+/** A fingerprint of the clipboard, cheap enough to poll (v0.2.14). */
+export interface ClipboardSignature {
+  /** 'text' | 'image' | 'empty' */
+  kind: string;
+  /** Length for text, byte size for an image. Zero when empty. */
+  size: number;
+  /** First and last few characters of text, so a change is detectable. */
+  hint: string;
+}
+
 export type ThemePreference = 'system' | 'dark' | 'light';
 
 export interface Preferences {
   theme: ThemePreference;
+  /**
+   * Global Quick Compare (v0.2.14). Both default to **off**: a global shortcut that
+   * takes a combination from another app on first launch is hostile, and a clipboard
+   * watcher nobody asked for is worse.
+   */
+  globalShortcut?: boolean;
+  clipboardWatcher?: boolean;
   /** Per-engine option defaults, seeded into every new comparison. */
   engineDefaults: Record<string, Record<string, unknown>>;
   checkUpdates: boolean;
@@ -258,6 +301,11 @@ export interface TwinScopeApi {
     /** Null when the clipboard holds nothing usable. */
     read(side: 'A' | 'B'): Promise<InputPayload | null>;
     write(text: string): Promise<void>;
+    /**
+     * A cheap fingerprint, for the opt-in watcher to poll. Reading the clipboard
+     * properly writes images to disk, so the watcher must not do it on a timer.
+     */
+    signature(): Promise<ClipboardSignature>;
   };
 
   history: {
@@ -294,6 +342,17 @@ export interface TwinScopeApi {
      * there. `null` is half of every drill-in: an added file has no BEFORE.
      */
     blob(request: { repo: string; ref: string; path: string }): Promise<string | null>;
+  };
+
+  quick: {
+    /** Opens the always-on-top panel, as the global shortcut does. */
+    open(): Promise<void>;
+    /** Hands two inputs to the main window and brings it forward. */
+    handoff(inputs: { a: InputPayload; b: InputPayload }): Promise<boolean>;
+    close(): Promise<void>;
+    state(): Promise<QuickState>;
+    /** Two inputs arriving from the panel. Returns an unsubscribe function. */
+    onInputs(listener: (inputs: { a: InputPayload; b: InputPayload }) => void): () => void;
   };
 
   settings: {

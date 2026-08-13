@@ -38,6 +38,7 @@ const api: TwinScopeApi = {
   clipboard: {
     read: (side): Promise<InputPayload | null> => ipcRenderer.invoke(IPC.readClipboard, side),
     write: (text: string): Promise<void> => ipcRenderer.invoke(IPC.writeClipboard, text),
+    signature: () => ipcRenderer.invoke(IPC.clipboardSignature),
   },
 
   history: {
@@ -57,6 +58,21 @@ const api: TwinScopeApi = {
   git: {
     probe: (path: string) => ipcRenderer.invoke(IPC.gitProbe, path),
     blob: (request) => ipcRenderer.invoke(IPC.gitBlob, request),
+  },
+
+  quick: {
+    open: (): Promise<void> => ipcRenderer.invoke(IPC.quickOpen),
+    handoff: (inputs) => ipcRenderer.invoke(IPC.quickHandoff, inputs),
+    close: (): Promise<void> => ipcRenderer.invoke(IPC.quickClose),
+    state: () => ipcRenderer.invoke(IPC.quickState),
+    onInputs: (listener) => {
+      // The raw event is dropped, as in `compare.onEvent`: handing it to the page
+      // would leak `sender`, and with it a route back to ipcRenderer.
+      const wrapped = (_event: unknown, payload: { a: InputPayload; b: InputPayload }): void =>
+        listener(payload);
+      ipcRenderer.on(IPC.quickInputs, wrapped);
+      return () => ipcRenderer.removeListener(IPC.quickInputs, wrapped);
+    },
   },
 
   settings: {

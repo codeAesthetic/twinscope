@@ -28,6 +28,9 @@ export interface Preferences {
    */
   engineDefaults: Record<string, Record<string, unknown>>;
   checkUpdates: boolean;
+  /** Global Quick Compare (v0.2.14). Both default to off — see channels.ts. */
+  globalShortcut: boolean;
+  clipboardWatcher: boolean;
 }
 
 interface Settings {
@@ -40,6 +43,8 @@ const DEFAULT_PREFERENCES: Preferences = {
   theme: 'dark',
   engineDefaults: {},
   checkUpdates: true,
+  globalShortcut: false,
+  clipboardWatcher: false,
 };
 
 const DEFAULTS: Settings = { version: 1, preferences: DEFAULT_PREFERENCES };
@@ -81,6 +86,9 @@ function parsePreferences(value: unknown): Preferences {
         ? (engineDefaults as Record<string, Record<string, unknown>>)
         : {},
     checkUpdates: candidate['checkUpdates'] !== false,
+    // `=== true`, not `!== false`: an absent preference must stay OFF.
+    globalShortcut: candidate['globalShortcut'] === true,
+    clipboardWatcher: candidate['clipboardWatcher'] === true,
   };
 }
 

@@ -160,8 +160,16 @@ export const PathSchema = z
 
 export const RevealPathSchema = PathSchema;
 
+/** Two inputs handed from the quick panel to the main window (v0.2.14). */
+export const QuickHandoffSchema = z.object({
+  a: InputPayloadSchema,
+  b: InputPayloadSchema,
+});
+
 export const PreferencesPatchSchema = z.object({
   theme: z.enum(['system', 'dark', 'light']).optional(),
+  globalShortcut: z.boolean().optional(),
+  clipboardWatcher: z.boolean().optional(),
   engineDefaults: z.record(z.string(), z.record(z.string(), z.unknown())).optional(),
   checkUpdates: z.boolean().optional(),
 });

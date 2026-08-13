@@ -3,7 +3,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { detectKind } from '../engines/detect';
-import type { InputPayload } from '../shared/channels';
+import type { ClipboardSignature, InputPayload } from '../shared/channels';
 
 /**
  * Reads the system clipboard into a comparison input (MD §34).
@@ -58,4 +58,29 @@ export async function readClipboard(side: 'A' | 'B'): Promise<InputPayload | nul
 
 export function writeClipboard(text: string): void {
   clipboard.writeText(text);
+}
+
+/**
+ * A cheap fingerprint of the clipboard, for the opt-in watcher (v0.2.14).
+ *
+ * Deliberately not `readClipboard`: that decodes an image and writes it to a temp
+ * file, which is exactly what a poll loop must not do — several times a second, for
+ * content the user has not offered. This reads the length and a few characters, so
+ * "something changed" is detectable without the content being ingested.
+ */
+export function clipboardSignature(): ClipboardSignature {
+  const text = clipboard.readText();
+  if (text !== '') {
+    const head = text.slice(0, 24);
+    const tail = text.length > 48 ? text.slice(-24) : '';
+    return { kind: 'text', size: text.length, hint: `${head}${tail}` };
+  }
+
+  const image = clipboard.readImage();
+  if (!image.isEmpty()) {
+    const { width, height } = image.getSize();
+    return { kind: 'image', size: width * height, hint: `${width}x${height}` };
+  }
+
+  return { kind: 'empty', size: 0, hint: '' };
 }

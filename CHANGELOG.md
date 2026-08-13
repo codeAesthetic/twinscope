@@ -8,6 +8,22 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.14 — 2026-08-13
+
+### Added
+
+- **Global Quick Compare.** ⌘⇧D (Ctrl+Shift+D) opens a small always-on-top panel
+  from wherever you are. Drop, paste or browse two things into it and press Compare;
+  it hands them to the main window and the diff opens there, because a 420×320 panel
+  is the wrong place to read one.
+- **An opt-in clipboard watcher that offers rather than takes.** With it on, the
+  panel notices when you copy something and shows a chip you can click. It never
+  fills anything in by itself, and nothing is actually read until you accept — the
+  watcher polls a length-and-fingerprint, not your clipboard's contents.
+- Both are **off by default**, and both are in Settings with what they do spelled
+  out. A global shortcut takes its combination from every other app on the machine,
+  which is not something to switch on for someone.
+
 ## 0.2.11 — 2026-08-13
 
 ### Added

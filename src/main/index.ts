@@ -4,6 +4,8 @@ import { closeHistory } from './history';
 import { registerIpcHandlers } from './ipc';
 import { applySecurityPolicy } from './security';
 import { createMainWindow, isHeadlessTest } from './window';
+import { registerQuickShortcut, unregisterQuickShortcut } from './quick';
+import { readPreferences } from './settings';
 
 /**
  * Electron main process entry point.
@@ -50,6 +52,17 @@ if (!app.requestSingleInstanceLock()) {
     // from whatever the user is actually doing.
     if (isHeadlessTest()) app.dock?.hide();
 
+    // Global Quick Compare (v0.2.14). Opt-in and default off: taking a global
+    // combination from another application on first launch is hostile. The
+    // registration can fail when someone else already owns it — `quick:state`
+    // reports that so the UI can say so rather than the feature just not existing.
+    if (readPreferences().globalShortcut) {
+      const ok = registerQuickShortcut();
+      if (!ok) {
+        console.warn('[quick] the global shortcut is already taken by another application');
+      }
+    }
+
     // macOS: clicking the dock icon with no windows open reopens one.
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) mainWindow = createMainWindow();
@@ -64,5 +77,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', () => {
     shutdownEngineHost();
     closeHistory();
+    // A global shortcut outliving the app would keep firing into nothing.
+    unregisterQuickShortcut();
   });
 }

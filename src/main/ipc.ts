@@ -1,12 +1,20 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
-import { readClipboard, writeClipboard } from './clipboard';
+import { clipboardSignature, readClipboard, writeClipboard } from './clipboard';
 import { readBytes, readInput } from './input';
 import { clear, get, list, record, remove, setStarred, touch } from './history';
 import { readPreferences, savePreferences } from './settings';
 import { exportReport, revealReport } from './export';
 import { probeRepo, readBlob } from './git';
-import { IPC, type InputPayload, type PingResult } from '../shared/channels';
+import {
+  handoffToMain,
+  hideQuickWindow,
+  isQuickShortcutRegistered,
+  isQuickWindow,
+  QUICK_SHORTCUT,
+  showQuickWindow,
+} from './quick';
+import { IPC, type InputPayload, type PingResult, type QuickState } from '../shared/channels';
 import { z } from 'zod';
 import {
   CompareRequestSchema,
@@ -17,6 +25,7 @@ import {
   HistoryRecordSchema,
   JobIdSchema,
   PreferencesPatchSchema,
+  QuickHandoffSchema,
   ReportFormatSchema,
   ReportPayloadSchema,
   RevealPathSchema,
@@ -100,6 +109,8 @@ export function registerIpcHandlers(): void {
     return readClipboard(SideSchema.parse(rawSide));
   });
 
+  ipcMain.handle(IPC.clipboardSignature, () => clipboardSignature());
+
   ipcMain.handle(IPC.writeClipboard, (_event, rawText: unknown): void => {
     // Bounded: this exists for "copy details" and copied diff lines, not as a
     // channel for a renderer to push arbitrary volume into the system.
@@ -162,6 +173,33 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.gitBlob, async (_event, payload: unknown) => {
     return readBlob(GitBlobSchema.parse(payload));
+  });
+
+  // --- Global Quick Compare (v0.2.14)
+  ipcMain.handle(IPC.quickOpen, (): void => {
+    showQuickWindow();
+  });
+
+  ipcMain.handle(IPC.quickClose, (): void => hideQuickWindow());
+
+  ipcMain.handle(IPC.quickState, (event): QuickState => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    return {
+      isQuick: isQuickWindow(window),
+      shortcutRegistered: isQuickShortcutRegistered(),
+      shortcut: QUICK_SHORTCUT,
+    };
+  });
+
+  ipcMain.handle(IPC.quickHandoff, (event, payload: unknown): boolean => {
+    const inputs = QuickHandoffSchema.parse(payload);
+    // The *other* window is the main one: the panel is whichever sent this.
+    const sender = BrowserWindow.fromWebContents(event.sender);
+    const main =
+      BrowserWindow.getAllWindows().find(
+        (window) => window.id !== sender?.id && !isQuickWindow(window),
+      ) ?? null;
+    return handoffToMain(main, inputs as Parameters<typeof handoffToMain>[1]);
   });
 
   // --- preferences

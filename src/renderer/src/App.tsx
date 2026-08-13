@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react';
 import { AppFrame } from './components/layout/AppFrame';
 import { CommandPalette } from './components/CommandPalette';
 import { useActions } from './lib/actions';
-import { useCompareEvents, useRunComparison } from './lib/compareClient';
+import { useCompareEvents, useQuickHandoff, useRunComparison } from './lib/compareClient';
 import { useAppShortcuts, useClipboardIntake } from './lib/intake';
 import { useAppStore } from './stores/app';
 import { CompareScreen } from './screens/CompareScreen';
 import { Gallery } from './screens/Gallery';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { Placeholder } from './screens/Placeholder';
+import { QuickScreen } from './screens/QuickScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { WorkspaceScreen } from './screens/WorkspaceScreen';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -40,6 +41,8 @@ function Shell() {
   // Subscribed once at the root: a per-screen subscription would drop events
   // whenever the user navigated mid-comparison.
   useCompareEvents();
+  // Two inputs arriving from the Quick Compare panel (v0.2.14).
+  useQuickHandoff();
 
   // The keyboard map (MD §10), from the single registry in lib/shortcuts.ts.
   const runComparison = useRunComparison();
@@ -61,8 +64,10 @@ function Shell() {
 /**
  * No router (plan D11) — the sidebar drives a Zustand `view`.
  *
- * Two dev-facing hash routes: #gallery for the design system, and #workspace to
- * reach the comparison chassis before a real comparison can open it.
+ * Three hash routes: #gallery for the design system and #workspace to reach the
+ * comparison chassis (both dev-facing), plus **#quick**, which is how main loads the
+ * always-on-top Quick Compare panel into this same renderer rather than shipping a
+ * second bundle (v0.2.14).
  */
 export function App() {
   const [hash, setHash] = useState(() => window.location.hash);
@@ -78,5 +83,9 @@ export function App() {
     if (hash === '#workspace') setView('workspace');
   }, [hash, setView]);
 
-  return <ThemeProvider>{hash === '#gallery' ? <Gallery /> : <Shell />}</ThemeProvider>;
+  return (
+    <ThemeProvider>
+      {hash === '#quick' ? <QuickScreen /> : hash === '#gallery' ? <Gallery /> : <Shell />}
+    </ThemeProvider>
+  );
 }

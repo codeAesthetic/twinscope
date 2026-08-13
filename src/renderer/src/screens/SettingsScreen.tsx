@@ -18,6 +18,7 @@ import { useTheme, type ThemePreference } from '../theme/ThemeProvider';
 export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
   const preferences = useSettingsStore((state) => state.preferences);
+  const update = useSettingsStore((state) => state.update);
   const load = useSettingsStore((state) => state.load);
   const setEngineDefault = useSettingsStore((state) => state.setEngineDefault);
 
@@ -109,6 +110,26 @@ export function SettingsScreen() {
             disabled until the owner decides whether TwinScope may make a network
             call at all (plan v0.2.13). Saying nothing here would be worse: the
             switch was already on screen promising something. */}
+        <Row
+          title="Global Quick Compare"
+          desc="⌘⇧D opens a small always-on-top panel from anywhere. Off by default — a global shortcut takes the combination from every other app."
+        >
+          <Switch
+            checked={preferences.globalShortcut === true}
+            onChange={(next) => void update({ globalShortcut: next })}
+            label="Global Quick Compare"
+          />
+        </Row>
+        <Row
+          title="Clipboard watcher"
+          desc="While the quick panel is open, offer new clipboard content. It offers — it never fills anything in by itself, and nothing is read until you accept."
+        >
+          <Switch
+            checked={preferences.clipboardWatcher === true}
+            onChange={(next) => void update({ clipboardWatcher: next })}
+            label="Clipboard watcher"
+          />
+        </Row>
         <Row title="Check for updates" desc="Not implemented — TwinScope makes no network calls.">
           <Switch checked={false} onChange={() => undefined} label="Check for updates" disabled />
         </Row>

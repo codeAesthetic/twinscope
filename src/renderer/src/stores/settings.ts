@@ -18,7 +18,13 @@ interface SettingsState {
   setEngineDefault: (engineId: string, patch: Record<string, unknown>) => Promise<void>;
 }
 
-const FALLBACK: Preferences = { theme: 'dark', engineDefaults: {}, checkUpdates: true };
+const FALLBACK: Preferences = {
+  theme: 'dark',
+  engineDefaults: {},
+  checkUpdates: true,
+  globalShortcut: false,
+  clipboardWatcher: false,
+};
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   preferences: FALLBACK,
@@ -35,12 +41,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   /**
    * Writes a preference patch.
    *
-   * **Currently has no caller.** Its only one was the Settings screen's
-   * "check for updates" switch, which v0.2.13 disabled — the preference promised
-   * signed, verified releases and nothing checked anything. Kept rather than
-   * deleted because the theme goes through `ThemeProvider` directly and
-   * `engineDefaults` has no editor yet, so this is the writer both will want; a
-   * reader finding it unused should not conclude preferences are read-only.
+   * Called by the Settings screen's switches. The theme is the exception and goes
+   * through `ThemeProvider` directly, because it has to apply before a round trip
+   * completes or the window flashes the wrong palette.
    */
   update: async (patch) => {
     set({ preferences: { ...get().preferences, ...patch } });

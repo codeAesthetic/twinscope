@@ -115,3 +115,22 @@ export function useRunDemo(): () => Promise<void> {
     await runComparison('demo');
   };
 }
+
+/**
+ * Two inputs arriving from the Quick Compare panel (v0.2.14).
+ *
+ * Subscribed at the root, like `useCompareEvents`: the handoff can land while the
+ * user is anywhere in the app, and a per-screen subscription would drop it.
+ */
+export function useQuickHandoff(): void {
+  const setInput = useCompareStore((state) => state.setInput);
+  const runComparison = useRunComparison();
+
+  useEffect(() => {
+    return window.twinscope.quick.onInputs(({ a, b }) => {
+      setInput('A', { ...a, side: 'A' });
+      setInput('B', { ...b, side: 'B' });
+      void runComparison();
+    });
+  }, [setInput, runComparison]);
+}
