@@ -1,0 +1,7 @@
+order_id,customer,country,items,total_gbp,status,updated
+1001,Priya Nair,GB,3,64.50,shipped,2026-07-02
+1002,Sam Okafor,IE,1,19.99,shipped,2026-07-02
+1003,Ada Lovelace,GB,7,210.00,pending,2026-07-03
+1004,Lin Wei,SG,2,45.25,shipped,2026-07-03
+1005,Marco Rossi,IT,1,12.00,cancelled,2026-07-04
+1006,Ana Silva,BR,4,88.40,pending,2026-07-05

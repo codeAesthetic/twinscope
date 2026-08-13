@@ -1,0 +1,40 @@
+x-defaults: &defaults
+  restart: always
+  logging:
+    driver: json-file
+    options:
+      max-size: 50m
+  environment:
+    TZ: UTC
+    LOG_LEVEL: debug
+
+services:
+  api:
+    <<: *defaults
+    image: registry.example.com/orders-api:2.5.0
+    ports:
+      - "3000:3000"
+    deploy:
+      replicas: 6
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 10s
+      retries: 3
+
+  worker:
+    <<: *defaults
+    image: registry.example.com/orders-worker:2.5.0
+    command: ["node", "worker.js", "--concurrency", "8"]
+
+  cache:
+    image: redis:7.4-alpine
+    volumes:
+      - cache-data:/data
+
+  metrics:
+    image: prom/prometheus:v2.54.0
+    ports:
+      - "9090:9090"
+
+volumes:
+  cache-data: {}

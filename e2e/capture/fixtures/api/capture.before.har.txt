@@ -1,0 +1,80 @@
+{
+  "log": {
+    "version": "1.2",
+    "creator": {
+      "name": "sample"
+    },
+    "entries": [
+      {
+        "startedDateTime": "2026-08-13T09:00:00.000Z",
+        "time": 142,
+        "request": {
+          "method": "GET",
+          "url": "https://api.example.com/v1/orders?limit=20&cursor=abc",
+          "headers": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            },
+            {
+              "name": "date",
+              "value": "Thu, 13 Aug 2026 09:00:00 GMT"
+            },
+            {
+              "name": "x-request-id",
+              "value": "7f2c1a90"
+            },
+            {
+              "name": "x-ratelimit-remaining",
+              "value": "599"
+            }
+          ],
+          "content": {
+            "size": 73,
+            "mimeType": "application/json",
+            "text": "{\"items\":[{\"id\":\"o_1\",\"total\":64.5,\"currency\":\"GBP\"}],\"nextCursor\":\"def\"}"
+          }
+        }
+      },
+      {
+        "startedDateTime": "2026-08-13T09:00:00.000Z",
+        "time": 88,
+        "request": {
+          "method": "GET",
+          "url": "https://api.example.com/v1/orders/o_1",
+          "headers": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "response": {
+          "status": 200,
+          "statusText": "OK",
+          "headers": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ],
+          "content": {
+            "size": 61,
+            "mimeType": "application/json",
+            "text": "{\"id\":\"o_1\",\"total\":64.5,\"currency\":\"GBP\",\"status\":\"shipped\"}"
+          }
+        }
+      }
+    ]
+  }
+}

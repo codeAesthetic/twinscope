@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Orders — Example</title>
+    <link rel="stylesheet" href="/assets/app.a1b2c3.css" />
+    <script src="/assets/app.a1b2c3.js" defer></script>
+    <style>
+      .card { border: 1px solid #ddd; border-radius: 6px; padding: 12px; }
+      .card h2 { font-size: 18px; margin: 0 0 8px; }
+      .total { color: #0a7; font-weight: 600; }
+      .banner { display: none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Your orders</h1>
+      <nav><a href="/orders">Orders</a> <a href="/account">Account</a></nav>
+    </header>
+    <main>
+      <section class="card">
+        <h2>Order 1001</h2>
+        <p>3 items · <span class="total">£64.50</span></p>
+        <img src="/assets/lamp.png" alt="Desk lamp" width="80" height="80" />
+        <button type="button">Track parcel</button>
+      </section>
+      <section class="card">
+        <h2>Order 1002</h2>
+        <p>1 item · <span class="total">£19.99</span></p>
+        <img src="/assets/arm.png" alt="Monitor arm" width="80" height="80" />
+      </section>
+    </main>
+    <footer><p>Example Ltd</p></footer>
+  </body>
+</html>
