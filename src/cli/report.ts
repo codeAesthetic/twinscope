@@ -43,6 +43,8 @@ export function renderSummary(
   b: InputRef,
   engineLabel: string,
   paint: Paint,
+  /** Present when a threshold was given (v0.3.4). */
+  thresholds?: { failed: boolean; lines: string[]; failures: string[] },
 ): string {
   const { summary } = result;
   const lines: string[] = [];
@@ -75,7 +77,82 @@ export function renderSummary(
     for (const note of result.normalizationNotes) lines.push(paint(`• ${note}`, 'dim'));
   }
 
+  // The threshold verdict goes last and names each rule, so a failing build says
+  // which number it failed on rather than only that it failed.
+  if (thresholds !== undefined && thresholds.lines.length > 0) {
+    lines.push('');
+    for (const line of thresholds.lines) {
+      lines.push(line.startsWith('FAIL') ? paint(line, 'red') : paint(line, 'green'));
+    }
+  }
+
   return `${lines.join('\n')}\n`;
+}
+
+/**
+ * `--format github` (v0.3.4): annotations for the log, Markdown for the job summary.
+ *
+ * Two outputs because GitHub reads two places, and a CI integration whose whole output
+ * is a wall of stdout is one nobody reads. Annotations go to stdout, where the runner
+ * parses them; the summary is returned separately for the caller to append to
+ * `$GITHUB_STEP_SUMMARY`.
+ */
+export function renderGithub(
+  result: DiffResult,
+  a: InputRef,
+  b: InputRef,
+  engineLabel: string,
+  thresholds: { failed: boolean; lines: string[]; failures: string[] },
+): { annotations: string; summary: string } {
+  const { summary } = result;
+  const changes = summary.added + summary.removed + summary.modified;
+  const title = `${a.name} → ${b.name}`;
+  const counts = `+${summary.added} / -${summary.removed} / ~${summary.modified}`;
+
+  const annotations: string[] = [];
+  for (const failure of thresholds.failures) {
+    // `::error` with no file attaches the annotation to the step, which is right: a
+    // comparison is about two files, and pinning it to one of them would be a guess.
+    annotations.push(`::error title=TwinScope threshold::${escapeData(failure)} (${title})`);
+  }
+  if (thresholds.failures.length === 0) {
+    annotations.push(
+      `::notice title=TwinScope::${escapeData(`${title}: ${changes} change${changes === 1 ? '' : 's'} (${counts})`)}`,
+    );
+  }
+
+  const extras = Object.entries(summary.extra ?? {}).map(([key, value]) => `${key}: ${value}`);
+  const lines = [
+    `### TwinScope — ${title}`,
+    '',
+    `**${changes} change${changes === 1 ? '' : 's'}** · ${counts} · ${engineLabel} · ${result.timings.ms} ms`,
+    '',
+  ];
+  if (extras.length > 0) lines.push(extras.map((entry) => `\`${entry}\``).join(' '), '');
+  if (thresholds.lines.length > 0) {
+    lines.push('| Threshold | Result |', '| --- | --- |');
+    for (const line of thresholds.lines) {
+      const failed = line.startsWith('FAIL');
+      lines.push(`| ${escapePipes(line.replace(/^(ok|FAIL)\s+/, ''))} | ${failed ? '❌' : '✅'} |`);
+    }
+    lines.push('');
+  }
+  if (result.normalizationNotes.length > 0) {
+    lines.push('<details><summary>What the comparison did</summary>', '');
+    for (const note of result.normalizationNotes) lines.push(`- ${note}`);
+    lines.push('', '</details>', '');
+  }
+
+  return { annotations: `${annotations.join('\n')}\n`, summary: `${lines.join('\n')}\n` };
+}
+
+/** GitHub's workflow-command escaping: a newline in a message would end the command. */
+function escapeData(value: string): string {
+  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+function escapePipes(value: string): string {
+  return value.replace(/\|/g, '\\|');
 }
 
 /**
@@ -88,6 +165,8 @@ export function renderJson(
   a: InputRef,
   b: InputRef,
   engineLabel: string,
+  /** Present when a threshold was given (v0.3.4), so a pipeline can read the verdict. */
+  thresholds?: { failed: boolean; lines: string[]; failures: string[] },
 ): string {
   return `${JSON.stringify(
     {
@@ -98,6 +177,7 @@ export function renderJson(
       normalizationNotes: result.normalizationNotes,
       identical: isIdentical(result.summary),
       ms: result.timings.ms,
+      ...(thresholds === undefined ? {} : { thresholds }),
     },
     null,
     2,

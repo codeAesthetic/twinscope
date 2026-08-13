@@ -1,8 +1,9 @@
-import { writeFile } from 'node:fs/promises';
+import { appendFile, writeFile } from 'node:fs/promises';
 import { parseArgs, type CliOptions } from './args';
 import { cliGitHost, cliHostFs, cliImageHost } from './hosts';
 import { CliInputError, readStdin, resolveInput } from './inputs';
-import { isIdentical, painter, renderJson, renderSummary } from './report';
+import { isIdentical, painter, renderGithub, renderJson, renderSummary } from './report';
+import { evaluate, hasThresholds } from './thresholds';
 import { engineById, selectEngine } from '../engines/registry';
 import { EngineInputError } from '../engines/types';
 import { renderHtml } from '../shared/report/html';
@@ -83,8 +84,15 @@ async function run(options: CliOptions): Promise<number> {
 
   const engine = pickEngine(a, b, options.engine);
   const result = await compare(engine, a, b, options);
+  const thresholds = evaluate(result.summary, options.thresholds);
 
-  await emit(result, a, b, engine, options);
+  await emit(result, a, b, engine, options, thresholds);
+
+  // A threshold takes over the exit code (v0.3.4). Without one, exit 1 means "these
+  // differ", which is usually true and rarely a build failure; with one it means
+  // "these differ by more than you allowed". Conflating the two silently would make
+  // one of them a trap.
+  if (hasThresholds(options.thresholds)) return thresholds.failed ? EXIT.different : EXIT.same;
   return isIdentical(result.summary) ? EXIT.same : EXIT.different;
 }
 
@@ -137,15 +145,29 @@ async function emit(
   b: InputRef,
   engine: DiffEngine<unknown>,
   options: CliOptions,
+  thresholds: ReturnType<typeof evaluate>,
 ): Promise<void> {
   const label = engine.meta.label;
 
+  if (options.format === 'github') {
+    if (options.quiet) return;
+    const { annotations, summary } = renderGithub(result, a, b, label, thresholds);
+    process.stdout.write(annotations);
+    // The job summary goes to the file the runner gave us, when it gave us one —
+    // appended, because a step may write several comparisons into one summary.
+    const target = options.out ?? process.env['GITHUB_STEP_SUMMARY'];
+    if (target !== undefined && target !== '') await appendFile(target, summary, 'utf8');
+    else process.stdout.write(summary);
+    return;
+  }
+
   if (options.format === 'summary' || options.format === 'json') {
     if (options.quiet) return;
+    const withThresholds = hasThresholds(options.thresholds) ? thresholds : undefined;
     const text =
       options.format === 'json'
-        ? renderJson(result, a, b, label)
-        : renderSummary(result, a, b, label, painter(options.color));
+        ? renderJson(result, a, b, label, withThresholds)
+        : renderSummary(result, a, b, label, painter(options.color), withThresholds);
     // Even `--json` honours `--out`: writing a machine-readable result to a file
     // is exactly what a CI step wants.
     if (options.out !== undefined) await writeFile(options.out, text, 'utf8');

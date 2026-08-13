@@ -1,3 +1,5 @@
+import { NO_THRESHOLDS, type Thresholds } from './thresholds';
+
 /**
  * Argument parsing for the `twinscope` CLI (v0.2.2, MD §40).
  *
@@ -8,7 +10,7 @@
  * function and therefore properly testable.
  */
 
-export type OutputFormat = 'summary' | 'json' | 'md' | 'html' | 'patch';
+export type OutputFormat = 'summary' | 'json' | 'md' | 'html' | 'patch' | 'github';
 
 export interface CliOptions {
   before: string;
@@ -24,6 +26,8 @@ export interface CliOptions {
   ignoreCase: boolean;
   color: boolean;
   quiet: boolean;
+  /** CI thresholds (v0.3.4). When any is set, the exit code follows them. */
+  thresholds: Thresholds;
 }
 
 export type ParseResult =
@@ -41,6 +45,7 @@ export interface ParseEnvironment {
 
 const FORMAT_FLAGS: Record<string, OutputFormat> = {
   '--json': 'json',
+  '--github': 'github',
   '--md': 'md',
   '--markdown': 'md',
   '--html': 'html',
@@ -60,6 +65,7 @@ OPTIONS
   --md, --markdown       Markdown report
   --html                 self-contained HTML report
   --patch                unified diff (text comparisons only)
+  --github               GitHub Actions annotations + a job summary
   --out <file>           write the report to a file instead of stdout
   --engine <id>          force an engine: text json folder git image binary
   --repo <path>          treat the operands as git refs in this repository
@@ -71,16 +77,27 @@ OPTIONS
   -h, --help             this text
   -v, --version          print the version
 
+CI THRESHOLDS (v0.3.4)
+  --max-changes <n>      fail when more than n things changed
+  --max-diff <percent>   fail when the difference exceeds this percentage
+  --fail-on-breaking     fail when a breaking API change is found
+
 EXIT CODES
-  0  the two inputs are the same
-  1  they differ
+  0  the two inputs are the same — or, with a threshold, within it
+  1  they differ — or, with a threshold, exceed it
   2  something went wrong
+
+  A threshold takes over exit code 1: without one it means "these differ", which is
+  usually true and rarely a build failure; with one it means "these differ by more
+  than you allowed".
 
 EXAMPLES
   twinscope before.json after.json
   twinscope src/ dist/ --md --out report.md
   twinscope --repo . main HEAD
   cat new.json | twinscope old.json -
+  twinscope api.v1.json api.v2.json --fail-on-breaking --github
+  twinscope before.png after.png --max-diff 0.5
 `;
 
 export function parseArgs(argv: readonly string[], environment: ParseEnvironment): ParseResult {
@@ -92,6 +109,7 @@ export function parseArgs(argv: readonly string[], environment: ParseEnvironment
   let ignoreWhitespace = false;
   let ignoreCase = false;
   let quiet = false;
+  const thresholds: Thresholds = { ...NO_THRESHOLDS };
   // Colour is on when a human is looking at it and nothing says otherwise.
   let color = environment.isTty && !environment.noColor;
   let sawFormat = false;
@@ -127,6 +145,28 @@ export function parseArgs(argv: readonly string[], environment: ParseEnvironment
     }
     if (arg === '-q' || arg === '--quiet') {
       quiet = true;
+      continue;
+    }
+
+    if (arg === '--fail-on-breaking') {
+      thresholds.failOnBreaking = true;
+      continue;
+    }
+
+    if (arg === '--max-changes' || arg === '--max-diff') {
+      const value = argv[index + 1];
+      if (value === undefined || value.startsWith('-')) {
+        return { kind: 'error', message: `${arg} needs a number.` };
+      }
+      const parsed = Number.parseFloat(value.replace('%', ''));
+      // A threshold that silently became NaN would pass everything, which is the
+      // worst possible failure mode for a flag whose whole job is to fail a build.
+      if (!Number.isFinite(parsed) || parsed < 0) {
+        return { kind: 'error', message: `${arg} needs a number, not "${value}".` };
+      }
+      index += 1;
+      if (arg === '--max-changes') thresholds.maxChanges = parsed;
+      else thresholds.maxDiffPercent = parsed;
       continue;
     }
 
@@ -186,6 +226,7 @@ export function parseArgs(argv: readonly string[], environment: ParseEnvironment
       ignoreCase,
       color,
       quiet,
+      thresholds,
     },
   };
 }

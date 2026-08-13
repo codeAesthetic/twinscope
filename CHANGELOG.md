@@ -8,6 +8,24 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.4 — 2026-08-13
+
+### Added
+
+- **Thresholds for CI.** `--max-changes`, `--max-diff` and `--fail-on-breaking` make a
+  comparison fail a build. They take over the exit code, on purpose: without a
+  threshold, exit 1 means "these two differ", which is usually true and rarely a
+  failure. With one it means "these differ by more than you allowed", and the output
+  names the threshold that failed.
+- A threshold that cannot be judged **fails** rather than quietly passing — asking to
+  fail over 1% different, against a comparison that has no percentage in it, is a
+  mistake worth surfacing.
+- **`--github`** writes GitHub Actions annotations and a job summary: the counts, a
+  table of every threshold with a tick or a cross, and what the comparison did.
+- **A GitHub Action** in `integrations/github-action/`, and [docs/ci.md](docs/ci.md)
+  with a workflow you can copy — including posting the report as a PR comment, which
+  uses the runner's own `gh`. TwinScope still makes no network calls of its own.
+
 ## 0.3.2 — 2026-08-13
 
 ### Added

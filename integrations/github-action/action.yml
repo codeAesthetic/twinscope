@@ -1,0 +1,88 @@
+name: 'Compare with TwinScope'
+description: 'Compare two files, folders or git refs in CI, with thresholds that can fail the build.'
+author: 'codeAesthetic'
+
+# A composite action rather than a Docker or JavaScript one: the CLI is a single
+# bundled file built from this repository, and a Docker image would mean publishing and
+# pulling one to run a diff. Everything here is `run:` steps you could type yourself,
+# which is also what makes the workflow in docs/ci.md readable.
+
+inputs:
+  before:
+    description: 'The BEFORE side: a path, or a git ref when `repo` is set.'
+    required: true
+  after:
+    description: 'The AFTER side.'
+    required: true
+  repo:
+    description: 'Treat `before`/`after` as git refs inside this repository.'
+    required: false
+    default: ''
+  engine:
+    description: 'Force an engine instead of letting detection choose.'
+    required: false
+    default: ''
+  max-changes:
+    description: 'Fail when more than this many things changed.'
+    required: false
+    default: ''
+  max-diff:
+    description: 'Fail when the difference percentage exceeds this.'
+    required: false
+    default: ''
+  fail-on-breaking:
+    description: 'Fail when a breaking API change is found (two OpenAPI documents).'
+    required: false
+    default: 'false'
+  cli:
+    description: >-
+      Path to the built `twinscope` CLI. Defaults to `out/cli/index.js`, which is what
+      `npm run build:cli` produces. TwinScope is not on npm yet, so there is no
+      `npx twinscope` to fall back to — see integrations/github-action/README.md.
+    required: false
+    default: 'out/cli/index.js'
+  report:
+    description: 'Write an HTML report here as well (uploadable as an artifact).'
+    required: false
+    default: ''
+
+outputs:
+  exit-code:
+    description: '0 within thresholds (or identical), 1 outside them (or different), 2 error.'
+    value: ${{ steps.compare.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - id: compare
+      shell: bash
+      # `set +e` around the CLI on purpose: exit 1 is a *result*, not a crash, and the
+      # step decides what to do with it after the summary has been written.
+      run: |
+        set -uo pipefail
+        args=("${{ inputs.before }}" "${{ inputs.after }}" --github)
+        [ -n "${{ inputs.repo }}" ] && args+=(--repo "${{ inputs.repo }}")
+        [ -n "${{ inputs.engine }}" ] && args+=(--engine "${{ inputs.engine }}")
+        [ -n "${{ inputs.max-changes }}" ] && args+=(--max-changes "${{ inputs.max-changes }}")
+        [ -n "${{ inputs.max-diff }}" ] && args+=(--max-diff "${{ inputs.max-diff }}")
+        [ "${{ inputs.fail-on-breaking }}" = "true" ] && args+=(--fail-on-breaking)
+
+        set +e
+        node "${{ inputs.cli }}" "${args[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+        if [ -n "${{ inputs.report }}" ]; then
+          node "${{ inputs.cli }}" "${args[@]::2}" --html --out "${{ inputs.report }}" || true
+        fi
+
+        # 2 is a genuine failure and always fails the step. 1 means "outside the
+        # thresholds you set", which is also a failure — but only because thresholds
+        # were set: without them the CLI's 1 means "these differ", which a build step
+        # must not treat as an error.
+        if [ "$code" = "2" ]; then exit 2; fi
+        if [ "$code" = "1" ] && { [ -n "${{ inputs.max-changes }}" ] || [ -n "${{ inputs.max-diff }}" ] || [ "${{ inputs.fail-on-breaking }}" = "true" ]; }; then
+          exit 1
+        fi
+        exit 0
