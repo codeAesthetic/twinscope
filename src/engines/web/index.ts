@@ -76,12 +76,30 @@ function assetKey(asset: Asset, ignoreQuery: boolean): string {
  * builds, and reporting it as a removal plus an addition means every asset row in
  * every comparison is noise. Pairing is on the tag plus the *shape* of the name with
  * hash-looking runs removed.
+ *
+ * **One rule, six characters, and it must contain a digit.** There used to be two rules
+ * that disagreed: hex needed eight characters and digits six. So `app.998877.js` folded
+ * and `app.a1b2c3.js` — the example in this very comment — did not, reporting one asset
+ * removed plus one added for the single commonest edit there is.
+ *
+ * Six, because `[contenthash:6]` is a one-line config change and plenty of builds use
+ * it; Vite and webpack default to eight, which the same rule covers. A separate digit
+ * rule is unnecessary once hex is six, since every digit is already a hex character.
+ *
+ * The digit requirement is what makes six safe. `[a-f0-9]{6,}` alone matches any word
+ * built from a–f, so `facade.css` and `decade.js` would fingerprint to `#.css`/`#.js`
+ * and could pair with each other. Real hashes are hex over sixteen symbols, so an
+ * all-letter one is a fraction of a percent — and missing that one only costs the
+ * removed-plus-added row this pass is here to avoid, which is the safer failure.
  */
+const HASH_RUN = 6;
+
 function fingerprintUrl(url: string): string {
-  return url
-    .split('?')[0]!
-    .replace(/[a-f0-9]{8,}/gi, '#')
-    .replace(/\d{6,}/g, '#');
+  // Built per call, not hoisted: a `g`-flagged regex shared between calls carries
+  // `lastIndex`, which is the bug `engines/normalize` documents at length. `replace`
+  // happens to reset it, but keeping the habit is cheaper than relying on that.
+  const hashLike = new RegExp(`(?=[a-f0-9]*\\d)[a-f0-9]{${HASH_RUN},}`, 'gi');
+  return url.split('?')[0]!.replace(hashLike, '#');
 }
 
 function diffAssets(

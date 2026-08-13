@@ -14,12 +14,20 @@ export interface DomNode {
   /** A structural key: `body>main>div.card:2`. */
   key: string;
   /**
-   * Parent path plus this node's position among *all* element siblings — the same
-   * slot regardless of tag.
+   * The node's tag-free identity: its **parent's key**, plus its slot among that
+   * parent's element children.
    *
    * Separate from `key`, which contains the tag: without it an `<h1>` that became an
    * `<h3>` cannot pair at all and reads as a removal plus an addition, which is two
    * rows for one edit.
+   *
+   * It used to be an absolute path of sibling indices (`1/2/3`), and that made the
+   * retag pass collapse on one of the commonest edits there is: insert a
+   * `<div class="banner">` before `<main>` and every index beneath it shifts by one, so
+   * no retagged node pairs and the noise the pass exists to remove comes back. Anchoring
+   * to the parent's key fixes it because `key` counts occurrences **per tag** — a new
+   * `<div>` before `<main>` leaves `main` the first `main`, so the key is stable and
+   * only a sibling of the same tag inserted earlier can shift it.
    */
   position: string;
   tag: string;
@@ -249,14 +257,15 @@ export function readPage(html: string, options: ReadOptions = {}): PageFacts {
       walk(
         childElement,
         keyFor(childElement, key, index, classesInKey),
-        `${position}/${slot}`,
+        // The parent's own key, not the parent's position: see `DomNode.position`.
+        `${key}#${slot}`,
         depth + 1,
       );
     }
   };
 
   const root = document.querySelector('html') ?? document;
-  walk(root as HTMLElement, keyFor(root as HTMLElement, '', 1, classesInKey), '1', 0);
+  walk(root as HTMLElement, keyFor(root as HTMLElement, '', 1, classesInKey), '#1', 0);
 
   facts.css = styles.join('\n');
   facts.textLength = collapse(document.text).length;

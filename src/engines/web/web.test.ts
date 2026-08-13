@@ -150,6 +150,64 @@ describe('webEngine', () => {
     expect(assets[0]).toMatchObject({ state: 'changed', detail: 'same asset, different URL' });
   });
 
+  it('pairs a retag even when an earlier sibling shifts every index below it', async () => {
+    // `position` used to be an absolute path of sibling indices, so inserting one
+    // element before <main> shifted every index beneath it and the retag pass — whose
+    // entire job is to stop an <h1> that became an <h3> reading as a removal plus an
+    // addition — matched nothing. Inserting an element earlier in a page is one of the
+    // most common edits there is.
+    const { data } = await run(
+      PAGE('<main><h1>Your orders</h1></main>'),
+      PAGE('<div class="banner">Free delivery</div><main><h3>Your orders</h3></main>'),
+    );
+
+    const structure = data.rows.filter((row) => row.section === 'structure');
+    const retag = structure.find((row) => row.detail?.includes('became'));
+    expect(retag, JSON.stringify(structure, null, 2)).toMatchObject({
+      state: 'changed',
+      detail: '<h1> became <h3>',
+    });
+
+    // And the heading itself is not *also* reported as removed or added.
+    const headingRows = structure.filter((row) => row.key.endsWith('h1') || row.key.endsWith('h3'));
+    expect(headingRows.map((row) => row.state)).toEqual(['changed']);
+
+    // The inserted banner is still a real addition — the fix must not swallow it.
+    expect(structure.some((row) => row.state === 'added' && row.key.includes('div'))).toBe(true);
+  });
+
+  it('folds a six-character hash, not only an eight-character one', async () => {
+    // The two rules disagreed: hex needed eight characters, digits six. So
+    // `app.998877.js` folded and `app.a1b2c3.js` did not — one asset removed plus one
+    // added, for the commonest edit between two builds.
+    for (const [before, after] of [
+      ['/static/app.a1b2c3.js', '/static/app.d4e5f6.js'],
+      ['/static/app.998877.js', '/static/app.112233.js'],
+      ['/static/app.a1b2c3d4.js', '/static/app.99887766.js'],
+    ] as const) {
+      const { data } = await run(
+        PAGE(`<script src="${before}"></script>`),
+        PAGE(`<script src="${after}"></script>`),
+      );
+      const assets = data.rows.filter((row) => row.section === 'assets');
+      expect(assets, `${before} → ${after}`).toHaveLength(1);
+      expect(assets[0]).toMatchObject({ state: 'changed', detail: 'same asset, different URL' });
+    }
+  });
+
+  it('does not treat an a-to-f word as a hash', async () => {
+    // Six hex characters alone matches any word built from a–f, so `facade` and
+    // `decade` would both fingerprint to `#` and could pair with each other. Requiring
+    // a digit is what makes the six-character rule safe.
+    const { data } = await run(
+      PAGE('<link rel="stylesheet" href="/facade.css">'),
+      PAGE('<link rel="stylesheet" href="/decade.css">'),
+    );
+    const assets = data.rows.filter((row) => row.section === 'assets');
+    expect(assets).toHaveLength(2);
+    expect(assets.map((row) => row.state).sort()).toEqual(['added', 'removed']);
+  });
+
   it('reports a broken heading outline as a concern', async () => {
     const { data } = await run(PAGE('<h1>a</h1><h2>b</h2>'), PAGE('<h2>a</h2><h2>b</h2>'));
     const outline = data.rows.find((row) => row.key === 'heading outline');
