@@ -194,7 +194,9 @@ ${styles()}
 
 function bodyFor(input: ReportInput): string {
   switch (input.engineId) {
+    // Large-file mode (v0.2.8) emits the same rows, so it reads the same way.
     case 'text':
+    case 'text-large':
       return textBody(input.data.rows ?? []);
     case 'json':
       return jsonBody(input.data.rows ?? []);

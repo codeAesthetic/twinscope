@@ -8,6 +8,30 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.8 — 2026-08-13
+
+### Added
+
+- **Large-file mode.** A pair of text files over 8 MB is now compared by indexing
+  rather than reading: TwinScope walks each file in 64-line blocks, matches the
+  blocks that are identical on both sides, and diffs only the parts between them. A
+  1 GB pair of logs is navigable in **9.4 seconds** using about 120 MB of memory —
+  the file itself is never held in one piece.
+- **Unchanged sections load when you open them.** In this mode a fold is a position
+  in the file rather than lines held in memory, so clicking one fetches just that
+  part. Sections too large to load in one go say so instead of pretending.
+- **An Explain panel in the text diff**, beside the normalisation rules — where the
+  rules have been pointing since 0.2.6. Large-file mode needs it: it lists what was
+  indexed, what was anchored, and anything it stopped short of doing.
+
+### Fixed
+
+- The engine named on the Compare screen is now always the engine that runs. Main
+  worked out the engine from a partial copy of the input and told the worker to use
+  it, so a comparison could be announced as one thing and performed as another.
+- A big pair no longer warns that it "may take a few seconds" when it will not:
+  the heads-up now appears only for the engines that really are slow at that size.
+
 ## 0.2.14 — 2026-08-13
 
 ### Added

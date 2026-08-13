@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { readdir, readFile, stat } from 'node:fs/promises';
+import { open, readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { PNG } from 'pngjs';
 import { decodeText } from '../engines/encoding';
@@ -39,6 +39,18 @@ export const cliHostFs: HostFs = {
   stat: async (path) => {
     const info = await stat(path);
     return { size: info.size, mtimeMs: info.mtimeMs };
+  },
+
+  /** Large-file mode's one extra primitive (v0.2.8). */
+  readRange: async (path, start, length) => {
+    const handle = await open(path, 'r');
+    try {
+      const buffer = Buffer.alloc(Math.max(0, length));
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, start);
+      return new Uint8Array(buffer.subarray(0, bytesRead));
+    } finally {
+      await handle.close();
+    }
   },
 
   hashFile: (path) =>

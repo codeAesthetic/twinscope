@@ -60,6 +60,15 @@ export interface HostFs {
   stat(path: string): Promise<{ size: number; mtimeMs: number }>;
   /** Streamed content hash; the host owns the crypto so engines stay pure. */
   hashFile(path: string): Promise<string>;
+  /**
+   * `length` bytes from `start`. **Optional** (v0.2.8): large-file mode is the only
+   * thing that needs it, and making it optional means the hosts that cannot offer
+   * it — or the fakes in a test — do not all have to change, while an engine can
+   * still *check* and refuse with a fallback instead of reading a gigabyte whole.
+   *
+   * May return fewer bytes than asked for at end of file, as a read syscall does.
+   */
+  readRange?(path: string, start: number, length: number): Promise<Uint8Array>;
 }
 
 /** Decoded pixels, in the only layout every image API agrees on. */

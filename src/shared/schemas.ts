@@ -185,6 +185,16 @@ export const ReadInputSchema = z.object({
 
 export const ResolveInputsSchema = z.array(ReadInputSchema).max(16);
 
+/**
+ * A byte range of a file (v0.2.8). The span itself is bounded in `main/input.ts`,
+ * where the number is next to the read that honours it.
+ */
+export const ReadRangeSchema = z.object({
+  path: PathSchema,
+  start: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+  end: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+});
+
 /** The folder the user picked; `probeRepo` finds the repository root above it. */
 export const GitProbeSchema = PathSchema;
 

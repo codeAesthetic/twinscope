@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { readdir, readFile, realpath, stat } from 'node:fs/promises';
+import { open, readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 import { decodeText } from '../engines/encoding';
 import { isInside, normalisePath } from '../shared/paths';
@@ -73,6 +73,10 @@ export function scopedHostFs(base: HostFs, roots: readonly string[]): HostFs {
     listDir: async (path) => base.listDir(await check(path)),
     stat: async (path) => base.stat(await check(path)),
     hashFile: async (path) => base.hashFile(await check(path)),
+    readRange: async (path, start, length) => {
+      if (base.readRange === undefined) throw new Error('This host cannot read part of a file.');
+      return base.readRange(await check(path), start, length);
+    },
   };
 }
 
@@ -105,6 +109,24 @@ export const nodeHostFs: HostFs = {
   stat: async (path) => {
     const info = await stat(path);
     return { size: info.size, mtimeMs: info.mtimeMs };
+  },
+
+  /**
+   * A slice of a file, for large-file mode (v0.2.8).
+   *
+   * One handle per call rather than a cached pool: a job reads a few hundred
+   * windows at most, the open dominates nothing, and a cache would have to be
+   * invalidated when the file changes underneath it.
+   */
+  readRange: async (path, start, length) => {
+    const handle = await open(path, 'r');
+    try {
+      const buffer = Buffer.alloc(Math.max(0, length));
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, start);
+      return new Uint8Array(buffer.subarray(0, bytesRead));
+    } finally {
+      await handle.close();
+    }
   },
 
   /** Streamed so hashing a 2 GB file costs a buffer, not 2 GB of heap. */

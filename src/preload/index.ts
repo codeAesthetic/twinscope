@@ -30,6 +30,7 @@ const api: TwinScopeApi = {
     read: (side, path): Promise<InputPayload> => ipcRenderer.invoke(IPC.readInput, { side, path }),
     bytes: (path: string): Promise<Uint8Array> => ipcRenderer.invoke(IPC.readBytes, path),
     resolve: (requests) => ipcRenderer.invoke(IPC.resolveInputs, requests),
+    range: (request) => ipcRenderer.invoke(IPC.readRange, request),
     // Synchronous and local: it only maps a File the user already dropped onto
     // this window to its path. No IPC, no filesystem access.
     pathForFile: (file: File): string => webUtils.getPathForFile(file),

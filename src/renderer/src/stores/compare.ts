@@ -4,6 +4,7 @@ import { useAppStore } from './app';
 import { useHistoryStore } from './history';
 import { defaultsFor } from './settings';
 import { selectEngine } from '../../../engines/registry';
+import { refFromPayload } from '../../../shared/inputRef';
 import type {
   CompareEvent,
   CompareRequest,
@@ -113,13 +114,9 @@ const IDLE = {
  */
 function engineFor(request: CompareRequest): string {
   if (request.engineId !== undefined) return request.engineId;
-  const asRef = (payload: InputPayload) => ({
-    side: payload.side,
-    kind: payload.kind,
-    name: payload.name,
-    size: payload.size,
-  });
-  return selectEngine(asRef(request.a), asRef(request.b))?.meta.id ?? '';
+  // `refFromPayload`, not a projection written here: a copy that lists only the
+  // fields today's engines read is a copy that answers differently from main's.
+  return selectEngine(refFromPayload(request.a), refFromPayload(request.b))?.meta.id ?? '';
 }
 
 /**

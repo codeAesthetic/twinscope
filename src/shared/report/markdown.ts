@@ -64,7 +64,9 @@ function describeOptions(options: Record<string, unknown>): string {
 /** Each engine's body is the shape a reader of *that* comparison expects. */
 function body(input: ReportInput): string[] {
   switch (input.engineId) {
+    // Large-file mode (v0.2.8) emits the same rows, so it reads the same way.
     case 'text':
+    case 'text-large':
       return textBody(input);
     case 'json':
       return jsonBody(input);

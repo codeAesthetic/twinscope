@@ -599,6 +599,15 @@ html[data-theme='light'] .dd-normpanel {
   background: var(--panel-2);
 }
 
+/* v0.2.8: the notes list when this rail carries the Explain section itself —
+   the text diff has no options panel of its own to put it in. */
+.dd-normpanel .dd-notes {
+  margin: 0;
+  padding: 8px 12px 12px 26px;
+  font: 400 11px/1.5 var(--sans);
+  color: var(--tx-2);
+}
+
 .dd-normtol {
   display: flex;
   align-items: center;

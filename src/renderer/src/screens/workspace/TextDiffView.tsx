@@ -38,6 +38,24 @@ interface DisplayRow {
 const ROW_HEIGHT = 20;
 
 /**
+ * The most one fold may fetch from disk (v0.2.8) — `main/input.ts` enforces the
+ * same number, and this copy is what lets the row say so before it is clicked.
+ */
+const MAX_LAZY_BYTES = 4 * 1024 * 1024;
+
+/** Lines of a lazily loaded span, as context rows numbered from the fold's start. */
+function lazyRows(text: string, left: number, right: number): TextRow[] {
+  const body = text.endsWith('\n') ? text.slice(0, -1) : text;
+  if (body === '') return [];
+  return body.split('\n').map((line, at) => ({
+    kind: 'ctx' as const,
+    left: left + at,
+    right: right + at,
+    text: line,
+  }));
+}
+
+/**
  * The text/code diff (MD §8.1): side-by-side, unified and inline, virtualised.
  *
  * One virtualised list of row *pairs* rather than two scrolling columns — that
@@ -60,6 +78,14 @@ export default function TextDiffView({ result }: EngineViewProps) {
     [cycleStoredMode, result.engineId],
   );
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  /**
+   * Rows fetched for a fold that never carried any (v0.2.8).
+   *
+   * Large-file mode hands over a byte range instead of the lines, because holding
+   * them would defeat the point of never reading the file. Keyed by the same index
+   * `expanded` is, so the two cannot drift.
+   */
+  const [fetched, setFetched] = useState<ReadonlyMap<number, TextRow[]>>(new Map());
   const a = useCompareStore((state) => state.a);
   const b = useCompareStore((state) => state.b);
   const storeOptions = useCompareStore((state) => state.options);
@@ -168,13 +194,13 @@ export default function TextDiffView({ result }: EngineViewProps) {
         // keyed by. Passing the position in *this* list instead meant that once
         // one fold had grown the list, every later fold's index was wrong and
         // clicking it expanded nothing.
-        for (const hiddenRow of row.hidden ?? []) push(hiddenRow, index);
+        for (const hiddenRow of row.hidden ?? fetched.get(index) ?? []) push(hiddenRow, index);
         return;
       }
       push(row, index);
     });
     return out;
-  }, [data.rows, expanded, mode]);
+  }, [data.rows, expanded, fetched, mode]);
 
   /** Indices of navigable changes, in document order. */
   const changeRows = useMemo(
@@ -238,6 +264,23 @@ export default function TextDiffView({ result }: EngineViewProps) {
   const currentRowIndex = current === -1 ? -1 : (changeRows[current]?.index ?? -1);
   const activeMatch = currentMatch === -1 ? undefined : matches[currentMatch];
 
+  /**
+   * Opens a fold, whichever kind it is.
+   *
+   * A fold from the ordinary text engine carries its rows and expanding is a set
+   * operation. A large-file fold (v0.2.8) carries a byte range instead, so its lines
+   * are fetched once and remembered — the file is far too big to have kept them.
+   */
+  const openFold = async (row: TextRow, dataIndex: number): Promise<void> => {
+    const range = row.range;
+    if (range !== undefined && row.hidden === undefined && !fetched.has(dataIndex)) {
+      const text = await window.twinscope.input.range(range);
+      const rowsForFold = lazyRows(text, row.left ?? 1, row.right ?? 1);
+      setFetched((previous) => new Map(previous).set(dataIndex, rowsForFold));
+    }
+    setExpanded((previous) => new Set(previous).add(dataIndex));
+  };
+
   // Mode-independent by construction: in unified a modification is already
   // split into a `del` half and an `add` half carrying the new text, so the
   // same filter yields the same lines in every mode.
@@ -286,7 +329,13 @@ export default function TextDiffView({ result }: EngineViewProps) {
           onChange={(next) =>
             setExpanded(
               next
-                ? new Set(data.rows.map((row, index) => (row.kind === 'fold' ? index : -1)))
+                ? // Only folds that already carry their rows: expanding all in
+                  // large-file mode would fetch every unchanged span in the file.
+                  new Set(
+                    data.rows.map((row, index) =>
+                      row.kind === 'fold' && row.hidden !== undefined ? index : -1,
+                    ),
+                  )
                 : new Set(),
             )
           }
@@ -336,15 +385,13 @@ export default function TextDiffView({ result }: EngineViewProps) {
                       type="button"
                       className="dd-fold"
                       data-testid="fold-row"
-                      onClick={() =>
-                        setExpanded((previous) => {
-                          const next = new Set(previous);
-                          next.add(dataIndex);
-                          return next;
-                        })
-                      }
+                      data-lazy={row.range !== undefined ? 'true' : 'false'}
+                      // A capped region (v0.2.8) explains itself and has nothing to
+                      // open; a lazy fold past the load cap is in the same position.
+                      disabled={row.note !== undefined || !expandable(row)}
+                      onClick={() => void openFold(row, dataIndex)}
                     >
-                      ⋯ {row.count} unchanged lines — click to expand
+                      {foldLabel(row)}
                     </button>
                   ) : (
                     <Row
@@ -363,8 +410,13 @@ export default function TextDiffView({ result }: EngineViewProps) {
           </div>
         </div>
         {/* v0.2.6: the shared normalisation rules, beside the diff. The text
-            engine had no rail of its own before this. */}
-        <NormalizeControls suppressed={result.summary.suppressed ?? 0} />
+            engine had no rail of its own before this. The notes join them in
+            v0.2.8: the rail already promised an Explain section this view did not
+            have, and large-file mode's caps are only honest on screen (Rule 3). */}
+        <NormalizeControls
+          suppressed={result.summary.suppressed ?? 0}
+          notes={result.normalizationNotes}
+        />
       </div>
     </div>
   );
@@ -605,6 +657,22 @@ function Painted({
       })}
     </>
   );
+}
+
+/** False for a fold whose lines are neither carried nor small enough to fetch. */
+function expandable(row: TextRow): boolean {
+  if (row.hidden !== undefined) return true;
+  if (row.range === undefined) return false;
+  return row.range.end - row.range.start <= MAX_LAZY_BYTES;
+}
+
+function foldLabel(row: TextRow): string {
+  // A note replaces the label entirely: it is there because a cap was hit, and a
+  // cap that renders as an ordinary fold reads as "nothing else changed here".
+  if (row.note !== undefined) return `⋯ ${row.note}`;
+  const count = (row.count ?? 0).toLocaleString();
+  if (!expandable(row)) return `⋯ ${count} unchanged lines — too large to load`;
+  return `⋯ ${count} unchanged lines — click to expand`;
 }
 
 function markFor(kind: TextRow['kind'], side: 'left' | 'right'): string {

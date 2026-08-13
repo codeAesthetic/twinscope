@@ -151,10 +151,13 @@ test('hardening: a deleted input fails with a readable message, not a stack trac
       await harness.page.getByTestId('pick-file-after').click();
       await rm(after);
 
-      // 12 MB of text trips the heavy-input confirmation, which is itself part
-      // of this pass.
+      // 12 MB of text used to trip the heavy-input confirmation here. Since v0.2.8
+      // a pair this size on disk is routed to large-file mode, which is *for* these
+      // sizes — warning that it may take a few seconds would be warning about the
+      // thing that stopped being slow. The confirmation still guards the engines
+      // that are slow at this size; `large-file.spec.ts` covers it by forcing one.
       await harness.page.getByTestId('compare-button').click();
-      await harness.page.getByTestId('confirm-heavy').click();
+      await expect(harness.page.getByTestId('confirm-heavy')).toHaveCount(0);
 
       const panel = harness.page.getByTestId('job-error');
       await expect(panel).toBeVisible({ timeout: 20_000 });

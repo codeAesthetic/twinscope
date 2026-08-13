@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { cancelComparison, startComparison } from './engine-host';
 import { clipboardSignature, readClipboard, writeClipboard } from './clipboard';
-import { readBytes, readInput } from './input';
+import { readBytes, readInput, readRangeText } from './input';
 import { clear, get, list, record, remove, setStarred, touch } from './history';
 import { readPreferences, savePreferences } from './settings';
 import { exportReport, revealReport } from './export';
@@ -31,6 +31,7 @@ import {
   RevealPathSchema,
   ReadBytesSchema,
   ReadInputSchema,
+  ReadRangeSchema,
   ResolveInputsSchema,
   SideSchema,
 } from '../shared/schemas';
@@ -103,6 +104,12 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.readBytes, async (_event, rawPath: unknown): Promise<Uint8Array> => {
     return readBytes(ReadBytesSchema.parse(rawPath));
+  });
+
+  // v0.2.8: one span of one file, for a large-file fold the view opens.
+  ipcMain.handle(IPC.readRange, async (_event, payload: unknown): Promise<string> => {
+    const { path, start, end } = ReadRangeSchema.parse(payload);
+    return readRangeText(path, start, end);
   });
 
   ipcMain.handle(IPC.readClipboard, async (_event, rawSide: unknown) => {

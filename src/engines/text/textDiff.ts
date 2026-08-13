@@ -43,6 +43,22 @@ export interface TextRow {
   count?: number;
   /** The rows a fold is hiding, materialised so expanding is instant. */
   hidden?: TextRow[];
+  /**
+   * Where a fold's hidden lines live on disk, when they were never materialised
+   * (v0.2.8). Large-file mode indexes a file it never holds, so an unchanged span
+   * is a byte range the view fetches on demand through `input:range` — the
+   * alternative being a fold that cannot be opened at all.
+   */
+  range?: { path: string; start: number; end: number };
+  /**
+   * A label that replaces a fold row's default text (v0.2.8).
+   *
+   * Large-file mode has three caps — a window too big to diff, a total row cap,
+   * and the lazy-load cap — and each one has to say so where the reader is
+   * looking. A cap that renders as an ordinary fold reads as "nothing else
+   * changed here", which is the opposite of true.
+   */
+  note?: string;
 }
 
 export interface TextDiffOptions {

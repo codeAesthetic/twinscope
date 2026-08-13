@@ -2,7 +2,7 @@ import { utilityProcess, type UtilityProcess, type WebContents } from 'electron'
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
 import { engineById, selectEngine } from '../engines/registry';
-import type { InputRef } from '../engines/types';
+import { refFromPayload } from '../shared/inputRef';
 import {
   IPC,
   type CompareEvent,
@@ -88,18 +88,17 @@ function ensureWorker(): UtilityProcess {
   return worker;
 }
 
-/** Resolve the engine up front so the UI can name it before work begins. */
+/**
+ * Resolve the engine up front so the UI can name it before work begins.
+ *
+ * This id is also what the worker is told to run, so the projection has to carry
+ * everything `canHandle` reads — `refFromPayload` exists because the copy that
+ * used to live here dropped `path`, and v0.2.8's engine selects on it.
+ */
 function resolveEngine(request: CompareRequest): { id: string; label: string } {
-  const asRef = (payload: CompareRequest['a']): InputRef => ({
-    side: payload.side,
-    kind: payload.kind,
-    name: payload.name,
-    size: payload.size,
-  });
-
   const engine = request.engineId
     ? engineById(request.engineId)
-    : selectEngine(asRef(request.a), asRef(request.b));
+    : selectEngine(refFromPayload(request.a), refFromPayload(request.b));
 
   if (!engine) {
     throw new Error(`No engine can compare ${request.a.kind} against ${request.b.kind}.`);

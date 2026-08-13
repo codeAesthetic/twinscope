@@ -21,6 +21,9 @@ export interface EngineViewProps {
 export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<EngineViewProps>>> = {
   demo: lazy(() => import('./DemoResultView')),
   text: lazy(() => import('./TextDiffView')),
+  // Large-file mode (v0.2.8) emits the same `TextRow[]`, so it is the same view:
+  // what differs is that its folds carry a byte range instead of their rows.
+  'text-large': lazy(() => import('./TextDiffView')),
   json: lazy(() => import('./JsonTreeView')),
   // YAML (v0.2.3) and XML (v0.2.4) are the JSON core over a different parser, so
   // they are the same view — registered against the same module rather than through

@@ -62,9 +62,24 @@ export function DetectedBar() {
     );
   }
 
+  // Size and path travel too: large-file mode (v0.2.8) claims a pair *because* of
+  // its size, and without them this bar would name `text` while the worker ran
+  // `text-large`.
   const detected = selectEngineForInputs(
-    { name: a.name, kind: a.kind, ...(a.text !== undefined ? { text: a.text } : {}) },
-    { name: b.name, kind: b.kind, ...(b.text !== undefined ? { text: b.text } : {}) },
+    {
+      name: a.name,
+      kind: a.kind,
+      size: a.size,
+      ...(a.path !== undefined ? { path: a.path } : {}),
+      ...(a.text !== undefined ? { text: a.text } : {}),
+    },
+    {
+      name: b.name,
+      kind: b.kind,
+      size: b.size,
+      ...(b.path !== undefined ? { path: b.path } : {}),
+      ...(b.text !== undefined ? { text: b.text } : {}),
+    },
   );
 
   const [kindA, kindB] = detected.kinds;
@@ -121,7 +136,13 @@ export function DetectedBar() {
           disabled={chosen === null}
           onClick={() => {
             const heavy =
-              chosen !== 'folder' && chosen !== 'image' && Math.max(a.size, b.size) > HEAVY_BYTES;
+              chosen !== 'folder' &&
+              chosen !== 'image' &&
+              // v0.2.8: large-file mode is *for* these sizes — it indexes rather
+              // than reads, so warning that it may take a few seconds would be
+              // warning about the thing that stopped being slow.
+              chosen !== 'text-large' &&
+              Math.max(a.size, b.size) > HEAVY_BYTES;
             if (heavy) setConfirmingHeavy(true);
             else void runComparison();
           }}

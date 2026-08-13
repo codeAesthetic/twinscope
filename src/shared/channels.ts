@@ -22,6 +22,14 @@ export const IPC = {
   readBytes: 'input:bytes',
   /** Read several paths, tolerating ones that no longer exist. */
   resolveInputs: 'input:resolve',
+  /**
+   * Text from a byte range of a file (v0.2.8).
+   *
+   * Large-file mode indexes a file it never holds, so an unchanged span reaches the
+   * view as a byte range rather than as rows. This is how opening one of those folds
+   * fetches its lines — bounded, so a fold cannot ask for a gigabyte.
+   */
+  readRange: 'input:range',
   /** Read the system clipboard as an input (MD §34). */
   readClipboard: 'clipboard:read',
   /** Copy text out. Goes through main because the renderer denies all
@@ -288,6 +296,12 @@ export interface TwinScopeApi {
     resolve(
       requests: Array<{ side: 'A' | 'B'; path: string }>,
     ): Promise<Array<InputPayload | null>>;
+    /**
+     * Decoded text from `[start, end)` of a file (v0.2.8). Rejects a span larger
+     * than the cap in `main/input.ts` — a lazily loaded fold is a convenience, not
+     * a route for pushing arbitrary volume through IPC.
+     */
+    range(request: { path: string; start: number; end: number }): Promise<string>;
     /**
      * Resolves a dropped `File` to its absolute path.
      *

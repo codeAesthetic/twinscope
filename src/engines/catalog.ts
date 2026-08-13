@@ -5,6 +5,7 @@ import { folderEngine } from './folder';
 import { gitEngine } from './git';
 import { imageEngine } from './image';
 import { jsonEngine } from './json';
+import { largeTextEngine } from './large';
 import { textEngine } from './text';
 import { xmlEngine } from './xml';
 import { yamlEngine } from './yaml';
@@ -15,7 +16,8 @@ import type { DiffEngine } from './types';
  * an executable stops being line-diffed into mojibake), `git` (v0.2.1) and
  * `yaml` (v0.2.3) and `xml`
  * (v0.2.4) — the JSON core over a different parser each — `csv` (v0.2.5),
- * which is a table and needed a model and a view of its own, and `deps` (v0.2.10).
+ * which is a table and needed a model and a view of its own, `deps` (v0.2.10) and
+ * `text-large` (v0.2.8), which is the line diff for files too big to hold.
  *
  * This is the single list the registry reads, and the place a new engine gets
  * added. Options are erased to `unknown` here: callers pick an engine first,
@@ -29,6 +31,7 @@ export const ENGINES: readonly DiffEngine<unknown>[] = [
   gitEngine,
   imageEngine,
   jsonEngine,
+  largeTextEngine,
   textEngine,
   xmlEngine,
   yamlEngine,

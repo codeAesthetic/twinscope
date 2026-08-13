@@ -50,6 +50,35 @@ export async function readBytes(path: string): Promise<Uint8Array> {
   return new Uint8Array(await readFile(path));
 }
 
+/** The most one lazily loaded fold may fetch (v0.2.8). */
+export const MAX_RANGE_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Text from a byte range, for large-file mode's folds (v0.2.8).
+ *
+ * Decoded as UTF-8 rather than through `decodeText`: this is a slice from the middle
+ * of a file, where there is no byte-order mark to find and a UTF-16 file has already
+ * been refused by the engine.
+ */
+export async function readRangeText(path: string, start: number, end: number): Promise<string> {
+  const span = end - start;
+  if (span <= 0) return '';
+  if (span > MAX_RANGE_BYTES) {
+    throw new Error(
+      `That range is ${(span / 1024 / 1024).toFixed(0)} MB — more than one section can load at once.`,
+    );
+  }
+
+  const handle = await open(path, 'r');
+  try {
+    const buffer = Buffer.alloc(span);
+    const { bytesRead } = await handle.read(buffer, 0, span, start);
+    return new TextDecoder('utf-8').decode(buffer.subarray(0, bytesRead));
+  } finally {
+    await handle.close();
+  }
+}
+
 export async function readInput(side: 'A' | 'B', path: string): Promise<InputPayload> {
   const info = await stat(path);
   const name = basename(path) || path;

@@ -27,18 +27,25 @@ export function engineById(id: string): DiffEngine<unknown> | undefined {
   return ALL.find((engine) => engine.meta.id === id);
 }
 
-/** Convenience for intake: detect both sides, then pick. */
+/**
+ * Convenience for intake: detect both sides, then pick.
+ *
+ * `size` and `path` are part of the input, not decoration: since v0.2.8 an engine
+ * can claim a pair *because* of how big it is, and dropping those two fields here
+ * made the bar name one engine while the worker — which has the whole payload —
+ * ran another.
+ */
 export function selectEngineForInputs(
-  a: Pick<InputRef, 'name' | 'text' | 'kind'>,
-  b: Pick<InputRef, 'name' | 'text' | 'kind'>,
+  a: Pick<InputRef, 'name' | 'text' | 'kind'> & Partial<Pick<InputRef, 'size' | 'path'>>,
+  b: Pick<InputRef, 'name' | 'text' | 'kind'> & Partial<Pick<InputRef, 'size' | 'path'>>,
 ): {
   engine: DiffEngine<unknown> | undefined;
   kinds: [ReturnType<typeof detectKind>, ReturnType<typeof detectKind>];
 } {
   const kindA = detectKind(a);
   const kindB = detectKind(b);
-  const refA = { ...a, kind: kindA, side: 'A', size: 0 } as InputRef;
-  const refB = { ...b, kind: kindB, side: 'B', size: 0 } as InputRef;
+  const refA = { size: 0, ...a, kind: kindA, side: 'A' } as InputRef;
+  const refB = { size: 0, ...b, kind: kindB, side: 'B' } as InputRef;
   return { engine: selectEngine(refA, refB), kinds: [kindA, kindB] };
 }
 

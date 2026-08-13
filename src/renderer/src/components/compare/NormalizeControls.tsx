@@ -20,7 +20,21 @@ import {
  * That is the whole point: normalisation changes the counts, so the counts have to
  * come back from the engine rather than be filtered here (Rule 3).
  */
-export function NormalizeControls({ suppressed }: { suppressed: number }) {
+export function NormalizeControls({
+  suppressed,
+  notes,
+}: {
+  suppressed: number;
+  /**
+   * The engine's notes, for a view with no Explain section of its own (v0.2.8).
+   *
+   * The suppressed line below has always ended "listed under Explain", which was
+   * true in the JSON view and nowhere else. The text view needs it for more than
+   * tidiness now: large-file mode's caps and its byte-exact anchoring are claims
+   * about what the comparison did **not** do, and those have to be on screen.
+   */
+  notes?: readonly string[];
+}) {
   const storeOptions = useCompareStore((state) => state.options);
   const setOptions = useCompareStore((state) => state.setOptions);
   const options = normalizeOptionsFrom(storeOptions['normalize']);
@@ -81,6 +95,17 @@ export function NormalizeControls({ suppressed }: { suppressed: number }) {
           {suppressed} difference{suppressed === 1 ? '' : 's'} suppressed. Every rule that fired is
           listed under Explain.
         </p>
+      )}
+
+      {notes !== undefined && notes.length > 0 && (
+        <>
+          <div className="dd-opthd">Explain</div>
+          <ul className="dd-notes" data-testid="normalize-notes">
+            {notes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );
