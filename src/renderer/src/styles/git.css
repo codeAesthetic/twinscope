@@ -208,6 +208,21 @@
   color: var(--info);
 }
 
+/* The engine's notes, under the file list. Bordered off rather than floating: they are
+   statements about what the comparison did, not rows in it. */
+.dd-gitnotes {
+  margin: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--tx-3);
+  line-height: 1.45;
+}
+
 .dd-git-empty,
 .dd-git-error {
   padding: 14px;

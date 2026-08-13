@@ -201,6 +201,19 @@ export default function GitDiffView({ result }: EngineViewProps) {
             </p>
           )}
         </div>
+
+        {/* The engine's notes, which had nowhere to go until now: they survived into an
+            exported report and appeared nowhere on screen. This view needs them more
+            than most — `git diff` never reports an untracked file, so the engine runs
+            `ls-files --others` as well, and the note is the only thing telling a reader
+            why a brand-new file is in a list that git alone would not have produced. */}
+        {result.normalizationNotes.length > 0 && (
+          <ul className="dd-gitnotes" data-testid="git-notes">
+            {result.normalizationNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

@@ -79,6 +79,11 @@ async function buildRepo(): Promise<string> {
 
   // An uncommitted change, so HEAD → working tree has something to show.
   await writeFile(join(root, 'README.md'), '# before\n\nuncommitted line\n');
+  // And an UNTRACKED file. `git diff` never reports one, so the engine merges in
+  // `ls-files --others --exclude-standard` and says so in a note — the behaviour that
+  // was silently missing until v0.2.2, and the note that reached an exported report but
+  // never the screen until the notes panel existed.
+  await writeFile(join(root, 'src/brand-new.ts'), 'export const brandNew = true;\n');
 
   return root;
 }
@@ -209,6 +214,15 @@ test('git diff: ref pickers, statuses, line counts, options and blob drill-in', 
     await expect(
       harness.page.getByTestId('git-diff').locator('[data-path="README.md"]'),
     ).toHaveAttribute('data-status', 'mod');
+
+    // ---------- the untracked file is here, and the screen says why ----------
+    await expect(
+      harness.page.getByTestId('git-diff').locator('[data-path="src/brand-new.ts"]'),
+    ).toHaveAttribute('data-status', 'add');
+
+    const notes = harness.page.getByTestId('git-notes');
+    await expect(notes).toBeVisible();
+    await expect(notes).toContainText('untracked');
 
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {
