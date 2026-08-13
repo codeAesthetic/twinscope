@@ -54,6 +54,11 @@ const api: TwinScopeApi = {
     reveal: (path: string) => ipcRenderer.invoke(IPC.revealReport, path),
   },
 
+  git: {
+    probe: (path: string) => ipcRenderer.invoke(IPC.gitProbe, path),
+    blob: (request) => ipcRenderer.invoke(IPC.gitBlob, request),
+  },
+
   settings: {
     read: () => ipcRenderer.invoke(IPC.settingsRead),
     write: (patch) => ipcRenderer.invoke(IPC.settingsWrite, patch),

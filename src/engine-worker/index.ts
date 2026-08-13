@@ -1,7 +1,8 @@
 import { nodeHostFs, scopedHostFs } from './hostFs';
+import { nodeGitHost, scopedGitHost } from './gitHost';
 import { engineById, selectEngine } from '../engines/registry';
 import { EngineInputError } from '../engines/types';
-import type { EngineCtx, HostFs, InputRef } from '../engines/types';
+import type { EngineCtx, GitHost, HostFs, InputRef } from '../engines/types';
 import type { CompareEvent, InputPayload } from '../shared/channels';
 
 /**
@@ -50,6 +51,20 @@ function fsForJob(message: StartMessage): HostFs {
   return roots.length === 0 ? hostFs : scopedHostFs(hostFs, roots);
 }
 
+/**
+ * Git access for one job, confined to that job's repository (v0.2.1).
+ *
+ * Both sides of a git comparison name the same repo — the engine rejects the pair
+ * otherwise — so there is exactly one root to confine to. A job that names no
+ * repository gets no git host at all, which is what makes `ctx.git === undefined`
+ * a meaningful check in the engine.
+ */
+function gitForJob(message: StartMessage): GitHost | undefined {
+  const repo = message.a.kind === 'git' ? message.a.path : undefined;
+  if (repo === undefined || repo === '') return undefined;
+  return scopedGitHost(nodeGitHost, repo);
+}
+
 function send(event: CompareEvent): void {
   process.parentPort.postMessage(event);
 }
@@ -66,11 +81,16 @@ async function materialize(payload: InputPayload, fs: HostFs): Promise<InputRef>
     ...(payload.text !== undefined ? { text: payload.text } : {}),
   };
 
+  if (payload.ref !== undefined) ref.ref = payload.ref;
+
   const needsText =
     ref.text === undefined &&
     ref.path !== undefined &&
     ref.kind !== 'folder' &&
-    ref.kind !== 'image';
+    ref.kind !== 'image' &&
+    // A git input's `path` is a repository, not a file — reading it as text would
+    // fail with EISDIR before the engine ever ran.
+    ref.kind !== 'git';
 
   if (needsText) {
     ref.text = await fs.readText(ref.path as string);
@@ -101,6 +121,8 @@ async function runJob(message: StartMessage): Promise<void> {
       return;
     }
 
+    const jobGit = gitForJob(message);
+
     const ctx: EngineCtx = {
       signal: controller.signal,
       progress: (percent, text) =>
@@ -111,6 +133,7 @@ async function runJob(message: StartMessage): Promise<void> {
           ...(text !== undefined ? { message: text } : {}),
         }),
       fs: jobFs,
+      ...(jobGit !== undefined ? { git: jobGit } : {}),
     };
 
     const options = { ...(engine.defaultOptions() as object), ...(message.options ?? {}) };

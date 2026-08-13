@@ -40,6 +40,7 @@ test('app boots, bridges to main, and stays locked down', async () => {
       'clipboard',
       'compare',
       'dialog',
+      'git',
       'history',
       'input',
       'ping',

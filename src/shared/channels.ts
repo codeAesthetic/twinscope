@@ -40,6 +40,10 @@ export const IPC = {
   exportReport: 'export:report',
   revealReport: 'export:reveal',
 
+  /** Git repositories (v0.2.1, MD §19). Both read-only. */
+  gitProbe: 'git:probe',
+  gitBlob: 'git:blob',
+
   /** Preferences that outlive the window. */
   settingsRead: 'settings:read',
   settingsWrite: 'settings:write',
@@ -79,6 +83,8 @@ export interface InputPayload {
   text?: string;
   size: number;
   lang?: string;
+  /** For `kind: 'git'`: the ref inside the repository at `path` (v0.2.1). */
+  ref?: string;
   /** True when the text was withheld because the input is too big to inline. */
   large?: boolean;
   /** How the bytes were decoded — shown in the status bar (MVP-11). */
@@ -172,6 +178,25 @@ export interface ReportPayload {
   images?: { before?: string; after?: string; mask?: string };
 }
 
+/** One commit as the ref picker lists it (v0.2.1). */
+export interface GitCommitInfo {
+  sha: string;
+  shortSha: string;
+  subject: string;
+  when: string;
+}
+
+/** What a repository offers as comparable refs. `null` from `probe` = not a repo. */
+export interface GitRepoInfo {
+  root: string;
+  head: string;
+  detached: boolean;
+  branches: string[];
+  tags: string[];
+  recent: GitCommitInfo[];
+  dirty: boolean;
+}
+
 export type ThemePreference = 'system' | 'dark' | 'light';
 
 export interface Preferences {
@@ -256,6 +281,19 @@ export interface TwinScopeApi {
     /** Opens a save dialog; resolves with null when the user cancels. */
     save(format: 'html' | 'md' | 'patch', input: ReportPayload): Promise<{ path: string | null }>;
     reveal(path: string): Promise<void>;
+  };
+
+  git: {
+    /**
+     * Describes the repository containing `path`. Resolves to `null` when the
+     * folder is not in one — that is an answer the panel shows, not an error.
+     */
+    probe(path: string): Promise<GitRepoInfo | null>;
+    /**
+     * One file's content at one ref, or `null` when the file does not exist
+     * there. `null` is half of every drill-in: an added file has no BEFORE.
+     */
+    blob(request: { repo: string; ref: string; path: string }): Promise<string | null>;
   };
 
   settings: {

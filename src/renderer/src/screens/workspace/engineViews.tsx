@@ -23,6 +23,7 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   text: lazy(() => import('./TextDiffView')),
   json: lazy(() => import('./JsonTreeView')),
   folder: lazy(() => import('./FolderTreeView')),
+  git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),
   binary: lazy(() => import('./BinaryView')),
 };

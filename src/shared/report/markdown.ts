@@ -70,6 +70,8 @@ function body(input: ReportInput): string[] {
       return jsonBody(input);
     case 'folder':
       return folderBody(input);
+    case 'git':
+      return gitBody(input);
     case 'image':
       return imageBody(input);
     default:
@@ -144,6 +146,36 @@ function folderBody(input: ReportInput): string[] {
       `| \`${row.path ?? ''}\` | ${row.status ?? ''} | ${size(left?.size)} | ${size(right?.size)} | ${row.note ?? ''} |`,
     );
   }
+  return out;
+}
+
+/** The git report (v0.2.1). Every row is a change, so nothing is filtered out. */
+function gitBody(input: ReportInput): string[] {
+  const rows = input.data.rows ?? [];
+  const totals = input.data.totals ?? { added: 0, removed: 0 };
+  if (rows.length === 0) return ['_These two refs are identical._'];
+
+  const out = [
+    `\`${input.data.before?.label ?? ''}\` → \`${input.data.after?.label ?? ''}\` in ` +
+      `\`${input.data.repo ?? ''}\` — **＋${totals.added} －${totals.removed}** lines` +
+      (input.data.partial === true ? ' _(partial)_' : ''),
+    '',
+    '| File | Status | Added | Removed | Note |',
+    '|---|---|---|---|---|',
+  ];
+
+  for (const row of rows) {
+    const counts =
+      row.binary === true ? ['binary', 'binary'] : [`${row.added ?? 0}`, `${row.removed ?? 0}`];
+    const from =
+      row.oldPath === undefined
+        ? ''
+        : `from \`${row.oldPath}\`${row.score === undefined ? '' : ` (${row.score}%)`}`;
+    out.push(
+      `| \`${row.path ?? ''}\` | ${row.status ?? ''} | ${counts[0]} | ${counts[1]} | ${from} |`,
+    );
+  }
+
   return out;
 }
 

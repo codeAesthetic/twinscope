@@ -5,10 +5,13 @@ import { readBytes, readInput } from './input';
 import { clear, get, list, record, remove, setStarred, touch } from './history';
 import { readPreferences, savePreferences } from './settings';
 import { exportReport, revealReport } from './export';
+import { probeRepo, readBlob } from './git';
 import { IPC, type InputPayload, type PingResult } from '../shared/channels';
 import { z } from 'zod';
 import {
   CompareRequestSchema,
+  GitBlobSchema,
+  GitProbeSchema,
   HistoryIdSchema,
   HistoryListSchema,
   HistoryRecordSchema,
@@ -148,6 +151,17 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(IPC.revealReport, (_event, rawPath: unknown): void => {
     revealReport(RevealPathSchema.parse(rawPath));
+  });
+
+  // --- git (v0.2.1). Both read-only; `probe` answers "not a repository" with
+  // null rather than an exception, because that is a normal outcome of picking
+  // a folder.
+  ipcMain.handle(IPC.gitProbe, async (_event, rawPath: unknown) => {
+    return probeRepo(GitProbeSchema.parse(rawPath));
+  });
+
+  ipcMain.handle(IPC.gitBlob, async (_event, payload: unknown) => {
+    return readBlob(GitBlobSchema.parse(payload));
   });
 
   // --- preferences

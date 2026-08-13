@@ -39,6 +39,12 @@ export interface ReportData {
   sameSize?: boolean;
   roots?: { before: string; after: string };
   files?: { before: number; after: number };
+  // git
+  repo?: string;
+  before?: { ref: string; label: string };
+  after?: { ref: string; label: string };
+  totals?: { added: number; removed: number };
+  partial?: boolean;
 }
 
 export interface ReportRow {
@@ -62,6 +68,12 @@ export interface ReportRow {
   // folder
   isDir?: boolean;
   status?: string;
+  // git
+  oldPath?: string;
+  added?: number;
+  removed?: number;
+  binary?: boolean;
+  score?: number;
 }
 
 export const MARK_OPEN = '⟦';

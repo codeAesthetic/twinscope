@@ -76,6 +76,36 @@ const FOLDER_REPORT: ReportInput = {
   },
 };
 
+const GIT_REPORT: ReportInput = {
+  ...BASE,
+  engineId: 'git',
+  a: { name: 'repo @ main', path: '/tmp/repo', kind: 'git' },
+  b: { name: 'repo @ working tree', path: '/tmp/repo', kind: 'git' },
+  summary: { added: 1, removed: 0, modified: 2, extra: { lines: '＋6 －3', renamed: 1 } },
+  normalizationNotes: ['Renames detected by git at 50% similarity.'],
+  data: {
+    repo: '/tmp/repo',
+    before: { ref: 'main', label: 'main' },
+    after: { ref: 'WORKTREE', label: 'working tree' },
+    totals: { added: 6, removed: 3 },
+    partial: false,
+    rows: [
+      { path: 'src/added.ts', status: 'add', added: 4, removed: 0, binary: false },
+      { path: 'src/edit.ts', status: 'mod', added: 2, removed: 3, binary: false },
+      {
+        path: 'ui/Modal.tsx',
+        status: 'rename',
+        oldPath: 'ui/OldModal.tsx',
+        score: 100,
+        added: 0,
+        removed: 0,
+        binary: false,
+      },
+      { path: 'logo.png', status: 'mod', added: 0, removed: 0, binary: true },
+    ],
+  },
+};
+
 const IMAGE_REPORT: ReportInput = {
   ...BASE,
   engineId: 'image',
@@ -140,6 +170,22 @@ describe('markdown report', () => {
     const folder = renderMarkdown(FOLDER_REPORT);
     expect(folder).toContain('| `src/edit.ts` | mod | 100 B | 220 B |');
     expect(folder).not.toContain('keep.ts');
+  });
+
+  it('renders a git comparison with its refs, line counts and rename notes', () => {
+    const git = renderMarkdown(GIT_REPORT);
+    expect(git).toContain('`main` → `working tree`');
+    expect(git).toContain('**＋6 －3** lines');
+    expect(git).toContain('| `src/edit.ts` | mod | 2 | 3 |');
+    // A binary file has no line counts to report — saying "0" would be a lie.
+    expect(git).toContain('| `logo.png` | mod | binary | binary |');
+    expect(git).toContain('from `ui/OldModal.tsx` (100%)');
+  });
+
+  it('says two identical refs are identical rather than printing an empty table', () => {
+    const git = renderMarkdown({ ...GIT_REPORT, data: { ...GIT_REPORT.data, rows: [] } });
+    expect(git).toContain('identical');
+    expect(git).not.toContain('| File |');
   });
 
   it('renders an image comparison as numbers, since Markdown cannot hold the pixels', () => {
@@ -210,8 +256,14 @@ describe('html report', () => {
     expect(image).toContain('8.00%');
   });
 
-  it('renders json and folder bodies as tables', () => {
+  it('renders json, folder and git bodies as tables', () => {
     expect(renderHtml(JSON_REPORT)).toContain('<td>$.name</td>');
     expect(renderHtml(FOLDER_REPORT)).toContain('<td>src/edit.ts</td>');
+
+    const git = renderHtml(GIT_REPORT);
+    expect(git).toContain('<td>src/edit.ts</td>');
+    expect(git).toContain('main → working tree');
+    expect(git).toContain('<td colspan="2">binary</td>');
+    expect(git).toContain('from ui/OldModal.tsx (100%)');
   });
 });

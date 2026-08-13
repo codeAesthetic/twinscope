@@ -1,13 +1,14 @@
 import { binaryEngine } from './binary';
 import { folderEngine } from './folder';
+import { gitEngine } from './git';
 import { imageEngine } from './image';
 import { jsonEngine } from './json';
 import { textEngine } from './text';
 import type { DiffEngine } from './types';
 
 /**
- * Every engine the app can run — the four from MD §55 plus `binary`, which
- * MVP-11 added so an executable stops being line-diffed into mojibake.
+ * Every engine the app can run — the four from MD §55, plus `binary` (MVP-11, so
+ * an executable stops being line-diffed into mojibake) and `git` (v0.2.1).
  *
  * This is the single list the registry reads, and the place a new engine gets
  * added. Options are erased to `unknown` here: callers pick an engine first,
@@ -16,6 +17,7 @@ import type { DiffEngine } from './types';
 export const ENGINES: readonly DiffEngine<unknown>[] = [
   binaryEngine,
   folderEngine,
+  gitEngine,
   imageEngine,
   jsonEngine,
   textEngine,

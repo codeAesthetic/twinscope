@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isSafeRef } from '../engines/git/refs';
 import { normalisePath } from './paths';
 
 /**
@@ -25,8 +26,22 @@ export const InputKindSchema = z.enum([
   'image',
   'folder',
   'binary',
+  'git',
   'unknown',
 ]);
+
+/**
+ * A git ref, validated with the engine's own guard (v0.2.1).
+ *
+ * `isSafeRef` lives in `engines/git/refs.ts` so the rule travels with the engine
+ * and the CLI inherits it; importing it here is what makes the desktop path
+ * enforce it *twice* — at the boundary, and again inside the engine.
+ */
+export const GitRefSchema = z
+  .string()
+  .min(1)
+  .max(255)
+  .refine(isSafeRef, 'Use a branch, tag, or commit id.');
 
 export const InputPayloadSchema = z.object({
   side: SideSchema,
@@ -40,6 +55,7 @@ export const InputPayloadSchema = z.object({
   encoding: z.string().max(32).optional(),
   eol: z.string().max(8).optional(),
   lossy: z.boolean().optional(),
+  ref: GitRefSchema.optional(),
 });
 
 export const CompareRequestSchema = z.object({
@@ -152,3 +168,20 @@ export const ReadInputSchema = z.object({
 });
 
 export const ResolveInputsSchema = z.array(ReadInputSchema).max(16);
+
+/** The folder the user picked; `probeRepo` finds the repository root above it. */
+export const GitProbeSchema = PathSchema;
+
+/**
+ * A blob request (v0.2.1).
+ *
+ * `repo` is a filesystem path and goes through `PathSchema`. `path` is a
+ * *repository-relative pathspec*, not a filesystem path, so it deliberately does
+ * not: `main/git.ts` checks it against the rules a pathspec has to satisfy
+ * instead — no leading `-`, no absolute form, no `..` segment.
+ */
+export const GitBlobSchema = z.object({
+  repo: PathSchema,
+  ref: GitRefSchema,
+  path: z.string().min(1).max(4096),
+});

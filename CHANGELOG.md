@@ -8,8 +8,20 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.2.1 — 2026-08-13
+
 ### Added
 
+- **Compare two git refs.** The Git card on the Compare screen opens a repository,
+  reads its branches, tags and recent commits, and compares any two of them — or
+  either one against the working tree, which is what "what have I changed?" means.
+  The result is one row per changed file with git's own line counts, and
+  double-clicking a row opens that file's text diff, read straight out of the two
+  revisions rather than off disk. Renames are git's, at a similarity threshold you
+  can turn off; turning it off re-runs the comparison, so the counts always come
+  from git rather than from a filtered view.
+  TwinScope shells out to the `git` already on your machine. No git implementation
+  is bundled, nothing is downloaded, and the repository is only ever read.
 - **The JSON comparison opens side by side**, and switches view the way the text
   one does: side-by-side, unified, inline, tree and raw. Every diff mode draws the
   same structural comparison — the change count never depends on which one you are

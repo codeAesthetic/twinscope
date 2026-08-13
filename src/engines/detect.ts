@@ -106,6 +106,9 @@ function parsesAsJson(text: string): boolean {
 export function detectKind(input: Pick<InputRef, 'name' | 'text' | 'kind'>): InputKind {
   // A folder is known structurally, never sniffed.
   if (input.kind === 'folder') return 'folder';
+  // Nor is a git ref: it was constructed by the Git panel, and its display name
+  // (`repo @ main`) would otherwise be run through the extension map.
+  if (input.kind === 'git') return 'git';
 
   const byExtension = EXTENSION_KIND[extensionOf(input.name)];
   if (byExtension) return byExtension;

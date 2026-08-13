@@ -1,0 +1,220 @@
+/*
+ * Git ref comparison (v0.2.1) — the intake panel and the changed-file list.
+ *
+ * Same construction as folder.css: fixed row height so the virtualiser needs no
+ * measuring pass, tokens only, both themes for free.
+ */
+
+/* ---------- the intake panel, on the Compare screen ---------- */
+
+.dd-gitpanel {
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dd-gitpanel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dd-gitpanel-head h2 {
+  font: 600 13px var(--sans);
+  color: var(--tx);
+  margin: 0;
+  margin-right: auto;
+}
+
+.dd-gitrepo {
+  font: 11.5px var(--mono);
+  color: var(--tx-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl; /* a long path truncates at the front, where it repeats */
+  text-align: left;
+  max-width: 100%;
+}
+
+.dd-gitrefs {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.dd-gitfield {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 190px;
+  flex: 1;
+}
+.dd-gitfield > span {
+  font: 600 10.5px var(--sans);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+.dd-gitfield input,
+.dd-gitfield select {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--tx);
+  font: 12px var(--mono);
+  padding: 7px 9px;
+  min-width: 0;
+}
+.dd-gitfield input:focus-visible,
+.dd-gitfield select:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: 0;
+  border-color: var(--acc);
+}
+
+.dd-gitnote {
+  font-size: 11.5px;
+  color: var(--tx-2);
+  margin: 0;
+}
+.dd-gitnote[data-tone='error'] {
+  color: var(--del);
+}
+
+/* ---------- the result view ---------- */
+
+.dd-gitwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  width: 100%;
+}
+
+.dd-githead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel-2);
+  font-size: 11.5px;
+  color: var(--tx-2);
+  flex: 0 0 auto;
+}
+.dd-githead b {
+  color: var(--tx);
+  font: 600 11.5px var(--mono);
+}
+
+.dd-gitscroll {
+  --dd-gitrow-height: 22px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.dd-gitrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: var(--dd-gitrow-height);
+  padding: 0 14px;
+  font: 12px/22px var(--mono);
+}
+.dd-gitrow:hover {
+  background: var(--hover);
+}
+.dd-gitrow[data-openable='true'] {
+  cursor: pointer;
+}
+.dd-gitrow[data-selected='true'],
+.dd-gitrow:focus-visible {
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+}
+.dd-gitrow[data-current='true'] {
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+
+.dd-gitstatus {
+  width: 14px;
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: 10px;
+}
+.dd-gitpath {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dd-gitfrom {
+  color: var(--info);
+  font-size: 10.5px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.dd-gitcounts {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  display: flex;
+  gap: 6px;
+}
+.dd-gitcounts .dd-gitplus {
+  color: var(--add);
+}
+.dd-gitcounts .dd-gitminus {
+  color: var(--del);
+}
+.dd-gitcounts .dd-gitbin {
+  color: var(--tx-3);
+}
+
+.dd-gitrow[data-status='add'] {
+  background: var(--add-bg);
+}
+.dd-gitrow[data-status='add'] .dd-gitpath,
+.dd-gitrow[data-status='add'] .dd-gitstatus {
+  color: var(--add);
+}
+.dd-gitrow[data-status='del'] {
+  background: var(--del-bg);
+}
+.dd-gitrow[data-status='del'] .dd-gitpath {
+  color: var(--del);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--del) 50%, transparent);
+}
+.dd-gitrow[data-status='del'] .dd-gitstatus {
+  color: var(--del);
+}
+.dd-gitrow[data-status='mod'] {
+  background: var(--mod-bg);
+}
+.dd-gitrow[data-status='mod'] .dd-gitpath,
+.dd-gitrow[data-status='mod'] .dd-gitstatus {
+  color: var(--mod);
+}
+.dd-gitrow[data-status='rename'] .dd-gitstatus,
+.dd-gitrow[data-status='copy'] .dd-gitstatus {
+  color: var(--info);
+}
+
+.dd-git-empty,
+.dd-git-error {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--tx-2);
+  margin: 0;
+}
+.dd-git-error {
+  color: var(--del);
+}

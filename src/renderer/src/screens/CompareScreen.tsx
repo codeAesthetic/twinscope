@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { DetectedBar } from '../components/home/DetectedBar';
 import { DropZonePair } from '../components/home/DropZonePair';
+import { GitPanel } from '../components/home/GitPanel';
 import { QuickCards } from '../components/home/QuickCards';
 import { RecentList } from '../components/home/RecentList';
 import { Button, Chip } from '../components/primitives';
@@ -12,6 +14,9 @@ import { useAppStore } from '../stores/app';
 export function CompareScreen() {
   const notice = useAppStore((state) => state.notice);
   const setNotice = useAppStore((state) => state.setNotice);
+  // The git panel is a mode of this screen rather than a route: it produces two
+  // inputs and then hands them to the same pipeline the drop zones use.
+  const [gitOpen, setGitOpen] = useState(false);
 
   return (
     <div className="dd-home" data-testid="screen-compare">
@@ -32,7 +37,8 @@ export function CompareScreen() {
 
       <DropZonePair />
       <DetectedBar />
-      <QuickCards />
+      {gitOpen && <GitPanel onClose={() => setGitOpen(false)} />}
+      <QuickCards onSelect={(id) => setGitOpen(id === 'git')} />
       <RecentList />
     </div>
   );

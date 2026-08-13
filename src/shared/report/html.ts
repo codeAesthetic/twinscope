@@ -200,6 +200,8 @@ function bodyFor(input: ReportInput): string {
       return jsonBody(input.data.rows ?? []);
     case 'folder':
       return folderBody(input.data.rows ?? []);
+    case 'git':
+      return gitBody(input);
     case 'image':
       return imageBody(input);
     default:
@@ -290,6 +292,50 @@ function folderBody(rows: readonly ReportRow[]): string {
 
   return `<table>
     <thead><tr><th>File</th><th>Status</th><th>Before</th><th>After</th><th>Note</th></tr></thead>
+    <tbody>
+      ${body}
+    </tbody>
+  </table>`;
+}
+
+/**
+ * The git report (v0.2.1): every changed file with its line counts.
+ *
+ * Every row in a git result is already a change, so unlike the folder report
+ * there is nothing to filter out — a `same` row cannot exist.
+ */
+function gitBody(input: ReportInput): string {
+  const rows = input.data.rows ?? [];
+  const totals = input.data.totals ?? { added: 0, removed: 0 };
+  if (rows.length === 0) return '<p class="meta">These two refs are identical.</p>';
+
+  const body = rows
+    .map((row) => {
+      const counts =
+        row.binary === true
+          ? '<td colspan="2">binary</td>'
+          : `<td class="new">＋${row.added ?? 0}</td><td class="old">－${row.removed ?? 0}</td>`;
+      const from =
+        row.oldPath === undefined
+          ? ''
+          : `from ${row.oldPath}${row.score === undefined ? '' : ` (${row.score}%)`}`;
+      return (
+        `<tr class="${escapeHtml(row.status)}">` +
+        `<td>${escapeHtml(row.path)}</td>` +
+        `<td>${escapeHtml(row.status)}</td>` +
+        counts +
+        `<td>${escapeHtml(from)}</td></tr>`
+      );
+    })
+    .join('\n      ');
+
+  return `<p class="meta">${escapeHtml(input.data.before?.label ?? '')} → ${escapeHtml(
+    input.data.after?.label ?? '',
+  )} in ${escapeHtml(input.data.repo ?? '')} · ＋${totals.added} －${totals.removed} lines${
+    input.data.partial === true ? ' · partial' : ''
+  }</p>
+  <table>
+    <thead><tr><th>File</th><th>Status</th><th>Added</th><th>Removed</th><th>Note</th></tr></thead>
     <tbody>
       ${body}
     </tbody>

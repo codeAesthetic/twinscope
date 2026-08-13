@@ -8,7 +8,17 @@
  */
 
 export type InputKind =
-  'text' | 'code' | 'json' | 'yaml' | 'csv' | 'md' | 'image' | 'folder' | 'binary' | 'unknown';
+  | 'text'
+  | 'code'
+  | 'json'
+  | 'yaml'
+  | 'csv'
+  | 'md'
+  | 'image'
+  | 'folder'
+  | 'binary'
+  | 'git'
+  | 'unknown';
 
 export interface InputRef {
   side: 'A' | 'B';
@@ -22,6 +32,12 @@ export interface InputRef {
   size: number;
   /** Detected language id for code inputs (ts, py, sql…). */
   lang?: string;
+  /**
+   * For `kind: 'git'`: which ref this side is. `path` is the repository root and
+   * this is the revision inside it, so one repo at two refs is two inputs
+   * (v0.2.1). The sentinel `WORKTREE` means the files as they are on disk.
+   */
+  ref?: string;
 }
 
 export interface DirEntry {
@@ -62,11 +78,23 @@ export interface ImageHost {
   encodePng(raster: Raster): Promise<string>;
 }
 
+/**
+ * Read-only access to a git repository, injected for the same reason `HostFs` is:
+ * an engine must not spawn a process any more than it opens a file. The host owns
+ * the subcommand allowlist and the process hygiene; the engine builds the argv and
+ * parses the output, which is the part worth unit-testing (v0.2.1).
+ */
+export interface GitHost {
+  /** Runs one git command inside `repo` and resolves with its stdout. */
+  run(repo: string, args: readonly string[]): Promise<string>;
+}
+
 export interface EngineCtx {
   signal: AbortSignal;
   progress(percent: number, message?: string): void;
   fs?: HostFs;
   image?: ImageHost;
+  git?: GitHost;
   /**
    * Hands control back to the host mid-computation. On a single-threaded host
    * this is what keeps a long pixel loop from freezing the UI; elsewhere it can
