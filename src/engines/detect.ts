@@ -24,6 +24,8 @@ const EXTENSION_KIND: Record<string, InputKind> = {
   markdown: 'md',
   txt: 'text',
   log: 'text',
+  // v0.3.3: a PDF is a document with pages, not an opaque binary.
+  pdf: 'pdf',
   png: 'image',
   jpg: 'image',
   jpeg: 'image',

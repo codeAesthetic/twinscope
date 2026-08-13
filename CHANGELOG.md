@@ -8,6 +8,24 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+## 0.3.3 — 2026-08-13
+
+### Added
+
+- **PDF comparison, page by page.** Two PDFs compare as documents rather than as
+  binaries: which pages changed, and what changed on them — with the word-level marks
+  the text diff uses, because it _is_ the text diff, running inside each page.
+- **Pages pair by their content, not by their number.** Insert a cover page and the rest
+  of the document still reads as unchanged, instead of every page after it being
+  reported as different.
+- **A page with no text says so.** A scan, or a page that is one big image, has nothing
+  for a text comparison to read, and that is stated rather than shown as "identical".
+- Metadata (title, author, producer) is compared as its own table, and a page whose size
+  changed is reported even when its words did not.
+- **What it does not do is on screen**: pages are not rendered and not compared visually.
+  Export the pages as PNGs and compare those two folders with the visual engine — the
+  comparison says so itself.
+
 ## 0.3.5 — 2026-08-13
 
 ### Added

@@ -289,3 +289,46 @@
 .dd-envtable tr[data-concern='true'] .dd-envkey {
   color: var(--mod);
 }
+
+/* PDF comparison (v0.3.3) — a page's lines, in the diff's own shapes. */
+.dd-pdflines {
+  border-top: 1px solid var(--line);
+  padding: 6px 0;
+  font: 11.5px/18px var(--mono);
+}
+.dd-pdfline {
+  display: flex;
+  gap: 6px;
+  padding: 0 10px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.dd-pdfline[data-kind='add'] {
+  background: var(--add-bg);
+}
+.dd-pdfline[data-kind='del'] {
+  background: var(--del-bg);
+}
+.dd-pdfline[data-kind='mod'] {
+  background: var(--mod-bg);
+}
+.dd-pdfline[data-kind='fold'] {
+  color: var(--tx-3);
+  background: var(--panel-2);
+}
+.dd-pdfnum {
+  width: 34px;
+  flex: 0 0 auto;
+  text-align: right;
+  color: var(--tx-3);
+  user-select: none;
+}
+.dd-pdfmark {
+  width: 10px;
+  flex: 0 0 auto;
+  color: var(--tx-3);
+}
+.dd-pdftext {
+  flex: 1;
+  min-width: 0;
+}

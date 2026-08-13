@@ -1,4 +1,4 @@
-import type { ReportInput } from './types';
+import type { ReportInput, ReportRow } from './types';
 import { changeRows, formatDate, MARK_CLOSE, MARK_OPEN, total } from './types';
 
 /**
@@ -86,6 +86,8 @@ function body(input: ReportInput): string[] {
       return imageBody(input);
     case 'visual':
       return visualBody(input);
+    case 'pdf':
+      return pdfBody(input);
     default:
       return ['_This engine has no Markdown renderer._'];
   }
@@ -97,7 +99,16 @@ function strip(text: string): string {
 
 /** A fenced `diff` block: universally rendered, and copy-pastes back as a patch. */
 function textBody(input: ReportInput): string[] {
-  const rows = input.data.rows ?? [];
+  return fencedDiff(input.data.rows ?? []);
+}
+
+/**
+ * A fenced `diff` block for a list of rows.
+ *
+ * Split out of `textBody` for v0.3.3, which needs one of these **per page** — the
+ * alternative was a second copy of the marker-stripping and the `@@` fold line.
+ */
+function fencedDiff(rows: readonly ReportRow[]): string[] {
   const out: string[] = ['```diff'];
 
   for (const row of rows) {
@@ -331,4 +342,40 @@ function visualBody(input: ReportInput): string[] {
         `| ${cell(row.path)} | ${row.pct === undefined ? '—' : `${row.pct.toFixed(2)}%`} | ${row.state} | ${cell(row.note ?? '')} |`,
     ),
   ];
+}
+
+/** The PDF body (v0.3.3): the page table, then a fenced diff for each changed page. */
+function pdfBody(input: ReportInput): string[] {
+  const data = input.data as {
+    pages?: Array<{
+      before?: number;
+      after?: number;
+      state: string;
+      rows?: ReportRow[];
+      added: number;
+      removed: number;
+      modified: number;
+    }>;
+  };
+  const changed = (data.pages ?? []).filter((page) => page.state !== 'same');
+  if (changed.length === 0) return ['Every page has the same text.'];
+
+  const lines = [
+    '| Before | After | State | Lines |',
+    '| --- | --- | --- | --- |',
+    ...changed.map(
+      (page) =>
+        `| ${page.before ?? '—'} | ${page.after ?? '—'} | ${page.state} | +${page.added} / -${page.removed} / ~${page.modified} |`,
+    ),
+    '',
+  ];
+
+  for (const page of changed) {
+    if ((page.rows ?? []).length === 0) continue;
+    lines.push(`#### Page ${page.after ?? page.before}`, '');
+    lines.push(...fencedDiff(page.rows ?? []));
+    lines.push('');
+  }
+
+  return lines;
 }

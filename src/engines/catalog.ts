@@ -7,6 +7,7 @@ import { folderEngine } from './folder';
 import { gitEngine } from './git';
 import { imageEngine } from './image';
 import { jsonEngine } from './json';
+import { pdfEngine } from './pdf';
 import { largeTextEngine } from './large';
 import { textEngine } from './text';
 import { visualEngine } from './visual';
@@ -51,6 +52,7 @@ export const ENGINES: readonly DiffEngine<unknown>[] = [
   imageEngine,
   jsonEngine,
   largeTextEngine,
+  pdfEngine,
   textEngine,
   visualEngine,
   webEngine,

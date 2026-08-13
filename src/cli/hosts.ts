@@ -63,6 +63,15 @@ export const cliHostFs: HostFs = {
     }),
 };
 
+/**
+ * The CLI reads PDFs with the same host the engine worker uses (v0.3.3).
+ *
+ * Re-exported rather than reimplemented: `engine-worker/pdfHost.ts` is plain Node with
+ * no Electron in it, so there is nothing to adapt — and two copies of a pdfjs setup
+ * would be two places for the "legacy build, no worker, no eval" decisions to drift.
+ */
+export { nodePdfHost as cliPdfHost } from '../engine-worker/pdfHost';
+
 export const cliGitHost: GitHost = {
   run: (repo, args) => git(repo, args),
 };

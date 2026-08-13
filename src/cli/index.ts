@@ -1,6 +1,6 @@
 import { appendFile, writeFile } from 'node:fs/promises';
 import { parseArgs, type CliOptions } from './args';
-import { cliGitHost, cliHostFs, cliImageHost } from './hosts';
+import { cliGitHost, cliHostFs, cliImageHost, cliPdfHost } from './hosts';
 import { CliInputError, readStdin, resolveInput } from './inputs';
 import { isIdentical, painter, renderGithub, renderJson, renderSummary } from './report';
 import { evaluate, hasThresholds } from './thresholds';
@@ -125,6 +125,7 @@ async function compare(
     fs: cliHostFs,
     image: cliImageHost,
     git: cliGitHost,
+    pdf: cliPdfHost,
   };
 
   const defaults = engine.defaultOptions() as Record<string, unknown>;

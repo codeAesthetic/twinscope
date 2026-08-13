@@ -17,6 +17,14 @@ files:
   - out/**/*
   - package.json
   - '!**/*.map'
+  # pdfjs (v0.3.3) ships a whole web viewer, two builds, image decoders, cmaps and
+  # standard fonts. The engine worker imports exactly one file — the legacy build —
+  # and never renders, so the rest is 20 MB of an installer with a 130 MB budget.
+  # cmaps and standard fonts are only reachable through `cMapUrl`/`standardFontDataUrl`,
+  # which this app deliberately does not set: see engine-worker/pdfHost.ts.
+  - '!node_modules/pdfjs-dist/{build,web,image_decoders,cmaps,standard_fonts,wasm,types}/**'
+  - '!node_modules/pdfjs-dist/legacy/{web,image_decoders}/**'
+  - '!node_modules/pdfjs-dist/**/*.min.mjs'
 
 asar: true
 npmRebuild: false

@@ -279,6 +279,8 @@ function bodyFor(input: ReportInput): string {
       return webBody(input);
     case 'visual':
       return visualBody(input);
+    case 'pdf':
+      return pdfBody(input);
     case 'git':
       return gitBody(input);
     case 'image':
@@ -695,6 +697,74 @@ function visualBody(input: ReportInput): string {
       ${body}
     </tbody>
   </table>`;
+}
+
+/** The PDF report (v0.3.3): a page table, then each changed page's lines. */
+function pdfBody(input: ReportInput): string {
+  const data = input.data as {
+    pages?: Array<{
+      before?: number;
+      after?: number;
+      state: string;
+      rows?: ReportRow[];
+      added: number;
+      removed: number;
+      modified: number;
+    }>;
+    infoChanges?: Array<{ key: string; before?: string; after?: string }>;
+  };
+  const pages = data.pages ?? [];
+  const changed = pages.filter((page) => page.state !== 'same');
+
+  const metadata = (data.infoChanges ?? [])
+    .map(
+      (change) =>
+        `<tr class="chg"><td>${escapeHtml(change.key)}</td><td class="old">${escapeHtml(change.before ?? '—')}</td>` +
+        `<td class="new">${escapeHtml(change.after ?? '—')}</td></tr>`,
+    )
+    .join('\n      ');
+
+  const rows = changed
+    .map(
+      (page) =>
+        `<tr class="${page.state === 'added' ? 'add' : page.state === 'removed' ? 'del' : 'mod'}">` +
+        `<td>${page.before ?? '—'}</td><td>${page.after ?? '—'}</td><td>${escapeHtml(page.state)}</td>` +
+        `<td>+${page.added} / -${page.removed} / ~${page.modified}</td></tr>`,
+    )
+    .join('\n      ');
+
+  const bodies = changed
+    .filter((page) => (page.rows ?? []).length > 0)
+    .map((page) =>
+      section(
+        `Page ${page.after ?? page.before}`,
+        textBody(page.rows ?? []),
+        `+${page.added} / -${page.removed} / ~${page.modified}`,
+      ),
+    )
+    .join('\n  ');
+
+  return `${
+    metadata === ''
+      ? ''
+      : `<table>
+    <thead><tr><th>Metadata</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      ${metadata}
+    </tbody>
+  </table>`
+  }
+  ${
+    rows === ''
+      ? '<p class="meta">Every page has the same text.</p>'
+      : `<table>
+    <thead><tr><th>Before</th><th>After</th><th>State</th><th>Lines</th></tr></thead>
+    <tbody>
+      ${rows}
+    </tbody>
+  </table>`
+  }
+  ${bodies}`;
 }
 
 function imageBody(input: ReportInput): string {

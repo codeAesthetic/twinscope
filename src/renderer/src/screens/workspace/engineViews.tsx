@@ -39,6 +39,9 @@ export const ENGINE_VIEWS: Record<string, LazyExoticComponent<ComponentType<Engi
   env: lazy(() => import('./EnvView')),
   // v0.3.2: four sections of one page comparison — structure, style, assets, a11y.
   web: lazy(() => import('./WebView')),
+  // v0.3.3: a PDF is pages, so the view is pages, each opening onto the text engine's
+  // own rows.
+  pdf: lazy(() => import('./PdfView')),
   folder: lazy(() => import('./FolderTreeView')),
   git: lazy(() => import('./GitDiffView')),
   image: lazy(() => import('./ImageDiffView')),

@@ -20,6 +20,7 @@ export type InputKind =
   | 'api'
   | 'env'
   | 'html'
+  | 'pdf'
   | 'md'
   | 'image'
   | 'folder'
@@ -105,12 +106,42 @@ export interface GitHost {
   run(repo: string, args: readonly string[]): Promise<string>;
 }
 
+/** One page of a PDF, as far as this app is concerned (v0.3.3). */
+export interface PdfPage {
+  /** 1-based. */
+  number: number;
+  /** Extracted text, in reading order as the document declares it. */
+  text: string;
+  /** Points, at scale 1. */
+  width: number;
+  height: number;
+}
+
+export interface PdfDocument {
+  pages: PdfPage[];
+  /** Whatever the document says about itself: Title, Author, Producer… */
+  info: Record<string, string>;
+  /** True when the reader stopped at `maxPages`. */
+  truncated: boolean;
+}
+
+/**
+ * Reading a PDF, injected for the same reason `ImageHost` is (v0.3.3): the parser is
+ * a megabyte of JavaScript, and the engine must not drag it into the renderer's
+ * bundle — where this engine never runs — just to be importable from `catalog.ts`.
+ * The host reads; the engine compares, which is the testable half.
+ */
+export interface PdfHost {
+  read(bytes: Uint8Array, maxPages: number): Promise<PdfDocument>;
+}
+
 export interface EngineCtx {
   signal: AbortSignal;
   progress(percent: number, message?: string): void;
   fs?: HostFs;
   image?: ImageHost;
   git?: GitHost;
+  pdf?: PdfHost;
   /**
    * Hands control back to the host mid-computation. On a single-threaded host
    * this is what keeps a long pixel loop from freezing the UI; elsewhere it can

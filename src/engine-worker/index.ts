@@ -1,5 +1,6 @@
 import { nodeHostFs, scopedHostFs } from './hostFs';
 import { nodeGitHost, scopedGitHost } from './gitHost';
+import { nodePdfHost } from './pdfHost';
 import { engineById, selectEngine } from '../engines/registry';
 import { EngineInputError } from '../engines/types';
 import type { EngineCtx, GitHost, HostFs, InputRef } from '../engines/types';
@@ -133,6 +134,9 @@ async function runJob(message: StartMessage): Promise<void> {
           ...(text !== undefined ? { message: text } : {}),
         }),
       fs: jobFs,
+      // v0.3.3. Given unconditionally: the host loads pdfjs on first use, so a
+      // comparison that is not a PDF never pays for the parser.
+      pdf: nodePdfHost,
       ...(jobGit !== undefined ? { git: jobGit } : {}),
     };
 
