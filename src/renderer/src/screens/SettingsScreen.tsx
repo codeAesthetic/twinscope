@@ -19,7 +19,6 @@ export function SettingsScreen() {
   const { preference, setPreference } = useTheme();
   const preferences = useSettingsStore((state) => state.preferences);
   const load = useSettingsStore((state) => state.load);
-  const update = useSettingsStore((state) => state.update);
   const setEngineDefault = useSettingsStore((state) => state.setEngineDefault);
 
   useEffect(() => {
@@ -104,12 +103,14 @@ export function SettingsScreen() {
             disabled
           />
         </Row>
-        <Row title="Check for updates" desc="Signed releases, verified before install.">
-          <Switch
-            checked={preferences.checkUpdates}
-            onChange={(next) => void update({ checkUpdates: next })}
-            label="Check for updates"
-          />
+        {/* The preference exists and defaulted to ON, describing "signed releases,
+            verified before install" — two claims that were both false: nothing
+            checked anything, and the app is unsigned by decision. Shown off and
+            disabled until the owner decides whether TwinScope may make a network
+            call at all (plan v0.2.13). Saying nothing here would be worse: the
+            switch was already on screen promising something. */}
+        <Row title="Check for updates" desc="Not implemented — TwinScope makes no network calls.">
+          <Switch checked={false} onChange={() => undefined} label="Check for updates" disabled />
         </Row>
       </div>
 

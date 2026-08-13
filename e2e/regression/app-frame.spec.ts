@@ -90,6 +90,17 @@ test('app frame: chrome, navigation and themes', async () => {
     await harness.page.getByRole('tab', { name: 'Dark' }).click();
     await expect(harness.page.locator('html')).toHaveAttribute('data-theme', 'dark');
 
+    // --- the update switch must not promise what the app does not do ---
+    // It defaulted to ON and read "signed releases, verified before install": nothing
+    // checked anything and the app is unsigned by decision (plan v0.2.13, blocked).
+    await harness.page.getByTestId('nav-settings').click();
+    const updates = harness.page.getByRole('switch', { name: 'Check for updates' });
+    await expect(updates).toBeDisabled();
+    await expect(updates).toHaveAttribute('aria-checked', 'false');
+    await expect(harness.page.getByTestId('screen-settings')).toContainText(
+      'TwinScope makes no network calls',
+    );
+
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {
     await harness.close();
