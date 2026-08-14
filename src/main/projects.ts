@@ -46,6 +46,14 @@ interface RawSaved {
 const MAX_PROJECTS = 200;
 const MAX_SAVED = 500;
 
+/**
+ * Newest first, and TOTAL — see `RECENCY` in `main/history.ts` for the why.
+ * `created_at` is `datetime('now')`, so three comparisons saved with ⌘S inside
+ * one second tie, and the tie alone resolves to *ascending* rowid: oldest on
+ * top, and only sometimes. `projects-saved.png` saves three in about a second.
+ */
+const SAVED_RECENCY = 'created_at DESC, id DESC';
+
 function parse<T>(json: string, fallback: T): T {
   try {
     return JSON.parse(json) as T;
@@ -91,7 +99,9 @@ function toSaved(raw: RawSaved): SavedComparison {
 
 export function listProjects(): Project[] {
   const rows = database()
-    .prepare('SELECT * FROM projects ORDER BY name COLLATE NOCASE ASC LIMIT ?')
+    // `id ASC` for the same reason as `SAVED_RECENCY`: two projects may share a
+    // name, and a tie the query does not break is an order that can move.
+    .prepare('SELECT * FROM projects ORDER BY name COLLATE NOCASE ASC, id ASC LIMIT ?')
     .all(MAX_PROJECTS) as unknown as RawProject[];
   return rows.map(toProject);
 }
@@ -167,10 +177,10 @@ export function removeProject(id: number): void {
 export function listSaved(projectId?: number): SavedComparison[] {
   const db = database();
   const rows = (projectId === undefined
-    ? db.prepare('SELECT * FROM saved_comparisons ORDER BY created_at DESC LIMIT ?').all(MAX_SAVED)
+    ? db.prepare(`SELECT * FROM saved_comparisons ORDER BY ${SAVED_RECENCY} LIMIT ?`).all(MAX_SAVED)
     : db
         .prepare(
-          'SELECT * FROM saved_comparisons WHERE project_id = ? ORDER BY created_at DESC LIMIT ?',
+          `SELECT * FROM saved_comparisons WHERE project_id = ? ORDER BY ${SAVED_RECENCY} LIMIT ?`,
         )
         .all(projectId, MAX_SAVED)) as unknown as RawSaved[];
   return rows.map(toSaved);

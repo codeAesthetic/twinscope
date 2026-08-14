@@ -8,7 +8,14 @@ import { openFolderPair, openPair, stage, still } from './helpers/stage';
  * The rows are produced the way a user produces them — four real comparisons
  * through intake, the engine host and the database — because history has no
  * fixture path and should not gain one for a screenshot. Every row reads "just
- * now", which is what keeps this capture stable: no wall-clock text can drift.
+ * now", which is what keeps the *text* stable: no wall-clock number can drift.
+ *
+ * It did not keep the **order** stable, and that is the same fact seen from the
+ * other side: four comparisons inside one second share one `datetime('now')`
+ * stamp, and until `RECENCY` in `main/history.ts` the tie was left to the query
+ * plan, so the folder row and the text row traded places between capture runs.
+ * The order is asserted below — a capture that changes between runs is a diff in
+ * every PR (§3.2), and an assertion says so where a screenshot only shows it.
  */
 test('stills: history with a row per engine', async () => {
   const harness = await stage();
@@ -53,6 +60,15 @@ test('stills: history with a row per engine', async () => {
     await expect(history).toBeVisible();
     await expect(history.locator('.dd-hitem')).toHaveCount(4);
     await expect(history).toContainText('Today');
+
+    // Most recent first, in the order they were run above — the four stamps are
+    // equal to the second, so this is exactly the tie `RECENCY` breaks.
+    await expect(history.locator('.dd-hitem-name')).toHaveText([
+      'users.v1.json ↔ users.v2.json',
+      'client.ts ↔ client.next.ts',
+      'api-v1/ ↔ api-v2/',
+      'home-v1.png ↔ home-v2.png',
+    ]);
 
     await still(harness, 'history-list');
 

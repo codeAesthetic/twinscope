@@ -106,6 +106,15 @@ test('stills: saved comparisons grouped under the project they were saved in', a
     await expect(chipsOf('users.v1.json ↔')).toContainText('json');
     await expect(chipsOf('api-v1/ ↔')).toContainText('folder');
 
+    // Most recently saved first, and asserted for the same reason `history-list`
+    // asserts its order: all three `created_at` stamps are equal to the second,
+    // so the list is only stable because `listSaved` breaks that tie by id.
+    await expect(group.locator('.dd-hitem-name')).toHaveText([
+      'api-v1/ ↔ api-v2/',
+      'users.v1.json ↔ users.v2.json',
+      'client.ts ↔ client.next.ts',
+    ]);
+
     // The paths on screen are the fixed work directory's — see the header note.
     await expect(group).toContainText('/tmp/twinscope-media/projects/client.ts');
 

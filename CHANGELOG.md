@@ -8,6 +8,19 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+### Fixed
+
+- **The most recent comparison is the one at the top.** Two comparisons finished inside
+  the same second were listed oldest-first — in History, in Home's recent list, and in a
+  project's saved comparisons — because the stored timestamp counts whole seconds and
+  nothing decided the tie. Which pairs it hit moved from run to run, so a list could
+  reorder itself between one launch and the next with nothing having changed.
+- **Two documentation screenshots stopped changing between runs.** `history-list.png` was
+  photographing the tie above, and `csv-grid.png` caught a macOS overlay scrollbar
+  mid-fade — a fade on the compositor's own timer, which the capture harness's
+  `animations: 'disabled'` does not reach. Scrollbars are now hidden for the whole
+  capture stage, which also keeps the host's "Show scroll bars" setting out of the assets.
+
 ## 0.3.10 — 2026-08-14
 
 Six fixes, each one something the app claimed to do and did not.

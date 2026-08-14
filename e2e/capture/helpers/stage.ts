@@ -14,6 +14,9 @@ import { launchApp, type Harness, type LaunchOptions } from '../../helpers/launc
  *  - **Device pixel ratio** is overridden to 2 via CDP rather than taken from the
  *    host display, so a non-retina machine produces the same PNG.
  *  - **Animations and the text caret** are disabled in every screenshot.
+ *  - **Scrollbars are hidden** (`NO_SCROLLBARS`), because a macOS overlay
+ *    scrollbar fades on a timer of its own that `animations: 'disabled'` does
+ *    not reach.
  *  - **The status bar carries a live "Compared in N ms"**, which is the one
  *    genuinely unrepeatable pixel in the app. Comparison stills leave it out of
  *    frame (`statusBar: false`) instead of faking the number.
@@ -21,6 +24,27 @@ import { launchApp, type Harness, type LaunchOptions } from '../../helpers/launc
 
 export const VIEWPORT = { width: 1440, height: 900 };
 export const DEVICE_SCALE_FACTOR = 2;
+
+/**
+ * No scrollbar may appear in a still.
+ *
+ * A macOS overlay scrollbar flashes whenever its container scrolls or its
+ * content resizes, then fades out over a few hundred milliseconds — on its own
+ * timer, inside the compositor, so Playwright's `animations: 'disabled'` (which
+ * only freezes CSS and Web animations) does not touch it. Whether the shot lands
+ * before or after that fade depends on how fast the machine ran the step before
+ * it, which is the definition of a capture that changes between runs:
+ * `csv-grid.png` caught one mid-fade, changing the bottom 14 device pixels of
+ * the image against a run where it had already gone.
+ *
+ * Hiding is the right direction rather than forcing a fixed width, because these
+ * bars are what the reader of the docs sees too: on macOS they take no layout
+ * space (`offsetHeight === clientHeight`), so suppressing them changes nothing
+ * else in the frame. It also pins one more host setting — System Settings ▸
+ * Appearance ▸ "Show scroll bars", whose "Always" would otherwise put a
+ * permanent 15px gutter into every still captured on that machine.
+ */
+const NO_SCROLLBARS = '::-webkit-scrollbar { display: none; }';
 
 const appRoot = resolve(__dirname, '..', '..', '..');
 export const MEDIA_DIR = join(appRoot, 'e2e', '.artifacts', 'media');
@@ -59,6 +83,11 @@ export async function stage(options: StageOptions = {}): Promise<Harness> {
     const window = BrowserWindow.getAllWindows()[0];
     window?.setContentSize(size.width, size.height);
   }, VIEWPORT);
+
+  // Appended last, so it wins over the app's own sheets at equal specificity.
+  // Every asset, clips included: an overlay scrollbar is not what any of them is
+  // a picture of, and the fade is as unrepeatable in a video as in a PNG.
+  await harness.page.addStyleTag({ content: NO_SCROLLBARS });
 
   if (!recording) {
     const session = await harness.page.context().newCDPSession(harness.page);

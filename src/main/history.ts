@@ -19,6 +19,23 @@ import type { InputPayload, Summary } from '../shared/channels';
 /** 2 since v0.2.9, which added `projects` and `saved_comparisons` (plan §3.6). */
 const SCHEMA_VERSION = 2;
 
+/**
+ * The tiebreak that makes every ordering here TOTAL.
+ *
+ * `datetime('now')` has one-second resolution, so two comparisons run in the
+ * same second carry the same `opened_at` — and `ORDER BY opened_at DESC` alone
+ * then returns them in whatever order the query plan reaches them, which is
+ * ascending rowid: the *older* of the two on top. So the thing you just did is
+ * not the thing at the top of the list, and which pair it happens to hit moves
+ * with how fast the machine is. `id DESC` breaks the tie by insertion order,
+ * which is the same recency the timestamp is expressing at a coarser grain.
+ *
+ * Caught by a screenshot: `history-list.png` seeds four comparisons in about a
+ * second, and two of its rows swapped between capture runs (§3.2 — a capture
+ * that changes between runs is a diff in every PR).
+ */
+const RECENCY = 'opened_at DESC, id DESC';
+
 /** Older unstarred rows are pruned past this, so history never grows forever. */
 const MAX_ROWS = 500;
 
@@ -199,7 +216,7 @@ export function record(input: RecordInput): HistoryRow {
     .prepare(
       `SELECT id FROM comparisons
        WHERE engine_id = ? AND input_a = ? AND input_b = ?
-       ORDER BY opened_at DESC LIMIT 1`,
+       ORDER BY ${RECENCY} LIMIT 1`,
     )
     .get(input.engineId, JSON.stringify(a), JSON.stringify(b)) as { id: number } | undefined;
 
@@ -239,7 +256,7 @@ function prune(): void {
     .prepare(
       `DELETE FROM comparisons
        WHERE starred = 0 AND id NOT IN (
-         SELECT id FROM comparisons ORDER BY starred DESC, opened_at DESC LIMIT ?
+         SELECT id FROM comparisons ORDER BY starred DESC, ${RECENCY} LIMIT ?
        )`,
     )
     .run(MAX_ROWS);
@@ -251,7 +268,7 @@ export function list(options: { limit?: number; starredOnly?: boolean } = {}): H
     .prepare(
       `SELECT * FROM comparisons
        ${options.starredOnly === true ? 'WHERE starred = 1' : ''}
-       ORDER BY opened_at DESC
+       ORDER BY ${RECENCY}
        LIMIT ?`,
     )
     .all(options.limit ?? MAX_ROWS) as unknown as RawRow[];

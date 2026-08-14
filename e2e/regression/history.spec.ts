@@ -186,6 +186,91 @@ test('history: a CSV comparison is badged CSV, not MD', async () => {
   }
 });
 
+test('history: comparisons stamped the same second still list newest first', async () => {
+  // `created_at`/`opened_at` default to `datetime('now')`, which has one-second
+  // resolution, so comparisons run back to back share a stamp. `ORDER BY
+  // opened_at DESC` alone leaves that tie to the query plan, and the plan
+  // resolves it by *ascending* rowid — oldest on top, but only for the pairs
+  // that happened to land in the same second, so the list order moved with how
+  // fast the machine was. Found by a screenshot: `history-list.png` seeds four
+  // comparisons in about a second and two of its rows swapped between capture
+  // runs (§3.2). `RECENCY` in `main/history.ts` breaks the tie by id.
+  //
+  // The stamps are equalised on disk between the two launches rather than raced
+  // for: a test that only sometimes produces the tie only sometimes tests it.
+  const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history-tie-'));
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-history-tie-files-'));
+
+  const pairs = ['alpha', 'beta', 'gamma'].map((name) => ({
+    title: `${name}.json ↔ ${name}.next.json`,
+    before: join(files, `${name}.json`),
+    after: join(files, `${name}.next.json`),
+  }));
+
+  try {
+    for (const pair of pairs) {
+      await writeFile(pair.before, '{ "n": 1 }');
+      await writeFile(pair.after, '{ "n": 2 }');
+    }
+
+    // ---------- first launch: three comparisons, in this order ----------
+    const first = await launchApp({ userDataDir });
+    await first.app.evaluate(
+      ({ dialog }, paths: string[]) => {
+        let call = 0;
+        dialog.showOpenDialog = () =>
+          Promise.resolve({ canceled: false, filePaths: [paths[call++] ?? paths[0]!] });
+      },
+      pairs.flatMap((pair) => [pair.before, pair.after]),
+    );
+
+    for (const pair of pairs) {
+      await first.page.getByTestId('pick-file-before').click();
+      await first.page.getByTestId('pick-file-after').click();
+      await first.page.getByTestId('compare-button').click();
+      await expect(first.page.getByTestId('json-tree')).toBeVisible({ timeout: 20_000 });
+      await first.page.getByTestId('back-button').click();
+      await expect(first.page.getByTestId('recent-list')).toContainText(pair.title);
+    }
+    await first.close();
+
+    // ---------- force the tie the capture only sometimes produced ----------
+    const db = new DatabaseSync(join(userDataDir, 'twinscope.db'));
+    db.exec(`UPDATE comparisons SET opened_at = (SELECT MAX(opened_at) FROM comparisons)`);
+    const stored = db
+      .prepare('SELECT id, opened_at FROM comparisons ORDER BY id ASC')
+      .all() as Array<{ id: number; opened_at: string }>;
+    db.close();
+
+    // The tie is the premise: assert it exists, or the rest passes for free.
+    expect(stored).toHaveLength(3);
+    expect(new Set(stored.map((row) => row.opened_at)).size).toBe(1);
+
+    // ---------- second launch: newest first, both places that list them ----------
+    const second = await launchApp({ userDataDir });
+    const newestFirst = [...pairs].reverse().map((pair) => pair.title);
+
+    try {
+      // Home's list and the History screen read the same query; both are checked
+      // because a tiebreak added to one of them would be a silent disagreement.
+      await expect(second.page.getByTestId('recent-list').locator('.dd-ritem-name')).toHaveText(
+        newestFirst,
+      );
+
+      await second.page.getByRole('button', { name: /^History/ }).click();
+      const history = second.page.getByTestId('screen-history');
+      await expect(history.locator('.dd-hitem-name')).toHaveText(newestFirst);
+
+      expect(second.errors, `errors:\n${second.errors.join('\n')}`).toEqual([]);
+    } finally {
+      await second.close();
+    }
+  } finally {
+    await rm(files, { recursive: true, force: true });
+    await rm(userDataDir, { recursive: true, force: true });
+  }
+});
+
 test('history: survives a restart, and a missing input is explained', async () => {
   const userDataDir = await mkdtemp(join(tmpdir(), 'twinscope-history2-'));
   const files = await mkdtemp(join(tmpdir(), 'twinscope-history2-files-'));
