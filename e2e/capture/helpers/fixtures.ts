@@ -147,6 +147,70 @@ export function imagePair(dir: string): Pair {
   return { before, after };
 }
 
+/**
+ * Two directories of "screenshots" for the visual engine (v0.3.5): one real
+ * regression, one byte-identical shot, one changed by less than the per-image
+ * budget allows.
+ *
+ * Shared by the two stills that describe this engine — the app's refusal
+ * (`visual.capture.ts`) and the terminal slide (`cli.capture.ts`) — precisely so
+ * they describe the *same* pair. The refusal names `baseline/ current/` and the
+ * slide reports what comparing those two actually produced; if each built its
+ * own fixture, the page would show a command beside numbers that never came
+ * from it.
+ */
+const SHOT = { width: 640, height: 400 };
+
+interface ShotVariant {
+  /** The primary button's fill and left edge — the big regression. */
+  button: Rgba;
+  buttonX: number;
+  /** A 14×14 status dot: 196 of 256 000 pixels, under the 0.1% per-image budget. */
+  dot: Rgba;
+}
+
+function appScreen({ button, buttonX, dot }: ShotVariant): Buffer {
+  const list: Box[] = [
+    { x: 0, y: 0, w: SHOT.width, h: 44, fill: INK.panel },
+    { x: 20, y: 16, w: 120, h: 12, fill: INK.text },
+    { x: 0, y: 44, w: 150, h: SHOT.height - 44, fill: INK.panel },
+    ...[0, 1, 2, 3].map((row) => ({ x: 18, y: 70 + row * 30, w: 110, h: 10, fill: INK.line })),
+    { x: 174, y: 76, w: 420, h: 150, fill: INK.panel },
+    { x: 194, y: 96, w: 180, h: 14, fill: INK.text },
+    ...[0, 1, 2].map((row) => ({ x: 194, y: 126 + row * 20, w: 340, h: 10, fill: INK.line })),
+    { x: 194, y: 196, w: 14, h: 14, fill: dot },
+    { x: buttonX, y: 250, w: 130, h: 34, fill: button },
+    { x: 400, y: 250, w: 110, h: 34, fill: INK.line },
+  ];
+  return encodePng(SHOT.width, SHOT.height, boxes(INK.bg, list));
+}
+
+const STEADY: ShotVariant = { button: INK.accent, buttonX: 194, dot: INK.good };
+
+export function screenshotSets(dir: string): Pair {
+  const before = join(dir, 'baseline');
+  const after = join(dir, 'current');
+  mkdirSync(before, { recursive: true });
+  mkdirSync(after, { recursive: true });
+
+  const pairs: Array<[string, ShotVariant, ShotVariant]> = [
+    // A recoloured, moved primary button: a few thousand pixels, and a real regression.
+    ['checkout.png', STEADY, { button: INK.warn, buttonX: 240, dot: INK.good }],
+    // Byte-identical, which is what most of a real suite looks like.
+    ['settings.png', STEADY, STEADY],
+    // 196 pixels — under the per-image budget on purpose, because anti-aliasing moves
+    // a handful of pixels on every run and zero is the wrong number to gate on.
+    ['sign-in.png', STEADY, { ...STEADY, dot: INK.warn }],
+  ];
+
+  for (const [name, one, other] of pairs) {
+    writeFileSync(join(before, name), appScreen(one));
+    writeFileSync(join(after, name), appScreen(other));
+  }
+
+  return { before, after };
+}
+
 /** A pinned linear-congruential stream: binary-looking bytes, NULs included. */
 function pseudoBytes(length: number, seed: number): Buffer {
   const out = Buffer.alloc(length);

@@ -8,6 +8,12 @@ project uses [semantic versioning][semver].
 
 ## Unreleased
 
+### Added
+
+- **`--color`.** The counterpart to `--no-color`: force ANSI on when stdout is not a
+  terminal. Colour is detected from a TTY, so `less -R`, a CI log that renders ANSI, and
+  anything else reading the output through a pipe previously had no way to ask for it.
+
 ### Fixed
 
 - **Asking for the visual engine in the app is answered, not reported as a crash.** It

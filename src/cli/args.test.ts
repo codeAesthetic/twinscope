@@ -99,6 +99,18 @@ describe('parseArgs', () => {
     expect(run(['a', 'b', '--no-colour']).color).toBe(false);
   });
 
+  it('colours a pipe when asked to, since detection cannot be asked', () => {
+    // `less -R`, a CI log that renders ANSI, and the capture that photographs
+    // this output are all readers that are not a TTY and want colour anyway.
+    expect(run(['a', 'b', '--color'], PIPE).color).toBe(true);
+    expect(run(['a', 'b', '--colour'], PIPE).color).toBe(true);
+    // Beats NO_COLOR too: it is the explicit answer to the same question.
+    expect(run(['a', 'b', '--color'], { noColor: true, isTty: false }).color).toBe(true);
+    // Later flag wins, in both directions.
+    expect(run(['a', 'b', '--no-color', '--color'], PIPE).color).toBe(true);
+    expect(run(['a', 'b', '--color', '--no-color']).color).toBe(false);
+  });
+
   it('shows help for --help, -h and no arguments at all', () => {
     expect(parseArgs(['--help'], TTY)).toEqual({ kind: 'help', text: HELP });
     expect(parseArgs(['-h'], TTY)).toEqual({ kind: 'help', text: HELP });

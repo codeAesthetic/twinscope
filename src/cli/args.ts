@@ -97,6 +97,7 @@ OPTIONS
   --ignore-whitespace    ignore whitespace-only changes
   --ignore-case          ignore case
   --no-color             never emit ANSI colour (also honours NO_COLOR)
+  --color                always emit it, even when piped or redirected
   -q, --quiet            print nothing; rely on the exit code
   -h, --help             this text
   -v, --version          print the version
@@ -166,6 +167,14 @@ export function parseArgs(argv: readonly string[], environment: ParseEnvironment
     }
     if (arg === '--no-color' || arg === '--no-colour') {
       color = false;
+      continue;
+    }
+    // The counterpart, and not only for symmetry: colour is detected from a TTY,
+    // so anything that reads stdout without being one — `less -R`, a CI log that
+    // renders ANSI, the capture that photographs this output — has no way to ask
+    // for it. Later flag wins, so `--no-color --color` is colour.
+    if (arg === '--color' || arg === '--colour') {
+      color = true;
       continue;
     }
     if (arg === '-q' || arg === '--quiet') {
