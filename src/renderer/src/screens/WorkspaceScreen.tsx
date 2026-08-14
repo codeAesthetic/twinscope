@@ -222,19 +222,59 @@ export function WorkspaceScreen() {
 
           {status === 'error' && error !== null && (
             <div data-testid="job-error" style={{ maxWidth: 440 }}>
+              {/* Three states, not two. A cancellation is the user's own doing and
+                  an 'unsupported' engine is a documented limit of this host —
+                  neither is a failure, and painting either in --del says the app
+                  broke. Only a real failure is red. */}
               <p
                 style={{
                   margin: 0,
-                  color: error.reason === 'cancelled' ? 'var(--tx-2)' : 'var(--del)',
+                  color:
+                    error.reason === 'failed' || error.reason === 'crash'
+                      ? 'var(--del)'
+                      : 'var(--tx-2)',
                   fontSize: 15,
                   fontWeight: 600,
                 }}
               >
-                {error.reason === 'cancelled' ? 'Comparison cancelled' : 'Comparison failed'}
+                {error.reason === 'cancelled'
+                  ? 'Comparison cancelled'
+                  : error.reason === 'unsupported'
+                    ? 'Not available in the app'
+                    : 'Comparison failed'}
               </p>
-              <p style={{ margin: '8px 0 14px', color: 'var(--tx-3)', fontSize: 12.5 }}>
+              <p
+                style={{
+                  margin: error.command === undefined ? '8px 0 14px' : '8px 0 10px',
+                  color: 'var(--tx-3)',
+                  fontSize: 12.5,
+                }}
+              >
                 {error.message}
               </p>
+              {/* Set as a command, because it is one: prose containing a command
+                  line reads as prose, and this is the whole answer to "then how
+                  do I run it?". */}
+              {error.command !== undefined && (
+                <p
+                  data-testid="error-command"
+                  style={{
+                    margin: '0 0 14px',
+                    padding: '8px 10px',
+                    borderRadius: 6,
+                    border: '1px solid var(--line)',
+                    background: 'var(--bg-2)',
+                    color: 'var(--tx-2)',
+                    fontFamily: 'var(--mono)',
+                    fontSize: 12,
+                    textAlign: 'left',
+                    overflowX: 'auto',
+                    whiteSpace: 'pre',
+                  }}
+                >
+                  {error.command}
+                </p>
+              )}
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                 {/* A wrong-engine failure is recoverable: offer the engine that
                     can still say something about these inputs. */}
@@ -251,7 +291,10 @@ export function WorkspaceScreen() {
                   </Button>
                 )}
                 <Button onClick={startOver}>Back to Compare</Button>
-                {error.reason !== 'cancelled' && (
+                {/* Only when something actually went wrong. There is nothing to
+                    report about a cancellation, and nothing to report about an
+                    engine this host was never able to run. */}
+                {(error.reason === 'failed' || error.reason === 'crash') && (
                   <Button
                     variant="ghost"
                     onClick={() => void copyDetails()}

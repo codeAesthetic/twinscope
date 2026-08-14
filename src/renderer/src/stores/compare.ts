@@ -57,8 +57,9 @@ interface CompareState {
   result: CompareResult | null;
   error: {
     message: string;
-    reason: 'failed' | 'cancelled' | 'crash';
+    reason: 'failed' | 'cancelled' | 'crash' | 'unsupported';
     fallback?: { engineId: string; label: string };
+    command?: string;
   } | null;
 
   /** Manual engine choice. Detection still decides when this is null (Rule 1). */
@@ -354,6 +355,7 @@ export const useCompareStore = create<CompareState>((set, get) => ({
         message: event.message,
         reason: event.reason,
         ...(event.fallback !== undefined ? { fallback: event.fallback } : {}),
+        ...(event.command !== undefined ? { command: event.command } : {}),
       },
     });
   },

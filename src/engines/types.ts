@@ -214,3 +214,28 @@ export class EngineInputError extends Error {
     this.fallback = fallback;
   }
 }
+
+/**
+ * This **host** cannot run this engine, and no input would change that.
+ *
+ * The visual engine has to list a directory *and* decode images, and no single
+ * process in the desktop app can do both (v0.3.5): the worker has no decoder,
+ * the renderer has one but cannot list a directory. So the app declines, and the
+ * command line is where it runs.
+ *
+ * Separate from `EngineInputError` because nothing went wrong. Presented as a
+ * failure — a red "Comparison failed" — a designed limit reads as a broken app,
+ * which is exactly how it read in the published `visual-regression.png`. It
+ * still extends `EngineInputError` so the fallback offer works unchanged: an
+ * engine that cannot run here should still hand over to one that can.
+ */
+export class EngineUnsupportedError extends EngineInputError {
+  /** Typed exactly as the user would type it; the panel sets it in mono. */
+  readonly command: string | undefined;
+
+  constructor(message: string, options: { command?: string; fallback?: EngineFallback } = {}) {
+    super(message, options.fallback);
+    this.name = 'EngineUnsupportedError';
+    this.command = options.command;
+  }
+}

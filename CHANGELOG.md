@@ -10,6 +10,15 @@ project uses [semantic versioning][semver].
 
 ### Fixed
 
+- **Asking for the visual engine in the app is answered, not reported as a crash.** It
+  runs from the command line by design — it has to list a directory and decode images at
+  once, which no single process in the app can do — but saying so as a red "Comparison
+  failed" made a documented limit look like a broken app. It now reads as the limit it
+  is, the command is set as a command you can read and copy rather than buried in the
+  sentence, and "Copy details" is gone, since there is nothing to report. The stray
+  `*and*` in the message — markdown written into an engine's error string and painted
+  verbatim — is gone with it. "Compare as folders" still stands beside it.
+
 - **The most recent comparison is the one at the top.** Two comparisons finished inside
   the same second were listed oldest-first — in History, in Home's recent list, and in a
   project's saved comparisons — because the stored timestamp counts whole seconds and

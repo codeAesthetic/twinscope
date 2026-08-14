@@ -21,6 +21,14 @@ import { openFolderPair, stage, still } from './helpers/stage';
  * folders the way the app *can*. Inventing a terminal panel inside the window to
  * dress up CLI output would put a UI that does not exist next to nine that do.
  *
+ * What that refusal must NOT look like is a crash. Until now this still published a
+ * red "Comparison failed", with the command line buried in the sentence and a stray
+ * `*and*` where someone had written markdown into an engine's error string — so the
+ * one picture on the page for this engine said the app was broken. Nothing failed:
+ * `EngineUnsupportedError` is a documented limit of this host, the panel titles and
+ * colours it as one, and the command is its own element. Feeding the engine better
+ * screenshots would not have changed any of that — no input can, which is the point.
+ *
  * The CLI's own output is not photographed and does not need to be: it is text, so
  * the documentation can carry it as a code block, and `e2e/regression/ci.spec.ts`
  * already drives the built binary over a real screenshot set — thresholds, worst-first
@@ -116,9 +124,22 @@ test('stills: visual regression is command-line only, and says so', async () => 
 
     const panel = harness.page.getByTestId('job-error');
     await expect(panel).toBeVisible({ timeout: 30_000 });
-    // The refusal names the command, exactly as it would have to be typed.
-    await expect(panel).toContainText('twinscope baseline/ current/ --engine visual');
-    await expect(panel).toContainText('read directories');
+
+    // The picture has to show a *limit*, not a casualty. "Comparison failed" in
+    // red is what this still published until now, and a reader of
+    // /docs/engines/visual could only read it as a broken app.
+    await expect(panel).toContainText('Not available in the app');
+    await expect(panel).not.toContainText('Comparison failed');
+    await expect(harness.page.getByTestId('copy-details')).toHaveCount(0);
+
+    // The command is its own element, set in mono, and typed exactly as it would
+    // be typed — not a command line running through the middle of a paragraph.
+    const command = harness.page.getByTestId('error-command');
+    await expect(command).toHaveText('twinscope baseline/ current/ --engine visual');
+    expect(await command.evaluate((element) => getComputedStyle(element).fontFamily)).toContain(
+      'mono',
+    );
+
     // …and it offers the engine that can still say something about these two folders,
     // rather than leaving a dead end.
     await expect(harness.page.getByTestId('error-fallback')).toHaveText('Compare as folders');

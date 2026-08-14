@@ -1,6 +1,6 @@
 import { MAX_DIMENSION, padTo, pixelDiff } from '../image/pixelDiff';
 import { radarFrom, ratioScore } from '../radar';
-import { EngineInputError } from '../types';
+import { EngineInputError, EngineUnsupportedError } from '../types';
 import type { DiffEngine, DiffResult, EngineCtx } from '../types';
 
 /**
@@ -113,9 +113,16 @@ export const visualEngine: DiffEngine<VisualDiffOptions, VisualDiffData> = {
     const startedAt = Date.now();
 
     if (ctx.fs === undefined || ctx.image === undefined) {
-      throw new EngineInputError(
-        'Visual regression needs to read directories *and* decode images. Run it from the command line: twinscope baseline/ current/ --engine visual.',
-        { fallbackEngineId: 'folder', fallbackLabel: 'Compare as folders' },
+      // Not a failure — this host simply cannot host this engine. The command is
+      // carried separately so the panel can set it in mono, and it names generic
+      // folders rather than these two: a real path here would put whatever
+      // directory the reader happened to open into a documentation still.
+      throw new EngineUnsupportedError(
+        'Visual regression has to list a directory and decode images at once, and no single process in the app can do both.',
+        {
+          command: 'twinscope baseline/ current/ --engine visual',
+          fallback: { fallbackEngineId: 'folder', fallbackLabel: 'Compare as folders' },
+        },
       );
     }
     const rootA = a.path;

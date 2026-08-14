@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile, mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { expect, test } from '@playwright/test';
 import { launchApp, type Harness } from '../helpers/launch';
 
@@ -121,5 +124,81 @@ test('job lifecycle: progress, completion, cancellation, crash recovery', async 
     expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
   } finally {
     await harness.close();
+  }
+});
+
+test('job lifecycle: an engine this host cannot run declines, and does not call it a failure', async () => {
+  /*
+   * The error panel has THREE states, and only one of them is a failure. The
+   * visual engine (v0.3.5) is command-line-only by design — it needs to list a
+   * directory *and* decode images, and no single process in the app can do both
+   * — so asking for it here is answered, not broken. It shipped painted in
+   * --del under "Comparison failed", which is what `visual-regression.png`, the
+   * one picture on /docs/engines/visual, published to every reader.
+   *
+   * No fixture can make this pass by accident: no pair of folders exists that
+   * would let this engine run in the app, which is exactly why the state needs
+   * to read as a limit rather than as a casualty.
+   */
+  const files = await mkdtemp(join(tmpdir(), 'twinscope-visual-'));
+  const harness = await launchApp();
+
+  try {
+    const before = join(files, 'baseline');
+    const after = join(files, 'current');
+    for (const dir of [before, after]) {
+      await mkdir(dir, { recursive: true });
+      // Never decoded — the refusal happens before anything is read.
+      await writeFile(join(dir, 'dashboard.png'), 'not really a png');
+    }
+
+    await harness.app.evaluate(
+      ({ dialog }, paths: string[]) => {
+        let call = 0;
+        dialog.showOpenDialog = () =>
+          Promise.resolve({ canceled: false, filePaths: [paths[call++] ?? paths[0]!] });
+      },
+      [before, after],
+    );
+
+    await harness.page.getByTestId('pick-folder-before').click();
+    await harness.page.getByTestId('pick-folder-after').click();
+
+    // Detection will not choose it — two folders of screenshots and two folders
+    // of source code look the same from outside — so it is asked for by name.
+    await harness.page.getByTestId('engine-select').selectOption('visual');
+    await harness.page.getByTestId('compare-button').click();
+
+    const panel = harness.page.getByTestId('job-error');
+    await expect(panel).toBeVisible({ timeout: 30_000 });
+    await expect(panel).toContainText('Not available in the app');
+    await expect(panel).not.toContainText('Comparison failed');
+
+    // Neutral, not the failure colour. Asserted on the computed value rather
+    // than on the token name, since that is what a reader actually sees.
+    const heading = panel.locator('p').first();
+    const [colour, failColour] = await heading.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const root = getComputedStyle(document.documentElement);
+      return [style.color, root.getPropertyValue('--del').trim()];
+    });
+    expect(colour).not.toBe(failColour);
+
+    // The command is a command: its own element, in mono, typed as typed.
+    await expect(harness.page.getByTestId('error-command')).toHaveText(
+      'twinscope baseline/ current/ --engine visual',
+    );
+
+    // Nothing to report, so nothing offers to collect a report...
+    await expect(harness.page.getByTestId('copy-details')).toHaveCount(0);
+    // ...but the way out stands, and it works: the folder engine can still say
+    // something about these two directories.
+    await harness.page.getByTestId('error-fallback').click();
+    await expect(harness.page.getByTestId('folder-tree')).toBeVisible({ timeout: 20_000 });
+
+    expect(harness.errors, `errors:\n${harness.errors.join('\n')}`).toEqual([]);
+  } finally {
+    await harness.close();
+    await rm(files, { recursive: true, force: true });
   }
 });

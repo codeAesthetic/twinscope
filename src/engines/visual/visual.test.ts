@@ -205,9 +205,33 @@ describe('visualEngine', () => {
         ctxWith(host.fs, undefined),
       ),
     ).rejects.toMatchObject({
-      name: 'EngineInputError',
+      // Unsupported, not merely wrong input: no file the user could pick would
+      // give this host a decoder, so the panel must not call it a failure.
+      name: 'EngineUnsupportedError',
+      command: 'twinscope baseline/ current/ --engine visual',
       fallback: { fallbackEngineId: 'folder' },
     });
+  });
+
+  it('states the refusal in prose a person reads, with no markup left in it', async () => {
+    // The message is painted verbatim into the error panel and into the
+    // published `visual-regression.png`, so an asterisk meant as emphasis is an
+    // asterisk on the screen — which is how `*and*` shipped in that still.
+    const host = hostOf({});
+    const cause = await visualEngine
+      .compare(
+        folder('A', '/base'),
+        folder('B', '/current'),
+        visualEngine.defaultOptions(),
+        ctxWith(host.fs, undefined),
+      )
+      .then(() => null)
+      .catch((error: unknown) => error as Error);
+
+    expect(cause, 'the engine must refuse this host').not.toBeNull();
+    expect(cause?.message).not.toMatch(/[*_`<>]/);
+    // The command travels in its own field, so the sentence stays a sentence.
+    expect(cause?.message).not.toContain('twinscope');
   });
 
   it('never wins detection, since two folders of source look the same from outside', () => {

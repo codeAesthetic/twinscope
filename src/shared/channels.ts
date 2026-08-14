@@ -177,13 +177,24 @@ export interface CompareFailed {
   jobId: string;
   /** Safe to show a user. */
   message: string;
-  /** 'cancelled' when the user stopped it; 'crash' when the host died. */
-  reason: 'failed' | 'cancelled' | 'crash';
+  /**
+   * 'cancelled' when the user stopped it; 'crash' when the host died;
+   * 'unsupported' when the engine declines **by design** and no input would
+   * change that. The last one is not a failure and the panel must not paint it
+   * as one — see `EngineUnsupportedError` in `engines/types.ts`.
+   */
+  reason: 'failed' | 'cancelled' | 'crash' | 'unsupported';
   /**
    * Another engine that could still compare these inputs — unparseable JSON is
    * still readable as text. The error panel renders it as a one-click retry.
    */
   fallback?: { engineId: string; label: string };
+  /**
+   * The command that *can* do it, for an 'unsupported' refusal. Shown exactly as
+   * it would be typed, so it is carried as its own field rather than buried in
+   * `message`: a command line set in prose reads as prose and cannot be copied.
+   */
+  command?: string;
 }
 
 export type CompareEvent = CompareProgress | CompareDone | CompareFailed;

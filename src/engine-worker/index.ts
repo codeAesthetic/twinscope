@@ -2,7 +2,7 @@ import { nodeHostFs, scopedHostFs } from './hostFs';
 import { nodeGitHost, scopedGitHost } from './gitHost';
 import { nodePdfHost } from './pdfHost';
 import { engineById, selectEngine } from '../engines/registry';
-import { EngineInputError } from '../engines/types';
+import { EngineInputError, EngineUnsupportedError } from '../engines/types';
 import type { EngineCtx, GitHost, HostFs, InputRef } from '../engines/types';
 import type { CompareEvent, InputPayload } from '../shared/channels';
 
@@ -158,6 +158,9 @@ async function runJob(message: StartMessage): Promise<void> {
     const fallback = !cancelled && cause instanceof EngineInputError ? cause.fallback : undefined;
     const fallbackEngine =
       fallback !== undefined ? engineById(fallback.fallbackEngineId) : undefined;
+    // A designed refusal, not a failure — the panel colours and titles it
+    // differently, so the distinction has to survive the trip out of here.
+    const unsupported = !cancelled && cause instanceof EngineUnsupportedError ? cause : undefined;
 
     send({
       type: 'error',
@@ -167,10 +170,11 @@ async function runJob(message: StartMessage): Promise<void> {
         : cause instanceof Error
           ? cause.message
           : String(cause),
-      reason: cancelled ? 'cancelled' : 'failed',
+      reason: cancelled ? 'cancelled' : unsupported !== undefined ? 'unsupported' : 'failed',
       ...(fallback !== undefined && fallbackEngine !== undefined
         ? { fallback: { engineId: fallbackEngine.meta.id, label: fallback.fallbackLabel } }
         : {}),
+      ...(unsupported?.command !== undefined ? { command: unsupported.command } : {}),
     });
   } finally {
     running.delete(message.jobId);
